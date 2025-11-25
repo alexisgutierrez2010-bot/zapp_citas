@@ -1,0 +1,52 @@
+==================================================
+RESUMEN DE AVANCES Y PLAN DE PRUEBAS - ZAPP CITAS
+==================================================
+
+Fecha: 20 de Noviembre de 2025
+
+----------------------------------------
+1. RESUMEN DE CAMBIOS INCORPORADOS HOY
+----------------------------------------
+
+La jornada de hoy se centró en la refactorización de la interfaz del Portal del Propietario (spa_owner) y en la resolución de errores críticos, culminando con la implementación de una nueva funcionalidad clave.
+
+* Reestructuración del Menú (spa_owner):
+  - Se rediseñó por completo el menú de navegación principal, eliminando submenús y adoptando una estructura plana y directa para mejorar la usabilidad.
+  - El menú final quedó establecido como: Gestión de Citas, Agenda Diaria, Agenda Semanal, Clientes, Servicios, Mi Negocio, Mi Perfil, Salir.
+
+* Nueva Funcionalidad - Agenda Semanal (spa_owner):
+  - Se desarrolló la vista completa de "Agenda Semanal".
+  - Se creó un nuevo endpoint de API (`api_owner_agenda_semanal.php`) optimizado para obtener todas las citas de una semana en una sola consulta.
+  - La interfaz permite la navegación entre semanas ("Anterior" y "Siguiente").
+  - Las citas se muestran en una tabla de 7 días, y cada cita es un objeto interactivo que abre el modal de edición al hacer clic.
+
+* Corrección de Errores Críticos:
+  - **Error de Caché del Navegador:** Se solucionó de forma definitiva el problema por el cual los cambios en `app_owner.js` no se reflejaban. Se implementó una técnica de "cache busting" en `spa_owner.php`, forzando al navegador a descargar siempre la última versión del script.
+  - **Error "Unexpected end of JSON input":** Se identificó y corrigió la causa raíz de este error persistente que afectaba a "Mi Negocio" y "Agenda Semanal". El problema era un orden incorrecto en la ejecución de los scripts de la API. Se reprogramaron `api_owner_negocio_detalle.php` y `api_owner_agenda_semanal.php` para seguir la secuencia correcta: 1) Validar Sesión, 2) Establecer Cabecera JSON, 3) Ejecutar Lógica.
+  - **Robustez de las APIs:** Se añadieron verificaciones de conexión a la base de datos en las APIs para que, en caso de fallo, devuelvan un error JSON controlado en lugar de una respuesta vacía.
+
+* Mejoras de Interfaz (spa_owner):
+  - Se estandarizaron los títulos de todas las secciones para que fueran más limpios y consistentes.
+  - Se eliminó la redundancia del nombre del negocio en los títulos de las vistas, ya que ahora se muestra de forma permanente en la barra de navegación principal.
+
+-----------------------
+2. NUEVO PLAN DE PRUEBAS
+-----------------------
+
+Para validar los cambios de hoy, se debe enfocar en la `spa_owner`.
+
+**Aplicación 2: Portal del Propietario (`spa_owner`)**
+  - [ ] **Prueba de Caché:** Realizar un cambio menor en `app_owner.js` (ej. un `console.log`), guardar y recargar la página en el navegador. Verificar en las herramientas de desarrollador que el archivo se carga con un nuevo número de versión (ej. `app_owner.js?v=123456789`).
+  - [ ] **Navegación:** Hacer clic en cada uno de los elementos del menú principal y verificar que cada vista se carga correctamente y el título de la sección es el adecuado ("Listado de Citas", "Gestión de Clientes", etc.).
+  - [ ] **Agenda Semanal:**
+    - [ ] Verificar que la vista carga las citas de la semana actual correctamente.
+    - [ ] Usar los botones "Semana Anterior" y "Semana Siguiente" y confirmar que la vista se actualiza.
+    - [ ] Hacer clic en una cita dentro de la agenda semanal y verificar que se abre el modal de edición.
+  - [ ] **Prueba de Expiración de Sesión:**
+    - [ ] Iniciar sesión en la `spa_owner`.
+    - [ ] Esperar más de 5 minutos sin hacer nada.
+    - [ ] Intentar navegar a "Mi Negocio" o "Agenda Semanal". **La aplicación debe detectar la sesión expirada y redirigir al login, sin mostrar el error "Unexpected end of JSON input".**
+
+---
+
+¡Excelente trabajo hoy! Que tengas una buena cena y un merecido descanso.

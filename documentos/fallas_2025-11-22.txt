@@ -1,0 +1,47 @@
+==================================================
+PENDIENTES DE DESARROLLO - ZAPP CITAS
+==================================================
+
+Fecha de Creación: 23 de Noviembre de 2025
+
+Este documento lista las funcionalidades, mejoras y correcciones que están planificadas para futuras sesiones de desarrollo.
+
+----------------------------------------
+1. FUNCIONALIDADES PRINCIPALES (ALTO IMPACTO)
+----------------------------------------
+
+* **Automatización de Período de Prueba (CRON Job)**:
+  - Crear un script `cron_check_trials.php` que se ejecute automáticamente (diariamente).
+  - Tareas del script:
+    1. Desactivar (cambiar a estado "Suspendido") los negocios cuyo período de prueba haya expirado.
+    2. Enviar correos de recordatorio a los negocios a los que les queden 7 días y 1 día de prueba.
+    3. Enviar un correo de "Cuenta Suspendida" cuando el período finalice.
+
+* **Notificaciones por SMS**:
+  - Investigar e integrar una API de SMS (ej. Twilio).
+  - Añadir la configuración de la API de SMS en el panel de administración.
+  - Modificar la lógica de envío de notificaciones (`enviar_email.php` o un nuevo script) para que también envíe SMS si el cliente tiene la opción `IN_SMS` activada.
+
+* **Dashboard de Métricas para el Propietario**:
+  - Diseñar una nueva vista principal para la `spa_owner` que muestre gráficos y estadísticas.
+  - Métricas a considerar: Citas por día/semana, servicios más populares, nuevos clientes por mes, ingresos estimados.
+
+----------------------------------------
+2. MEJORAS Y NUEVAS CARACTERÍSTICAS
+----------------------------------------
+
+* **Filtro por Categoría en SPA del Cliente**:
+  - Añadir un menú desplegable o botones en la `spa_cliente` para que los usuarios puedan filtrar la lista de negocios por categoría.
+
+* **Sesión Persistente (Recordarme)**:
+  - Añadir una opción de "Recordarme" en los formularios de login para que los usuarios (especialmente el propietario) no tengan que iniciar sesión cada vez.
+
+* **Mostrar/Ocultar Contraseña**:
+  - Añadir un icono de "ojo" en los campos de contraseña de los formularios de login para mejorar la usabilidad.
+
+----------------------------------------
+3. DEUDA TÉCNICA Y CORRECCIONES
+----------------------------------------
+
+* **Resolver Error en "Mi Perfil" (SPA Cliente)**:
+  - Investigar y solucionar de forma definitiva el error persistente "Unexpected end of JSON input" que ocurre al intentar cargar o actualizar el perfil del cliente en la `spa_cliente`.

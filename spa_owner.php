@@ -1,0 +1,64 @@
+<?php
+// Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
+// ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
+// Update :Nov-24-2025).
+?><!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal del Propietario</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { 
+            background-color: #f4f7f6; 
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        /* Estilos para el reloj responsivo en la barra de navegación */
+        #owner-clock {
+            font-size: clamp(0.8rem, 3vw, 1rem);
+            white-space: nowrap;
+            color: rgba(255, 255, 255, 0.75);
+            align-self: center; /* Centrar verticalmente en el toggler */
+        }
+        #app-container {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#" id="navbar-brand-title">Portal del Propietario</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto" id="nav-menu"></ul>
+            </div>
+        </div>
+    </nav>
+
+    <main id="app-container" class="container mt-4">
+        <div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div></div>
+    </main>
+
+    <footer class="footer mt-auto py-3 bg-dark text-white-50">
+        <div class="container text-center">
+            <small>
+                ©2025. Software development and Authorized by <a href="http://www.acticven.com" target="_blank" class="text-white">WWW.ACTICVEN.COM</a> All rights reserved. (Version 1.0 Date: Nov-19-2025).
+            </small>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <?php
+    // Técnica de "Cache Busting":
+    // Añade la fecha de la última modificación del archivo JS como un parámetro de versión.
+    // Esto fuerza al navegador a descargar el archivo nuevo cada vez que lo modificamos.
+    ?>
+    <script src="app_owner.js?v=<?php echo filemtime('app_owner.js'); ?>"></script>
+</body>
+</html>

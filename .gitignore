@@ -1,0 +1,12 @@
+# Ignorar el archivo de configuración que contiene credenciales sensibles.
+config.php
+
+# Ignorar las carpetas de respaldo, como se recomienda en leeme.txt.
+backup*/
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de dependencias de PHP (si usas Composer en el futuro)
+/vendor/

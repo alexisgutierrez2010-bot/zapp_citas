@@ -1,0 +1,32 @@
+==================================================
+TAREAS PENDIENTES PARA LA PRÓXIMA SESIÓN
+==================================================
+
+Fecha: 23 de Noviembre de 2025
+
+Este documento lista las tareas prioritarias para continuar el desarrollo en la siguiente sesión (24 de Noviembre de 2025).
+
+----------------------------------------
+1. CORRECCIÓN CRÍTICA: Solucionar error "Unexpected token" en Agenda Diaria.
+----------------------------------------
+
+* **Objetivo:** Aplicar la solución definitiva al error que impide la carga de la "Agenda Diaria" en el portal del propietario.
+
+* **Plan de Acción:**
+  - [ ] **Paso 1:** Modificar `api_owner_session_check.php` para **eliminar** la línea `session_start();`.
+  - [ ] **Paso 2:** Modificar `api_owner_horario_disponible.php` para **añadir** la línea `session_start();` al principio del archivo, antes de que se incluya el guardián.
+
+----------------------------------------
+2. MEJORA DE USABILIDAD: Botón "Hoy" en Agenda Semanal.
+----------------------------------------
+
+* **Objetivo:** Añadir un botón "Hoy" en la vista de "Agenda Semanal" del propietario para que pueda volver rápidamente a la semana actual después de navegar a fechas pasadas o futuras.
+
+----------------------------------------
+3. MEJORA DE SEGURIDAD/UX: Función "Mostrar/Ocultar Contraseña".
+----------------------------------------
+
+* **Objetivo:** Implementar un ícono de "ojo" en el campo de contraseña del formulario de login del propietario (`spa_owner`) que permita al usuario ver lo que está escribiendo.
+
+---
+Fin del documento.

@@ -1,0 +1,76 @@
+
+
+<pre>==================================================
+INSTRUCCIONES DE DESPLIEGUE - ZAPP CITAS
+==================================================
+
+Fecha: 24 de Noviembre de 2025
+
+Este documento proporciona los pasos b&aacute;sicos para desplegar la aplicaci&oacute;n ZApp Citas desde un entorno local (XAMPP en Windows) a un servidor de hosting en producci&oacute;n (como Hostinger, basado en Linux).
+
+----------------------------------------
+1. REQUISITOS DEL SERVIDOR
+----------------------------------------
+
+Aseg&uacute;rate de que tu plan de hosting cumpla con los siguientes requisitos:
+
+- **Servidor Web:** Apache o Nginx.
+- **PHP:** Versi&oacute;n 8.0 o superior.
+- **Extensiones de PHP:**
+  - `mysqli` (para la conexi&oacute;n a la base de datos).
+  - `json` (para el manejo de las APIs).
+  - `mbstring` (para el manejo de caracteres multibyte).
+  (Estas extensiones suelen estar activadas por defecto en la mayor&iacute;a de los hostings modernos).
+- **Base de Datos:** MySQL o MariaDB.
+
+----------------------------------------
+2. PREPARACI&Oacute;N DE LA BASE DE DATOS
+----------------------------------------
+
+1.  **Exportar la Base de Datos Local:**
+    - Abre phpMyAdmin en tu XAMPP.
+    - Selecciona la base de datos `u802326406_citas`.
+    - Ve a la pesta&ntilde;a "Exportar".
+    - Elige el m&eacute;todo "R&aacute;pido" y el formato "SQL".
+    - Haz clic en "Exportar" para descargar el archivo `.sql` a tu computadora.
+
+2.  **Crear e Importar la Base de Datos en el Hosting:**
+    - En el panel de control de tu hosting (ej. hPanel de Hostinger), ve a la secci&oacute;n de "Bases de Datos".
+    - Crea una **nueva base de datos** y un **nuevo usuario** para esa base de datos. Anota cuidadosamente el nombre de la base de datos, el nombre de usuario y la contrase&ntilde;a que generes.
+    - Abre phpMyAdmin en tu hosting y selecciona la base de datos que acabas de crear.
+    - Ve a la pesta&ntilde;a "Importar", selecciona el archivo `.sql` que exportaste de tu XAMPP y ejecuta la importaci&oacute;n.
+
+----------------------------------------
+3. CONFIGURACI&Oacute;N DEL PROYECTO
+----------------------------------------
+
+Este es el paso m&aacute;s cr&iacute;tico. Antes de subir los archivos, debes editar el siguiente archivo en tu computadora:
+
+- **Archivo a modificar:** `config.php`
+- **Cambios a realizar:** Actualiza las credenciales de la base de datos con las que creaste en tu hosting.
+
+    $servername = "localhost"; // Generalmente es 'localhost', pero conf&iacute;rmalo en tu hosting.
+    $username   = "NOMBRE_DE_USUARIO_DEL_HOSTING";
+    $password   = "CONTRASE&Ntilde;A_DEL_HOSTING";
+    $dbname     = "NOMBRE_DE_LA_BD_DEL_HOSTING";
+
+**Importante:** Tambi&eacute;n revisa y actualiza las credenciales SMTP en este mismo archivo si planeas usar la funcionalidad de env&iacute;o de correos desde el servidor en vivo.
+
+----------------------------------------
+4. SUBIDA DE ARCHIVOS
+----------------------------------------
+
+1.  Con&eacute;ctate a tu hosting usando un cliente FTP (como FileZilla) o el Administrador de Archivos del panel de control.
+2.  Navega al directorio ra&iacute;z de tu sitio web (normalmente `public_html`).
+3.  Sube **todos los archivos y carpetas** del proyecto `zapp_citas` a este directorio.
+    - **Recomendaci&oacute;n:** Para ahorrar espacio y tiempo, puedes omitir la subida de las carpetas `backup*`.
+
+----------------------------------------
+5. VERIFICACI&Oacute;N FINAL
+----------------------------------------
+
+Una vez subidos los archivos, abre tu dominio en el navegador y realiza pruebas exhaustivas:
+- Intenta iniciar sesi&oacute;n en el portal del propietario y del cliente.
+- Navega por todas las secciones (Agenda Diaria, Clientes, Mi Negocio, etc.).
+- Realiza una acci&oacute;n que interact&uacute;e con la base de datos (ej. editar un cliente) para confirmar que la conexi&oacute;n es correcta.
+</pre>
