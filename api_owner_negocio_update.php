@@ -4,6 +4,7 @@
 // Fecha de Creación: 27/11/2025
 
 // 1. Guardián de sesión: Se ejecuta ANTES de cualquier salida.
+session_start();
 require_once 'api_owner_session_check.php';
 
 // 2. Cabecera JSON: Se establece DESPUÉS de la validación de sesión.

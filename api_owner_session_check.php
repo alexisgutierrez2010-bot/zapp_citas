@@ -2,7 +2,7 @@
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
 // Update :Nov-24-2025).
-session_start();
+// session_start(); // ELIMINADO: La responsabilidad se mueve al script que lo incluye.
 
 define('SESSION_TIMEOUT', 300); // 300 segundos = 5 minutos
 

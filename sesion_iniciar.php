@@ -137,14 +137,6 @@ $_SESSION['captcha_hash'] = strtoupper(substr(sha1(session_id() . $_SESSION['cap
         </div>
     </div>    
 
-    <footer class="footer mt-auto py-3 bg-dark text-white-50" style="position: fixed; bottom: 0; width: 100%;">
-        <div class="container text-center">
-            <small>
-                ©2025. Software development and Authorized by <a href="http://www.acticven.com" target="_blank" class="text-white">WWW.ACTICVEN.COM</a> All rights reserved. (Version 1.0 Date: Nov-19-2025).
-            </small>
-        </div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <?php include 'footer.php'; // Incluimos el pie de página centralizado ?>
 </body>
 </html>

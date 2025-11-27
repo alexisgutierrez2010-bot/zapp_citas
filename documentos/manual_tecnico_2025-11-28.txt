@@ -2,8 +2,8 @@
 MANUAL TÉCNICO DEL SISTEMA - ZAPP CITAS
 ==================================================
  
-Fecha de Creación: 24 de Noviembre de 2025
-Versión: 1.1
+Fecha de Creación: 28 de Noviembre de 2025
+Versión: 1.3
 
 ----------------------------------------
 0. INTRODUCCIÓN
@@ -17,7 +17,7 @@ El sistema ZApp Citas está compuesto por tres aplicaciones principales que trab
 
 1.  **Panel de Administración (zapp_citas):** Es el núcleo del sistema, desarrollado en PHP tradicional. Permite la gestión completa de negocios, usuarios, clientes, servicios, citas y configuraciones globales.
 2.  **SPA del Propietario (spa_owner):** Una Single-Page Application (HTML + JavaScript) diseñada para que los dueños de negocios gestionen su agenda, clientes y servicios de forma rápida y moderna.
-3.  **SPA del Cliente (spa_cliente):** Una Single-Page Application (HTML + JavaScript) que permite a los clientes finales registrarse, ver su historial y gestionar su perfil.
+3.  **SPA del Cliente (spa_client):** Una Single-Page Application (HTML + JavaScript) que permite a los clientes finales registrarse, ver su historial, agendar citas y gestionar su perfil.
 
 **Estructura de Llamados:**
 El sistema utiliza una arquitectura mixta:
@@ -26,7 +26,110 @@ El sistema utiliza una arquitectura mixta:
 
 
 ----------------------------------------
-1. LISTADO DE PROGRAMAS Y FUNCIONALIDAD
+1. ARQUITECTURA DETALLADA DE APLICACIONES
+----------------------------------------
+
+Esta sección profundiza en el funcionamiento interno de cada una de las tres aplicaciones principales.
+
+**1.1. Panel de Administración (zapp_citas)**
+---------------------------------------------
+*   **Propósito y Tecnología:**
+    Es el centro de control total del sistema. Está construido con PHP tradicional, donde cada acción del usuario (hacer clic en un enlace, enviar un formulario) resulta en una nueva solicitud al servidor, que renderiza y devuelve una página HTML completa.
+
+*   **Flujo de Seguridad y Sesión:**
+    1.  El acceso se inicia en `sesion_iniciar.php`.
+    2.  Las credenciales se envían a `procesar_login.php`, que verifica el usuario y la contraseña contra la tabla `j100_usuarios`.
+    3.  Si el login es exitoso, se establecen variables de sesión (`$_SESSION['loggedin'] = true`, `$_SESSION['id_usuario']`, etc.).
+    4.  Cada página protegida (ej. `dashboard.php`, `clientes_lista.php`) incluye `require_once 'auth_check.php';` al principio.
+    5.  `auth_check.php` es el "guardián": inicia la sesión con `session_start()` y verifica si `$_SESSION['loggedin']` es `true`. Si no, redirige a `sesion_iniciar.php`. También gestiona el timeout por inactividad.
+
+*   **Conexión a Base de Datos:**
+    Cada script PHP que necesita interactuar con la base de datos incluye `require_once 'config.php';`, que establece la conexión a través de la variable global `$conn`.
+
+*   **Variables Clave de Sesión:**
+    - `$_SESSION['loggedin']`: Booleano que indica si el usuario está autenticado.
+    - `$_SESSION['id_usuario']`: ID del usuario logueado.
+    - `$_SESSION['nombre_usuario']`: Nombre del usuario para mostrar en la interfaz.
+    - `$_SESSION['id_negocio']`: ID del negocio que el usuario está gestionando.
+    - `$_SESSION['rol']`: Rol del usuario ('Master', 'Propietario').
+    - `$_SESSION['last_activity']`: Timestamp de la última interacción para controlar el timeout.
+
+*   **Ejemplo de Lógica SQL (en `citas_lista.php`):**
+    ```sql
+    -- Consulta para obtener las citas de un día específico para un negocio.
+    SELECT c.id_cita, c.fecha_hora_inicio, c.estado_cita, cl.nombre_completo, s.nombre_servicio
+    FROM j108_citas c
+    JOIN j106_clientes cl ON c.id_cliente = cl.id_cliente
+    LEFT JOIN j104_servicios s ON c.id_servicio = s.id_servicio
+    WHERE DATE(c.fecha_hora_inicio) = ? AND c.id_negocio = ?
+    ORDER BY c.fecha_hora_inicio ASC;
+    ```
+
+**1.2. SPA del Propietario (spa_owner)**
+----------------------------------------
+*   **Propósito y Tecnología:**
+    Es una interfaz moderna y rápida para la gestión diaria del negocio. Es una Single-Page Application (SPA), lo que significa que la página principal (`spa_owner.php`) se carga una sola vez. Toda la interacción posterior (navegar entre menús, editar citas) se realiza mediante JavaScript (`app_owner.js`), que se comunica con el servidor a través de APIs PHP sin recargar la página. Esto proporciona una experiencia de usuario fluida, similar a una aplicación de escritorio.
+
+*   **Flujo de Seguridad y Sesión:**
+    1.  La SPA carga `renderLoginView()` que llama a la API `api_owner_login.php` para obtener un CAPTCHA.
+    2.  El usuario envía sus credenciales a `api_owner_login.php` (vía POST). La API valida al usuario y, si es exitoso, crea una sesión de PHP en el servidor con variables específicas (`$_SESSION['owner_loggedin']`). Devuelve los datos del usuario como JSON.
+    3.  El JavaScript (`app_owner.js`) recibe la respuesta JSON exitosa, guarda los datos del propietario localmente y renderiza la vista principal ("Mi Agenda").
+    4.  Cada acción posterior que requiere datos (ej. ver el calendario) hace una llamada `fetch` a una API protegida (ej. `api_owner_calendario_eventos.php`).
+    5.  Cada API protegida incluye `require_once 'api_owner_session_check.php';` al principio. Este guardián verifica que `$_SESSION['owner_loggedin']` sea `true`. Si no, la API devuelve un error 401 (No Autorizado).
+    6.  Si el JavaScript recibe un error 401, interpreta que la sesión ha expirado o es inválida, y redirige al usuario a la vista de login.
+
+*   **Conexión a Base de Datos:**
+    Cada script de API (ej. `api_owner_citas.php`) incluye `require_once 'config.php';` para establecer la conexión `$conn`.
+
+*   **Variables Clave de Sesión:**
+    - `$_SESSION['owner_loggedin']`: Booleano.
+    - `$_SESSION['owner_id_usuario']`: ID del usuario propietario.
+    - `$_SESSION['owner_id_negocio']`: ID del negocio que gestiona.
+    - `$_SESSION['owner_last_activity']`: Timestamp para el timeout.
+
+*   **Ejemplo de Lógica SQL (en `api_owner_calendario_eventos.php`):**
+    ```sql
+    -- Consulta para obtener los eventos para FullCalendar en un rango de fechas.
+    SELECT c.id_cita, c.fecha_hora_inicio, c.fecha_hora_fin, c.estado_cita, cl.nombre_completo, s.nombre_servicio
+    FROM j108_citas c
+    JOIN j106_clientes cl ON c.id_cliente = cl.id_cliente
+    LEFT JOIN j104_servicios s ON c.id_servicio = s.id_servicio
+    WHERE c.id_negocio = ? AND c.fecha_hora_inicio BETWEEN ? AND ?;
+    ```
+
+**1.3. SPA del Cliente (spa_client)**
+-------------------------------------
+*   **Propósito y Tecnología:**
+    Portal de autoservicio para el cliente final. Al igual que la SPA del propietario, es una Single-Page Application (`spa_client.php` + `app_client.js`) que se comunica con el servidor mediante APIs (`api_cliente_*.php`).
+
+*   **Flujo de Seguridad y Sesión:**
+    El flujo es similar al de la SPA del propietario, pero con sus propias APIs y variables de sesión para mantener una separación estricta de roles.
+    1.  El login se realiza contra `api_cliente_login.php` usando solo el número de teléfono y un CAPTCHA.
+    2.  Si el cliente no existe, la API devuelve un error 404, y el JavaScript le ofrece registrarse. El registro se procesa con `api_cliente_registro.php`.
+    3.  Si el login es exitoso, se crea una sesión con `$_SESSION['client_loggedin'] = true`.
+    4.  Las APIs protegidas (ej. `api_cliente_perfil.php`) usan el guardián `api_cliente_session_check.php` para validar la sesión del cliente.
+
+*   **Conexión a Base de Datos:**
+    Cada script de API (`api_cliente_*.php`) incluye `require_once 'config.php';`.
+
+*   **Variables Clave de Sesión:**
+    - `$_SESSION['client_loggedin']`: Booleano.
+    - `$_SESSION['client_id_cliente']`: ID del cliente logueado.
+    - `$_SESSION['client_id_negocio']`: ID del negocio al que pertenece el cliente.
+    - `$_SESSION['client_last_activity']`: Timestamp para el timeout.
+
+*   **Ejemplo de Lógica SQL (en `api_cliente_historial.php`):**
+    ```sql
+    -- Consulta para obtener el historial de citas de un cliente.
+    SELECT c.id_cita, c.fecha_hora_inicio, c.estado_cita, s.nombre_servicio
+    FROM j108_citas c
+    JOIN j104_servicios s ON c.id_servicio = s.id_servicio
+    WHERE c.id_cliente = ?
+    ORDER BY c.fecha_hora_inicio DESC;
+    ```
+
+----------------------------------------
+2. LISTADO DE PROGRAMAS Y FUNCIONALIDAD
 ----------------------------------------
 
 A continuación se detalla cada programa y su propósito dentro del sistema.
@@ -35,9 +138,9 @@ A continuación se detalla cada programa y su propósito dentro del sistema.
 --------------------------------------------
 * `config.php`: Define las credenciales de conexión a la base de datos y las constantes de configuración de SMTP.
 * `audit_log.php`: Contiene la función `registrar_auditoria()` para registrar eventos clave en la tabla `j101_auditoria`.
-* `index.php`: Portal de bienvenida principal que redirige a las tres aplicaciones.
-* `footer.php`: Pie de página común para todas las vistas del panel de administración.
-* `navbar.php`: Barra de navegación superior para el panel de administración.
+* `index.php`: Portal de bienvenida principal. Muestra accesos a las tres aplicaciones y utiliza el `footer.php` centralizado.
+* `footer.php`: Pie de página universal para toda la aplicación (panel de admin y SPAs). Incluye el script de Bootstrap y un reloj en tiempo real.
+* `navbar.php`: Barra de navegación superior, exclusiva para el panel de administración.
 * `get_image.php`: Script seguro para servir la imagen de fondo de un negocio desde la base de datos.
 
 **B. Autenticación y Sesión:**
@@ -45,7 +148,7 @@ A continuación se detalla cada programa y su propósito dentro del sistema.
 * `auth_check.php`: **Guardián de sesión** para el panel de administración. Inicia la sesión (`session_start()`), verifica si el usuario está autenticado y controla el tiempo de inactividad. Se incluye en todas las páginas protegidas.
 * `api_owner_session_check.php`: Guardián de seguridad para la API de la SPA del Propietario.
 * `api_cliente_session_check.php`: Guardián de seguridad para la API de la SPA del Cliente.
-* `sesion_iniciar.php`: Muestra el formulario de login para el panel de administración.
+* `sesion_iniciar.php`: Muestra el formulario de login para el panel de administración. Utiliza el `footer.php` centralizado.
 * `procesar_login.php`: Valida las credenciales del panel de administración y crea la sesión.
 * `logout.php`: Cierra la sesión del panel de administración.
 * `olvide_clave.php` / `procesar_olvide_clave.php`: Gestionan la recuperación de contraseñas.
@@ -126,6 +229,13 @@ A continuación se detalla cada programa y su propósito dentro del sistema.
 * `api_owner_negocio_detalle.php`: Devuelve los detalles de configuración del negocio.
 * `api_owner_negocio_actualizar.php`: Actualiza la configuración del negocio.
 * `api_owner_perfil_detalle.php`: Devuelve los datos del perfil del propietario.
+* `api_owner_calendario_eventos.php`: Sirve los datos de las citas en formato de eventos para el componente FullCalendar.
+* `api_owner_cita_eliminar.php`: Procesa la eliminación de una cita.
+
+  **APIs Reutilizadas/Renombradas en Lógica:**
+* `api_owner_citas.php`: Sirve los datos para la vista "Mi Agenda" (lista de citas del día).
+* `api_owner_horario_disponible.php`: Sirve los datos para la vista "Disponibilidad del Día" (slots de tiempo).
+
 
 **E. API para SPA del Cliente (spa_cliente):**
 -----------------------------------------------
@@ -168,10 +278,10 @@ Este diagrama de texto ilustra el flujo principal de interacción entre los comp
                   |                    |                    |
                   V                    V                    V
       +---------------------+  +-------------------+  +--------------------+
-      | zapp_citas (Admin)  |  | spa_owner.html    |  | spa_cliente.html   |
+      | zapp_citas (Admin)  |  | spa_owner.php     |  | spa_client.php     |
       +---------------------+  +-------------------+  +--------------------+
                  |                      |                    |
-                 |                      | (Llama a)          | (Llama a)
+                 | (Usa footer.php)     | (Usa footer.php)   | (Usa footer.php)
                  V                      V                    V
       +---------------------+  +-------------------+  +--------------------+
       | sesion_iniciar.php  |  | api_owner_*.php   |  | api_cliente_*.php  |
@@ -197,18 +307,61 @@ Este diagrama de texto ilustra el flujo principal de interacción entre los comp
 
 
 ----------------------------------------
-3. PROGRAMAS DE USO COMÚN
+3. DIAGRAMA ESTRUCTURADO DE PROGRAMAS
+----------------------------------------
+
+Este diagrama de texto ilustra el flujo principal de interacción entre los componentes.
+
+                               +-----------------+
+                               |   index.php     | (Portal Principal)
+                               +-----------------+
+                                       |
+                  +--------------------+--------------------+
+                  |                    |                    |
+                  V                    V                    V
+      +---------------------+  +-------------------+  +--------------------+
+      | zapp_citas (Admin)  |  | spa_owner.php     |  | spa_client.php     | (SPA del Cliente)
+      +---------------------+  +-------------------+  +--------------------+
+                 |                      |                    |
+                 | (Usa footer.php)     | (Usa footer.php)   | (Usa footer.php)
+                 V                      V                    V
+      +---------------------+  +-------------------+  +--------------------+
+      | sesion_iniciar.php  |  | api_owner_*.php   |  | api_cliente_*.php  |
+      +---------------------+  +-------------------+  +--------------------+
+                 |                      |                    |
+                 V                      |                    |
+      +---------------------+          |                    |
+      | procesar_login.php  |          |                    |
+      +---------------------+          |                    |
+                 |                      |                    |
+                 V                      V                    V
+      +---------------------+  +-------------------+  +--------------------+
+      | dashboard.php       |  | (JavaScript en    |  | (JavaScript en    |
+      | (Carga auth_check.php)|  |  app_owner.js)    |  |  app.js)           |
+      +---------------------+  +-------------------+  +--------------------+
+                 |                      |                    |
+                 |                      |                    |
+                 |                      V                    V
+                 |            +--------------------------------+
+                 +----------->|           Base de Datos        |
+                              |             (MySQL)            |
+                              +--------------------------------+
+
+
+----------------------------------------
+4. PROGRAMAS DE USO COMÚN
 ----------------------------------------
 
 * `auth_check.php`: Es el archivo más crítico para la seguridad del panel de administración.
 * `config.php`: Esencial para la conexión a la base de datos en todos los scripts.
 * `citas_lista.php`: Es el centro de operaciones para la gestión diaria de citas.
 * `negocios_configuracion.php`: Es la página principal para la configuración de un negocio.
-* `api_owner_horario_disponible.php`: Es la API más importante para la SPA del propietario, ya que construye el cronograma visual.
+* `api_owner_horario_disponible.php`: API clave para la vista "Disponibilidad del Día" en la SPA del propietario.
+* `api_owner_calendario_eventos.php`: API clave que alimenta el componente de Calendario interactivo.
 
 
 ----------------------------------------
-4. ESTRUCTURA DE BASE DE DATOS
+5. ESTRUCTURA DE BASE DE DATOS
 ----------------------------------------
 
 **j100_usuarios**

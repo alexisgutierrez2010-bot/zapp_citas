@@ -1,6 +1,6 @@
 <?php
 // Revisado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM en fecha Nov/20/2025 //
-// session_start(); // ELIMINADO: El guardián ya inicia la sesión.
+session_start();
 require_once 'config.php';
 require_once 'audit_log.php';
 require_once 'vendor/autoload.php';

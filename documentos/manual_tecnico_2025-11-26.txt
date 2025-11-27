@@ -2,8 +2,8 @@
 MANUAL TÉCNICO DEL SISTEMA - ZAPP CITAS
 ==================================================
  
-Fecha de Creación: 24 de Noviembre de 2025
-Versión: 1.1
+Fecha de Creación: 26 de Noviembre de 2025
+Versión: 1.2
 
 ----------------------------------------
 0. INTRODUCCIÓN
@@ -35,9 +35,9 @@ A continuación se detalla cada programa y su propósito dentro del sistema.
 --------------------------------------------
 * `config.php`: Define las credenciales de conexión a la base de datos y las constantes de configuración de SMTP.
 * `audit_log.php`: Contiene la función `registrar_auditoria()` para registrar eventos clave en la tabla `j101_auditoria`.
-* `index.php`: Portal de bienvenida principal que redirige a las tres aplicaciones.
-* `footer.php`: Pie de página común para todas las vistas del panel de administración.
-* `navbar.php`: Barra de navegación superior para el panel de administración.
+* `index.php`: Portal de bienvenida principal. Muestra accesos a las tres aplicaciones y utiliza el `footer.php` centralizado.
+* `footer.php`: Pie de página universal para toda la aplicación (panel de admin y SPAs). Incluye el script de Bootstrap y un reloj en tiempo real.
+* `navbar.php`: Barra de navegación superior, exclusiva para el panel de administración.
 * `get_image.php`: Script seguro para servir la imagen de fondo de un negocio desde la base de datos.
 
 **B. Autenticación y Sesión:**
@@ -45,7 +45,7 @@ A continuación se detalla cada programa y su propósito dentro del sistema.
 * `auth_check.php`: **Guardián de sesión** para el panel de administración. Inicia la sesión (`session_start()`), verifica si el usuario está autenticado y controla el tiempo de inactividad. Se incluye en todas las páginas protegidas.
 * `api_owner_session_check.php`: Guardián de seguridad para la API de la SPA del Propietario.
 * `api_cliente_session_check.php`: Guardián de seguridad para la API de la SPA del Cliente.
-* `sesion_iniciar.php`: Muestra el formulario de login para el panel de administración.
+* `sesion_iniciar.php`: Muestra el formulario de login para el panel de administración. Utiliza el `footer.php` centralizado.
 * `procesar_login.php`: Valida las credenciales del panel de administración y crea la sesión.
 * `logout.php`: Cierra la sesión del panel de administración.
 * `olvide_clave.php` / `procesar_olvide_clave.php`: Gestionan la recuperación de contraseñas.
@@ -168,10 +168,10 @@ Este diagrama de texto ilustra el flujo principal de interacción entre los comp
                   |                    |                    |
                   V                    V                    V
       +---------------------+  +-------------------+  +--------------------+
-      | zapp_citas (Admin)  |  | spa_owner.html    |  | spa_cliente.html   |
+      | zapp_citas (Admin)  |  | spa_owner.php     |  | spa_client.php     |
       +---------------------+  +-------------------+  +--------------------+
                  |                      |                    |
-                 |                      | (Llama a)          | (Llama a)
+                 | (Usa footer.php)     | (Usa footer.php)   | (Usa footer.php)
                  V                      V                    V
       +---------------------+  +-------------------+  +--------------------+
       | sesion_iniciar.php  |  | api_owner_*.php   |  | api_cliente_*.php  |

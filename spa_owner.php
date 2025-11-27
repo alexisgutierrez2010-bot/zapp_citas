@@ -7,7 +7,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal del Propietario</title>
+    <title>Gestión de Citas del Negocio</title>
+    <!-- FullCalendar CSS -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css' rel='stylesheet'>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { 
@@ -26,12 +29,17 @@
         #app-container {
             flex: 1;
         }
+        /* Estilos para que los eventos del calendario se vean bien con Bootstrap */
+        .fc-event {
+            color: #fff !important; /* Forzar texto blanco en eventos */
+            padding: 2px 4px;
+        }
     </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="#" id="navbar-brand-title">Portal del Propietario</a>
+            <a class="navbar-brand" href="#" id="navbar-brand-title">Gestión de Citas del Negocio</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -45,20 +53,12 @@
         <div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div></div>
     </main>
 
-    <footer class="footer mt-auto py-3 bg-dark text-white-50">
-        <div class="container text-center">
-            <small>
-                ©2025. Software development and Authorized by <a href="http://www.acticven.com" target="_blank" class="text-white">WWW.ACTICVEN.COM</a> All rights reserved. (Version 1.0 Date: Nov-19-2025).
-            </small>
-        </div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <?php
     // Técnica de "Cache Busting":
     // Añade la fecha de la última modificación del archivo JS como un parámetro de versión.
     // Esto fuerza al navegador a descargar el archivo nuevo cada vez que lo modificamos.
     ?>
+    <?php include 'footer.php'; ?>
     <script src="app_owner.js?v=<?php echo filemtime('app_owner.js'); ?>"></script>
 </body>
 </html>

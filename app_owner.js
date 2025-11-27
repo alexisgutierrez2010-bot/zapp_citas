@@ -41,8 +41,8 @@ document.addEventListener('DOMContentLoaded', function() {
             errorLogin = `<div class="alert alert-danger mt-3">Error al cargar el formulario de acceso: ${error.message}</div>`;
         }
 
-        document.title = 'Portal del Propietario - Login';
-        navbarBrand.textContent = 'Portal del Propietario';
+        document.title = 'Gestión de Citas del Negocio - Login';
+        navbarBrand.textContent = 'Gestión de Citas del Negocio';
         navMenu.innerHTML = ''; // Menú vacío en el login
 
         appContainer.innerHTML = `
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
             clockInterval = setInterval(() => {
                 updateClock('owner-clock');
             }, 1000);
-            renderCitasView(); // 2. Luego, renderiza la vista de citas.
+            renderMiAgendaView(); // 2. CORRECCIÓN: Renderiza "Mi Agenda" (la lista de citas) como vista inicial.
 
         } catch (error) {
             errorContainer.innerHTML = `<div class="alert alert-danger mt-3">${error.message}</div>`;
@@ -158,11 +158,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (ownerActual) {
             // Si hay un propietario logueado, mostrar su menú
-            // Se construye el menú plano con todas las opciones en el nivel superior.
             navMenu.innerHTML = `
-                <li class="nav-item"><a class="nav-link active" href="#" id="nav-citas">Gestión de Citas</a></li>
-                <li class="nav-item"><a class="nav-link" href="#" id="nav-agenda-diaria">Agenda Diaria</a></li>
-                <li class="nav-item"><a class="nav-link" href="#" id="nav-agenda-semanal">Agenda Semanal</a></li>
+                <li class="nav-item"><a class="nav-link active" href="#" id="nav-mi-agenda">Mi Agenda</a></li>
+                <li class="nav-item"><a class="nav-link" href="#" id="nav-disponibilidad">Disponibilidad del Día</a></li>
+                <li class="nav-item"><a class="nav-link" href="#" id="nav-calendario">Calendario</a></li>
                 <li class="nav-item"><a class="nav-link" href="#" id="nav-clientes">Mis Clientes</a></li>
                 <li class="nav-item"><a class="nav-link" href="#" id="nav-servicios">Mis Servicios</a></li>
                 <li class="nav-item ms-lg-3"><a class="nav-link" href="#" id="nav-mi-negocio">Mi Negocio</a></li>
@@ -173,12 +172,12 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
 
             // Añadir listeners a los elementos del menú
-            document.getElementById('nav-citas').addEventListener('click', renderCitasView);
-            document.getElementById('nav-agenda-diaria').addEventListener('click', renderCronogramaView);
-            document.getElementById('nav-agenda-semanal').addEventListener('click', renderAgendaSemanalView);
+            document.getElementById('nav-calendario').addEventListener('click', renderCalendarioView);
             document.getElementById('nav-servicios').addEventListener('click', renderServiciosView);
             document.getElementById('nav-clientes').addEventListener('click', renderClientesView);
             document.getElementById('nav-mi-negocio').addEventListener('click', renderMiNegocioView);
+            document.getElementById('nav-mi-agenda').addEventListener('click', renderMiAgendaView);
+            document.getElementById('nav-disponibilidad').addEventListener('click', renderDisponibilidadView);
             document.getElementById('nav-mi-perfil').addEventListener('click', renderMiPerfilView);
             document.getElementById('nav-salir').addEventListener('click', handleLogout);
         }
@@ -190,29 +189,14 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(() => clearInterval(clockInterval)) // Detener el reloj
             .finally(() => {
                 ownerActual = null; // Limpiar el estado del propietario
-                updateNavbar(); // Limpiar el menú
-                navbarBrand.textContent = 'Portal del Propietario';
+                navbarBrand.textContent = 'Gestión de Citas del Negocio - Login';
                 navMenu.innerHTML = ''; // Asegurarse de que el menú esté vacío
                 renderLoginView(); // Volver a la vista de login
             });
     }
 
-    function renderDashboardView() {
-        document.title = `Portal - ${ownerActual.nombre_negocio}`;
-        navbarBrand.textContent = ownerActual.nombre_negocio;
-        // Vista principal (por ahora, un simple saludo)
-        appContainer.innerHTML = `
-            <div class="p-5 mb-4 bg-light rounded-3">
-                <div class="container-fluid py-5">
-                    <h1 class="display-5 fw-bold">¡Bienvenido, ${ownerActual.nombre_usuario}!</h1>
-                    <p class="col-md-8 fs-4">Desde aquí podrás gestionar las citas, servicios y clientes de tu negocio de forma rápida y sencilla.</p>
-                </div>
-            </div>
-        `;
-    }
-
-    // --- VISTA DE CITAS ---
-    async function renderCitasView(event) {
+    // --- VISTA "MI AGENDA" (GESTOR DE CITAS DIARIAS) ---
+    async function renderMiAgendaView(event) {
         if (event) event.preventDefault();
 
         // Si se pasa una nueva fecha, la actualizamos. Si no, usamos la que ya tenemos.
@@ -220,13 +204,13 @@ document.addEventListener('DOMContentLoaded', function() {
             currentDate = event.detail.newDate;
         }
 
-        setActiveNavLink('nav-citas'); // Asegurarse de que el enlace de citas esté activo
+        setActiveNavLink('nav-mi-agenda');
         appContainer.innerHTML = `<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando citas...</span></div></div>`;
 
         try {
-            // Formatear la fecha para la API (YYYY-MM-DD)
             const fechaFiltro = currentDate.toISOString().split('T')[0];
             
+            // Usamos la API que devuelve la lista de citas para un día
             const response = await fetch(`${API_URL}api_owner_citas.php?fecha=${fechaFiltro}`);
             if (!response.ok) {
                 const errorData = await response.json();
@@ -256,6 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <td><span class="badge ${color_clase}">${estado}</span></td>
                             <td>
                                 <button class="btn btn-sm btn-outline-primary btn-edit-cita" data-id-cita="${cita.id_cita}">Ver/Editar</button>
+                                <button class="btn btn-sm btn-outline-danger ms-1 btn-delete-cita" data-id-cita="${cita.id_cita}">Eliminar</button>
                             </td>
                         </tr>
                     `;
@@ -272,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             appContainer.innerHTML = `
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3>Listado de Citas <small class="text-muted fs-5">(${currentDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })})</small></h3>
+                    <h3>Mi Agenda <small class="text-muted fs-5">(${currentDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })})</small></h3>
                     <div class="btn-group">
                         <button class="btn btn-secondary" id="prev-day-btn">&laquo; Día Anterior</button>
                         <input type="date" class="form-control" id="date-picker" value="${fechaFiltro}">
@@ -281,32 +266,91 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 ${citasHtml}
                 <div class="d-flex justify-content-end">
-                     <button class="btn btn-primary">Agendar Nueva Cita</button>
+                     <button class="btn btn-primary" id="btn-agendar-desde-lista">Agendar Nueva Cita</button>
                 </div>
             `;
 
-            // Añadir listeners para la navegación por fecha
-            document.getElementById('prev-day-btn').addEventListener('click', () => {
-                currentDate.setDate(currentDate.getDate() - 1);
-                renderCitasView();
-            });
-            document.getElementById('next-day-btn').addEventListener('click', () => {
-                currentDate.setDate(currentDate.getDate() + 1);
-                renderCitasView();
-            });
+            // Añadir listeners
+            document.getElementById('prev-day-btn').addEventListener('click', () => { currentDate.setDate(currentDate.getDate() - 1); renderMiAgendaView(); });
+            document.getElementById('next-day-btn').addEventListener('click', () => { currentDate.setDate(currentDate.getDate() + 1); renderMiAgendaView(); });
             document.getElementById('date-picker').addEventListener('change', (e) => {
-                // El valor de un input date es un string 'YYYY-MM-DD'. Hay que convertirlo a objeto Date
-                // teniendo cuidado con la zona horaria.
                 const [year, month, day] = e.target.value.split('-').map(Number);
                 currentDate = new Date(year, month - 1, day);
-                renderCitasView();
+                renderMiAgendaView();
             });
+            document.getElementById('btn-agendar-desde-lista').addEventListener('click', () => openAgendarCitaModal());
+            document.querySelectorAll('.btn-edit-cita').forEach(btn => btn.addEventListener('click', (e) => openEditCitaModal(e.target.dataset.idCita)));
+            document.querySelectorAll('.btn-delete-cita').forEach(btn => btn.addEventListener('click', (e) => handleDeleteCita(e.target.dataset.idCita)));
 
-            // Añadir listeners para los botones de editar
-            document.querySelectorAll('.btn-edit-cita').forEach(btn => {
-                btn.addEventListener('click', (e) => openEditCitaModal(e.target.dataset.idCita));
+        } catch (error) {
+            appContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+        }
+    }
+
+    function renderDashboardView() {
+        document.title = `Portal - ${ownerActual.nombre_negocio}`;
+        navbarBrand.textContent = ownerActual.nombre_negocio;
+        // Vista principal (por ahora, un simple saludo)
+        appContainer.innerHTML = `
+            <div class="p-5 mb-4 bg-light rounded-3">
+                <div class="container-fluid py-5">
+                    <h1 class="display-5 fw-bold">¡Bienvenido, ${ownerActual.nombre_usuario}!</h1>
+                    <p class="col-md-8 fs-4">Desde aquí podrás gestionar las citas, servicios y clientes de tu negocio de forma rápida y sencilla.</p>
+                </div>
+            </div>
+        `;
+    }
+
+    // --- VISTA DE CALENDARIO (NUEVA VISTA PRINCIPAL) ---
+    async function renderCalendarioView(event) {
+        if (event) event.preventDefault();
+        setActiveNavLink('nav-calendario');
+        appContainer.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>Calendario de Citas</h3>
+                <button class="btn btn-primary" id="btn-agendar-desde-calendario">Agendar Nueva Cita</button>
+            </div>
+            <div id="calendar-container" class="bg-white p-3 rounded shadow-sm">
+                <div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando calendario...</span></div></div>
+            </div>
+        `;
+
+        document.getElementById('btn-agendar-desde-calendario').addEventListener('click', () => openAgendarCitaModal());
+
+        try {
+            // 1. Obtener la configuración del negocio para saber las horas de trabajo
+            const negocioResponse = await fetch(`${API_URL}api_owner_negocio_get.php`);
+            if (!negocioResponse.ok) throw new Error('No se pudo cargar la configuración del negocio.');
+            const negocio = await negocioResponse.json();
+
+            // 2. Inicializar el calendario con las horas de trabajo
+            const calendarEl = document.getElementById('calendar-container');
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                themeSystem: 'bootstrap5',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                locale: 'es',
+                initialView: 'dayGridMonth',
+                events: `${API_URL}api_owner_calendario_eventos.php`,
+                // --- ¡AQUÍ ESTÁ LA MAGIA! ---
+                slotMinTime: negocio.hora_inicio, // Ej: "09:00:00"
+                slotMaxTime: negocio.hora_cierre, // Ej: "18:00:00"
+                businessHours: {
+                    daysOfWeek: negocio.dias_trabajo.split(',').map(Number), // [1, 2, 3, 4, 5] para L-V
+                    startTime: negocio.hora_inicio,
+                    endTime: negocio.hora_cierre,
+                },
+                eventClick: function(info) {
+                    openEditCitaModal(info.event.id);
+                },
+                dateClick: function(info) {
+                    openAgendarCitaModal(info.dateStr);
+                }
             });
-
+            calendar.render();
         } catch (error) {
             appContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
         }
@@ -375,7 +419,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (!saveResponse.ok) throw new Error(saveData.error);
                     
                     modal.hide();
-                    renderCitasView(); // Recargar la lista de citas
+                    // Recargar la vista activa
+                    const activeLink = navMenu.querySelector('.nav-link.active');
+                    if (activeLink && activeLink.id === 'nav-mi-agenda') {
+                        renderMiAgendaView();
+                    } else {
+                        renderCalendarioView();
+                    }
                 } catch (saveError) {
                     document.getElementById('modal-error-container').innerHTML = `<div class="alert alert-danger">${saveError.message}</div>`;
                 }
@@ -924,7 +974,102 @@ document.addEventListener('DOMContentLoaded', function() {
 
             appContainer.innerHTML = `
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3>Agenda Diaria <small class="text-muted fs-5">(${currentDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })})</small></h3>
+                    <h3>Disponibilidad del Día <small class="text-muted fs-5">(${currentDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })})</small></h3>
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" id="prev-day-cronograma-btn">&laquo; Día Anterior</button>
+                        <input type="date" class="form-control" id="date-picker-cronograma" value="${fechaFiltro}">
+                        <button class="btn btn-secondary" id="next-day-cronograma-btn">Día Siguiente &raquo;</button>
+                    </div>
+                </div>
+                ${cronogramaHtml}
+            `;
+
+            // Añadir listeners para la navegación por fecha
+            document.getElementById('prev-day-cronograma-btn').addEventListener('click', () => {
+                currentDate.setDate(currentDate.getDate() - 1);
+                renderDisponibilidadView();
+            });
+            document.getElementById('next-day-cronograma-btn').addEventListener('click', () => {
+                currentDate.setDate(currentDate.getDate() + 1);
+                renderDisponibilidadView();
+            });
+            document.getElementById('date-picker-cronograma').addEventListener('change', (e) => {
+                const [year, month, day] = e.target.value.split('-').map(Number);
+                currentDate = new Date(year, month - 1, day);
+                renderDisponibilidadView();
+            });
+
+            // Añadir listeners para los botones de acción en los slots
+            document.querySelectorAll('.btn-edit-cita').forEach(btn => {
+                btn.addEventListener('click', (e) => openEditCitaModal(e.target.dataset.idCita));
+            });
+            document.querySelectorAll('.btn-agendar-cita').forEach(btn => {
+                btn.addEventListener('click', (e) => openAgendarCitaModal(e.target.dataset.startTime));
+            });
+
+        } catch (error) {
+            appContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+        }
+    }
+
+    // --- VISTA DE DISPONIBILIDAD DEL DÍA ---
+    async function renderDisponibilidadView(event) {
+        if (event) event.preventDefault();
+
+        // Si se pasa una nueva fecha, la actualizamos. Si no, usamos la que ya tenemos.
+        if (event && event.detail && event.detail.newDate) {
+            currentDate = event.detail.newDate;
+        }
+
+        setActiveNavLink('nav-disponibilidad');
+        appContainer.innerHTML = `<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando agenda...</span></div></div>`;
+
+        try {
+            const fechaFiltro = currentDate.toISOString().split('T')[0];
+            const response = await fetch(`${API_URL}api_owner_horario_disponible.php?fecha=${fechaFiltro}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'No se pudo cargar el cronograma.');
+            }
+            const data = await response.json();
+            const slots = data.slots;
+            const infoNegocio = data.info_negocio;
+
+            let cronogramaHtml = '';
+            if (slots.length === 0 && infoNegocio.dias_trabajo && !infoNegocio.dias_trabajo.includes(currentDate.getDay().toString())) {
+                cronogramaHtml = `<div class="alert alert-warning">El negocio no trabaja este día (${currentDate.toLocaleDateString('es-ES', { weekday: 'long' })}).</div>`;
+            } else if (slots.length === 0) {
+                cronogramaHtml = `<div class="alert alert-info">No hay slots disponibles para este día. Revise la configuración de horario.</div>`;
+            } else {
+                cronogramaHtml = `<div class="list-group">`;
+                slots.forEach(slot => {
+                    let slotClass = 'list-group-item';
+                    let slotContent = `<strong>${slot.start_time} - ${slot.end_time}</strong>`;
+                    let actionButton = '';
+
+                    if (slot.status === 'booked') {
+                        slotClass += ' list-group-item-danger'; // Cita ocupada
+                        slotContent += `<br>Cita: ${slot.cita.nombre_cliente} - ${slot.cita.nombre_servicio} (${slot.cita.estado_cita})`;
+                        actionButton = `<button class="btn btn-sm btn-outline-light btn-edit-cita" data-id-cita="${slot.cita.id_cita}">Ver/Editar</button>`;
+                    } else {
+                        slotClass += ' list-group-item-success'; // Slot disponible
+                        slotContent += `<br>Disponible`;
+                        actionButton = `<button class="btn btn-sm btn-outline-light btn-agendar-cita" data-start-time="${fechaFiltro} ${slot.start_time}">Agendar</button>`;
+                    }
+
+                    cronogramaHtml += `
+                        <div class="${slotClass} d-flex justify-content-between align-items-center">
+                            <div>${slotContent}</div>
+                            <div>${actionButton}</div>
+                        </div>
+                    `;
+                });
+                cronogramaHtml += `</div>`;
+            }
+
+            appContainer.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3>Mi Agenda <small class="text-muted fs-5">(${currentDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })})</small></h3>
                     <div class="btn-group">
                         <button class="btn btn-secondary" id="prev-day-cronograma-btn">&laquo; Día Anterior</button>
                         <input type="date" class="form-control" id="date-picker-cronograma" value="${fechaFiltro}">
@@ -1046,7 +1191,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const saveData = await saveResponse.json();
                 if (!saveResponse.ok) throw new Error(saveData.error);
                 modal.hide();
-                renderCronogramaView(); // Recargar el cronograma
+                // Recargar la vista activa
+                const activeLink = navMenu.querySelector('.nav-link.active');
+                if (activeLink && activeLink.id === 'nav-mi-agenda') {
+                    renderMiAgendaView();
+                } else if (activeLink && activeLink.id === 'nav-disponibilidad') {
+                    renderDisponibilidadView();
+                } else { renderCalendarioView(); }
             } catch (saveError) {
                 document.getElementById('modal-error-container').innerHTML = `<div class="alert alert-danger">${saveError.message}</div>`;
             }
@@ -1278,99 +1429,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- VISTA DE AGENDA SEMANAL (PLACEHOLDER) ---
-    async function renderAgendaSemanalView(event) {
-        if (event) event.preventDefault();
-
-        // Si no hay fecha actual, la establecemos a hoy
-        if (!currentDate) currentDate = new Date();
-
-        setActiveNavLink('nav-agenda-semanal'); // Asegurarse de que el enlace esté activo
-        appContainer.innerHTML = `<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando citas...</span></div></div>`;
-
-        // Calcular inicio y fin de la semana (Lunes a Domingo)
-        const tempDate = new Date(currentDate);
-        const dayOfWeek = tempDate.getDay(); // 0=Domingo, 1=Lunes,...
-        const diff = tempDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Ajuste para que la semana empiece en Lunes
-        const startOfWeek = new Date(tempDate.setDate(diff));
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-        const startOfWeekFormatted = startOfWeek.toLocaleDateString('es-ES', {day:'numeric', month:'short'});
-        const endOfWeekFormatted = endOfWeek.toLocaleDateString('es-ES', {day:'numeric', month:'short'});
-        
-        // Formatear la fecha de hoy para mostrarla como referencia
-        const hoyFormatted = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
+    // Nueva función para manejar la eliminación de citas
+    async function handleDeleteCita(idCita) {
+        if (!confirm(`¿Estás seguro de que quieres eliminar permanentemente la cita #${idCita}? Esta acción no se puede deshacer.`)) {
+            return;
+        }
 
         try {
-            // Formatear la fecha para la API (YYYY-MM-DD)
-            const fechaFiltro = currentDate.toISOString().split('T')[0];
-            
-            const response = await fetch(`${API_URL}api_owner_citas.php?fecha=${fechaFiltro}`);
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'No se pudieron cargar las citas.');
-            }
-            const citas = await response.json();
-
-            let citasHtml = '';
-            if (citas.length > 0) {
-                const status_colors = {
-                    'Pendiente': 'bg-info text-dark', 'Completada': 'bg-success',
-                    'Cancelada': 'bg-danger', 'Pospuesta': 'bg-warning text-dark',
-                    'No Asistió': 'bg-secondary', 'Confirmada': 'bg-primary',
-                };
-
-                const citasRows = citas.map((cita, index) => {
-                    const inicio = new Date(cita.fecha_hora_inicio);
-                    const fin = new Date(cita.fecha_hora_fin);
-                    const estado = cita.estado_cita;
-                    const color_clase = status_colors[estado] ?? 'bg-light text-dark';
-                    return `
-                        <tr>
-                            <td>${index + 1}</td>
-                            <td>${inicio.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit' })} - ${fin.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit' })}</td>
-                            <td>${cita.nombre_cliente}</td>
-                            <td>${cita.nombre_servicio}</td>
-                            <td><span class="badge ${color_clase}">${estado}</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary btn-edit-cita" data-id-cita="${cita.id_cita}">Ver/Editar</button>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-
-                citasHtml = `
-                    <table class="table table-striped table-hover">
-                        <thead class="table-dark"><tr><th>#</th><th>Horario</th><th>Cliente</th><th>Servicio</th><th>Estado</th><th>Acciones</th></tr></thead>
-                        <tbody>${citasRows}</tbody>
-                    </table>`;
-            } else {
-                citasHtml = `<div class="alert alert-info">No hay citas agendadas para esta fecha.</div>`;
-            }
-
-            appContainer.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3>Agenda Semanal <small class="text-muted fs-5">(${startOfWeekFormatted} - ${endOfWeekFormatted}) &nbsp; | &nbsp; Hoy: ${hoyFormatted}</small></h3>
-                    <div class="btn-group">
-                        <button class="btn btn-secondary" id="prev-week-btn">&laquo; Semana Anterior</button>
-                        <button class="btn btn-secondary" id="next-week-btn">Semana Siguiente &raquo;</button>
-                    </div>
-                </div>
-                ${citasHtml}
-            `;
-
-            // Añadir listeners para la navegación por fecha
-            document.getElementById('prev-week-btn').addEventListener('click', () => { currentDate.setDate(currentDate.getDate() - 7); renderAgendaSemanalView(); });
-            document.getElementById('next-week-btn').addEventListener('click', () => { currentDate.setDate(currentDate.getDate() + 7); renderAgendaSemanalView(); });
-
-            // Añadir listeners para los botones de editar
-            document.querySelectorAll('.btn-edit-cita').forEach(btn => {
-                btn.addEventListener('click', (e) => openEditCitaModal(e.target.dataset.idCita));
+            const response = await fetch(`${API_URL}api_owner_cita_eliminar.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_cita: idCita })
             });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+            
+            // Recargamos la vista de calendario para reflejar el cambio.
+            const activeLink = navMenu.querySelector('.nav-link.active');
+            if (activeLink && activeLink.id === 'nav-mi-agenda') {
+                renderMiAgendaView();
+            } else {
+                renderCalendarioView();
+            }
 
         } catch (error) {
-            appContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+            alert('Error al eliminar la cita: ' + error.message);
         }
     }
 
@@ -1392,5 +1475,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Iniciar la aplicación mostrando la vista de login
-    renderLoginView(); // Renderizado inicial
+    renderLoginView();
 });

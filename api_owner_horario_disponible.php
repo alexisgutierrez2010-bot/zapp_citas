@@ -2,18 +2,18 @@
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
 // Update :Nov-24-2025).
-// session_start(); // ELIMINADO: El guardián ya inicia la sesión.
+session_start();
 require_once 'api_owner_session_check.php'; // Guardián de sesión y timeout
+header('Content-Type: application/json'); // CORRECCIÓN: La cabecera se establece ANTES de cualquier lógica.
 require_once 'config.php';
 
 // --- PROCESO AUTOMÁTICO DE ACTUALIZACIÓN DE ESTADO ---
+// Este proceso se ejecuta de forma segura después de que la cabecera JSON ha sido establecida.
 $sql_update_vencidas = "UPDATE j108_citas SET estado_cita = 'Vencida' WHERE fecha_hora_inicio < NOW() AND estado_cita = 'Pendiente' AND id_negocio = ?";
 $stmt_update = $conn->prepare($sql_update_vencidas);
 $stmt_update->bind_param("i", $_SESSION['owner_id_negocio']);
 $stmt_update->execute();
 $stmt_update->close();
-
-header('Content-Type: application/json');
 
 $id_negocio_session = $_SESSION['owner_id_negocio'];
 $fecha_str = isset($_GET['fecha']) ? $_GET['fecha'] : date('Y-m-d');
@@ -63,7 +63,8 @@ $citas_existentes = [];
 $sql_citas = "SELECT 
                 c.id_cita, c.fecha_hora_inicio, c.fecha_hora_fin, c.estado_cita, c.descripcion_trabajo,
                 cl.nombre_completo AS nombre_cliente, cl.numero_celular AS telefono_cliente,
-                s.nombre_servicio, c.tipo_cita
+                s.nombre_servicio, c.tipo_cita,
+                s.duracion_valor, s.duracion_unidad -- CAMPOS FALTANTES AÑADIDOS
               FROM j108_citas c
               JOIN j106_clientes cl ON c.id_cliente = cl.id_cliente
               LEFT JOIN j104_servicios s ON c.id_servicio = s.id_servicio
@@ -106,6 +107,9 @@ while ($current_slot_start < $hora_cierre_dt) {
             ($cita_start >= $current_slot_start && $cita_start < $current_slot_end)) {
             
             $slot_info['status'] = 'booked';
+            // CORRECCIÓN LÓGICA: Usar la hora de inicio y fin REAL de la cita para el slot.
+            $slot_info['start_time'] = $cita_start->format('H:i');
+            $slot_info['end_time'] = $cita_end->format('H:i');
             $slot_info['cita'] = [
                 'id_cita' => $cita['id_cita'],
                 'nombre_cliente' => $cita['nombre_cliente'],
@@ -114,13 +118,18 @@ while ($current_slot_start < $hora_cierre_dt) {
                 'duracion_valor' => $cita['duracion_valor'],
                 'duracion_unidad' => $cita['duracion_unidad'],
             ];
-            // Si un slot está reservado, no necesitamos comprobar más citas para este slot
+            // SALTO EN EL TIEMPO: Movemos el cursor al final de la cita encontrada.
+            $current_slot_start = clone $cita_end;
             break; 
         }
     }
 
     $response_data['slots'][] = $slot_info;
-    $current_slot_start->add($intervalo);
+
+    // Si el slot no fue 'booked', avanzamos el intervalo normal. Si lo fue, el cursor ya se movió.
+    if ($slot_info['status'] === 'available') {
+        $current_slot_start->add($intervalo);
+    }
 }
 
 echo json_encode($response_data);

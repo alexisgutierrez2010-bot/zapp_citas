@@ -115,15 +115,15 @@ date_default_timezone_set('America/Caracas'); // Establecer la zona horaria
                 <div class="col-md-6 col-lg-4 d-flex">
                     <a href="spa_client.php" class="action-card w-100">
                         <div class="card-body">
-                            <h5>👤 SPA Cliente</h5>
-                            <p>Portal para Clientes</p>
+                            <h5>👤 App Cliente</h5>
+                            <p>Gestión de Citas por Cliente</p>
                         </div>
                     </a>
                 </div>
                 <div class="col-md-12 col-lg-4 d-flex">
                     <a href="spa_owner.php" class="action-card w-100">
                         <div class="card-body">
-                            <h5>📅 App Propietario</h5>
+                            <h5>📅 APP Propietario</h5>
                             <p>Gestión de Citas del Negocio</p>
                         </div>
                     </a>
@@ -132,17 +132,10 @@ date_default_timezone_set('America/Caracas'); // Establecer la zona horaria
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/app.js?v=<?php echo time(); ?>"></script>
-    <script>
-        // Script para actualizar la hora en tiempo real sin recargar la página
-        function updateTime() {
-            const timeElement = document.getElementById('current-time');
-            if (timeElement) {
-                timeElement.textContent = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-            }
-        }
-        setInterval(updateTime, 1000);
-    </script>
+    <?php 
+    // No incluimos el footer directamente para evitar el margen superior (mt-5) que tiene.
+    // En su lugar, lo requerimos y lo mostramos sin ese margen.
+    include 'footer.php'; 
+    ?>
 </body>
 </html>

@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function cargarDatosNegocio() {
         try {
             // Al inicio, mostramos un título genérico.
-            const genericTitle = "Portal de Clientes";
+            const genericTitle = "Gestión de Citas por Clientes";
             document.title = genericTitle;
             navbarBrand.textContent = genericTitle;
             updateNavbar();
