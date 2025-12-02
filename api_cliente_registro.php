@@ -1,5 +1,5 @@
 <?php
-// Revisado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM en fecha Nov/20/2025 //
+// Revisado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM en fecha Nov/27/2025 //
 require_once 'config.php';
 require_once 'audit_log.php';
 require_once 'vendor/autoload.php';
@@ -85,7 +85,7 @@ try {
 
     // 4. Enviar correo de bienvenida
     try {
-        $mail = new PHPMailer(true);
+        $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
         $mail->isSMTP();
         $mail->Host = SMTP_HOST;
         $mail->SMTPAuth = true;

@@ -1,0 +1,398 @@
+# Manual Técnico y Guía de Despliegue - ZApp Citas
+
+**Versión:** 1.3
+**Última Actualización:** 28 de Noviembre de 2025
+
+---
+
+## 1. Introducción
+
+Este documento sirve como la referencia técnica central para el ecosistema de aplicaciones "ZApp Citas". Su objetivo es proporcionar una visión clara y detallada de la arquitectura del software, la estructura de la base de datos, la funcionalidad de cada componente y las interacciones entre ellos.
+
+El sistema ZApp Citas está compuesto por tres aplicaciones principales que trabajan de forma coordinada:
+
+1.  **Panel de Administración (zapp_citas):** Es el núcleo del sistema, desarrollado en PHP tradicional. Permite la gestión completa de negocios, usuarios, clientes, servicios, citas y configuraciones globales.
+2.  **SPA del Propietario (spa_owner):** Una Single-Page Application (HTML + JavaScript) diseñada para que los dueños de negocios gestionen su agenda, clientes y servicios de forma rápida y moderna.
+3.  **SPA del Cliente (spa_client):** Una Single-Page Application (HTML + JavaScript) que permite a los clientes finales registrarse, ver su historial, agendar citas y gestionar su perfil.
+
+El sistema utiliza una arquitectura mixta:
+- El Panel de Administración sigue un modelo de carga de páginas PHP tradicional (ej. `clientes_lista.php` -> `clientes_editar.php`).
+- Las SPAs (`spa_owner.php` y `spa_client.php`) son interfaces estáticas que consumen datos de un conjunto de scripts PHP que actúan como una API RESTful (ej. `api_owner_horario_disponible.php`).
+
+---
+
+## 2. Arquitectura Detallada de Aplicaciones
+
+### 2.1. Panel de Administración (zapp_citas)
+
+*   **Propósito y Tecnología:**
+    Es el centro de control total del sistema. Está construido con PHP tradicional, donde cada acción del usuario resulta en una nueva solicitud al servidor, que renderiza y devuelve una página HTML completa.
+
+*   **Flujo de Seguridad y Sesión:**
+    1.  El acceso se inicia en `sesion_iniciar.php`.
+    2.  Las credenciales se envían a `procesar_login.php`, que verifica el usuario y la contraseña contra la tabla `j100_usuarios`.
+    3.  Si el login es exitoso, se establecen variables de sesión (`$_SESSION['loggedin'] = true`, `$_SESSION['id_usuario']`, etc.).
+    4.  Cada página protegida (ej. `dashboard.php`) incluye `require_once 'auth_check.php';` al principio.
+    5.  `auth_check.php` es el "guardián": inicia la sesión con `session_start()` y verifica si `$_SESSION['loggedin']` es `true`. Si no, redirige a `sesion_iniciar.php`. También gestiona el timeout por inactividad.
+
+*   **Variables Clave de Sesión:**
+    - `$_SESSION['loggedin']`: Booleano que indica si el usuario está autenticado.
+    - `$_SESSION['id_usuario']`: ID del usuario logueado.
+    - `$_SESSION['id_negocio']`: ID del negocio que el usuario está gestionando.
+    - `$_SESSION['rol']`: Rol del usuario ('Master', 'Propietario').
+    - `$_SESSION['last_activity']`: Timestamp de la última interacción para controlar el timeout.
+
+### 2.2. SPA del Propietario (spa_owner)
+
+*   **Propósito y Tecnología:**
+    Interfaz moderna y rápida para la gestión diaria del negocio. Es una Single-Page Application (SPA), lo que significa que la página principal (`spa_owner.php`) se carga una sola vez. Toda la interacción posterior se realiza mediante JavaScript (`app_owner.js`), que se comunica con el servidor a través de APIs PHP sin recargar la página.
+
+*   **Flujo de Seguridad y Sesión:**
+    1.  La SPA carga `renderLoginView()` que llama a la API `api_owner_login.php` para obtener un CAPTCHA.
+    2.  El usuario envía sus credenciales a `api_owner_login.php` (vía POST). La API valida al usuario y, si es exitoso, crea una sesión de PHP en el servidor con variables específicas (`$_SESSION['owner_loggedin']`).
+    3.  Cada acción posterior que requiere datos hace una llamada `fetch` a una API protegida (ej. `api_owner_calendario_eventos.php`).
+    4.  Cada API protegida incluye `require_once 'api_owner_session_check.php';` al principio. Este guardián verifica que `$_SESSION['owner_loggedin']` sea `true`. Si no, la API devuelve un error 401 (No Autorizado).
+
+*   **Variables Clave de Sesión:**
+    - `$_SESSION['owner_loggedin']`: Booleano.
+    - `$_SESSION['owner_id_usuario']`: ID del usuario propietario.
+    - `$_SESSION['owner_id_negocio']`: ID del negocio que gestiona.
+    - `$_SESSION['owner_last_activity']`: Timestamp para el timeout.
+
+### 2.3. SPA del Cliente (spa_client)
+
+*   **Propósito y Tecnología:**
+    Portal de autoservicio para el cliente final. Al igual que la SPA del propietario, es una SPA (`spa_client.php` + `app_client.js`) que se comunica con el servidor mediante APIs (`api_cliente_*.php`).
+
+*   **Flujo de Seguridad y Sesión:**
+    El flujo es similar al de la SPA del propietario, pero con sus propias APIs y variables de sesión.
+    1.  El login se realiza contra `api_cliente_login.php` usando solo el número de teléfono y un CAPTCHA.
+    2.  Si el cliente no existe, la API devuelve un error 404, y el JavaScript le ofrece registrarse.
+    3.  Si el login es exitoso, se crea una sesión con `$_SESSION['client_loggedin'] = true`.
+    4.  Las APIs protegidas usan el guardián `api_cliente_session_check.php`.
+
+*   **Variables Clave de Sesión:**
+    - `$_SESSION['client_loggedin']`: Booleano.
+    - `$_SESSION['client_id_cliente']`: ID del cliente logueado.
+    - `$_SESSION['client_id_negocio']`: ID del negocio al que pertenece el cliente.
+    - `$_SESSION['client_last_activity']`: Timestamp para el timeout.
+
+---
+
+## 2.5. Flujo de Comunicaciones por Email
+
+Para garantizar una experiencia de usuario profesional y consistente, el sistema implementa un flujo de notificaciones por correo electrónico automatizado. La regla general es: **toda acción significativa sobre una cita debe generar una notificación automática por correo electrónico tanto al cliente como al negocio.**
+
+A continuación se detalla el comportamiento homologado del sistema:
+
+| Evento de la Cita | Rol / Aplicación | Comportamiento del Email |
+| :--- | :--- | :--- |
+| **Crear Cita** | Admin, Propietario, Cliente | ✅ **Automático:** Envía correo de "Nueva Cita" con detalles y archivo de calendario (.ics). |
+| **Modificar Cita** | Admin, Propietario | ✅ **Automático:** Envía correo de "Cita Modificada" con los nuevos detalles y un .ics actualizado. |
+| **Confirmar Cita** | Cliente, Propietario | ✅ **Automático:** Envía correo de "Cita Confirmada". |
+| **Cancelar Cita** | Admin, Propietario, Cliente | ✅ **Automático:** Envía correo de "Cita Cancelada" con una actualización de calendario. |
+| **Completar Cita** | Admin, Propietario | ✅ **Automático:** Envía correo de "Cita Completada" como resumen y agradecimiento. |
+| **Eliminar Cita** | Admin, Propietario | ✅ **Automático:** Envía un correo de "Cita Cancelada" **antes** de eliminar el registro de la base de datos para notificar al cliente. |
+
+---
+
+## 2.6. Sistema de Auditoría
+
+El sistema cuenta con un robusto módulo de auditoría que registra todas las operaciones críticas realizadas en las tres aplicaciones. El objetivo es mantener una trazabilidad completa de las acciones que modifican datos, mejorando la seguridad y el control. Todos los eventos se almacenan en la tabla `j101_auditoria`.
+
+La siguiente tabla de diagnóstico detalla la cobertura de auditoría en todo el sistema:
+
+| Evento | Aplicación | Archivo(s) Involucrados | ¿Auditado? |
+| :--- | :--- | :---: |
+| **Login / Logout** | `zapp_citas` | `procesar_login.php`, `logout.php`, `auth_check.php` | ✅ **Sí** |
+| | `spa_owner` | `api_owner_login.php`, `api_owner_logout.php` | ✅ **Sí** |
+| | `spa_client` | `api_cliente_login.php` | ✅ **Sí** |
+| | | | |
+| **Crear Negocio** | `zapp_citas` | `negocios_crear.php` | ✅ **Sí** |
+| **Actualizar Negocio** | `zapp_citas` | `negocios_actualizar.php` | ✅ **Sí** |
+| | `spa_owner` | `api_owner_negocio_update.php` | ✅ **Sí** |
+| **Eliminar Negocio** | `zapp_citas` | `negocios_eliminar.php` | ✅ **Sí** |
+| | | | |
+| **Crear Usuario** | `zapp_citas` | `usuarios_crear.php` | ✅ **Sí** |
+| **Actualizar Usuario** | `zapp_citas` | `usuarios_actualizar.php` | ✅ **Sí** |
+| **Eliminar Usuario** | `zapp_citas` | `usuarios_eliminar.php` | ✅ **Sí** |
+| **Actualizar Perfil (Propio)** | `zapp_citas` | `perfil_actualizar.php` | ✅ **Sí** |
+| | `spa_owner` | `api_owner_perfil_actualizar.php` | ✅ **Sí** |
+| | | | |
+| **Crear Cliente** | `zapp_citas` | `clientes_crear.php` | ✅ **Sí** |
+| | `spa_owner` | `api_owner_cliente_crear.php` | ✅ **Sí** |
+| | `spa_client` | `api_cliente_registro.php` | ✅ **Sí** |
+| **Actualizar Cliente** | `zapp_citas` | `clientes_actualizar.php` | ✅ **Sí** |
+| | `spa_owner` | `api_owner_cliente_actualizar.php` | ✅ **Sí** |
+| | `spa_client` | `api_cliente_perfil.php` | ✅ **Sí** |
+| **Desactivar Cliente** | `zapp_citas` | `clientes_eliminar.php` | ✅ **Sí** |
+| | `spa_owner` | `api_owner_cliente_eliminar.php` | ✅ **Sí** |
+| | | | |
+| **Crear Servicio** | `zapp_citas` | `servicios_crear.php` | ✅ **Sí** |
+| | `spa_owner` | `api_owner_servicio_crear.php` | ✅ **Sí** |
+| **Actualizar Servicio** | `zapp_citas` | `servicios_actualizar.php` | ✅ **Sí** |
+| | `spa_owner` | `api_owner_servicio_actualizar.php` | ✅ **Sí** |
+| **Desactivar Servicio** | `zapp_citas` | `servicios_eliminar.php` | ✅ **Sí** |
+| | `spa_owner` | `api_owner_servicio_eliminar.php` | ✅ **Sí** |
+| | | | |
+| **CRUD de Citas** | `zapp_citas`, `spa_owner`, `spa_client` | ✅ **Sí** |
+
+**Conclusión:** Todas las operaciones que implican creación, modificación o eliminación de datos (CRUD) están siendo auditadas correctamente en todas las interfaces.
+
+---
+
+## 3. Listado de Programas y Funcionalidad
+
+Esta sección detalla cada programa y su propósito dentro del sistema.
+
+#### 3.1. Archivos Centrales y de Configuración
+*   `config.php`: Define las credenciales de conexión a la base de datos y las constantes de configuración de SMTP.
+*   `audit_log.php`: Contiene la función `registrar_auditoria()` para registrar eventos clave.
+*   `index.php`: Portal de bienvenida principal que redirige a las tres aplicaciones.
+*   `footer.php` / `navbar.php`: Componentes de UI para el panel de administración.
+*   `get_image.php`: Script seguro para servir la imagen de fondo de un negocio.
+
+#### 3.2. Autenticación y Sesión
+*   `auth_check.php`: **Guardián de sesión** para el panel de administración.
+*   `api_owner_session_check.php`: Guardián de seguridad para la API de la SPA del Propietario.
+*   `api_cliente_session_check.php`: Guardián de seguridad para la API de la SPA del Cliente.
+*   `sesion_iniciar.php` / `procesar_login.php`: Gestionan el login del panel de administración.
+*   `logout.php`: Cierra la sesión del panel de administración.
+*   `olvide_clave.php` / `procesar_olvide_clave.php`: Gestionan la recuperación de contraseñas.
+
+#### 3.3. Panel de Administración (CRUDs)
+*   **Negocios:** `negocios_configuracion.php`, `negocios_actualizar.php`, `crear_negocio.php`, `negocios_crear.php`, `negocios_eliminar.php`.
+*   **Usuarios:** `usuarios_lista.php`, `usuarios_crear.php`, `usuarios_editar.php`, `usuarios_actualizar.php`, `usuarios_eliminar.php`.
+*   **Clientes:** `clientes_lista.php`, `clientes_crear.php`, `clientes_editar.php`, `clientes_actualizar.php`, `clientes_eliminar.php`.
+*   **Servicios:** `servicios_lista.php`, `servicios_crear.php`, `servicios_editar.php`, `servicios_actualizar.php`, `servicios_eliminar.php`.
+*   **Categorías:** `categorias_lista.php`, `categoria_crear.php`, `categorias_procesar_crear.php`, `categoria_editar.php`, `categoria_actualizar.php`, `categoria_eliminar.php`.
+*   **Citas:** `citas_lista.php`, `citas_crear.php`, `citas_editar.php`, `citas_actualizar.php`, `citas_eliminar.php`, `citas_actualizar_estado.php`, `calendario_ver.php`.
+*   **Documentos:** `seleccionar_resumen.php`, `documento_editar.php`, `documento_subir.php`, `enviar_resumen.php`.
+*   **Localizaciones:** `paises_lista.php` (y su CRUD), `estados_lista.php` (y su CRUD).
+
+#### 3.4. API para SPA del Propietario (spa_owner)
+*   `api_owner_login.php`: Valida las credenciales del propietario y crea su sesión.
+*   `api_owner_logout.php`: Cierra la sesión del propietario.
+*   `api_owner_horario_disponible.php`: Devuelve los slots de tiempo y las citas de un día.
+*   `api_owner_cita_detalle.php`: Devuelve los detalles completos de una cita.
+*   `api_owner_cita_crear.php`: Permite al propietario crear una nueva cita.
+*   `api_owner_clientes.php`: Devuelve la lista de clientes activos del negocio.
+*   `api_owner_servicios.php`: Devuelve la lista de servicios activos del negocio.
+*   `api_owner_citas_cerrar_vencidas.php`: Procesa y marca como 'Vencidas' las citas pasadas que no fueron completadas.
+
+#### 3.5. API para SPA del Cliente (spa_client)
+*   `api_cliente_login.php`: Valida el número de celular del cliente y crea su sesión.
+*   `api_cliente_logout.php`: Cierra la sesión del cliente.
+*   `api_cliente_registro.php`: Registra un nuevo cliente en la base de datos.
+*   `api_cliente_perfil.php`: Obtiene y actualiza los datos del perfil del cliente.
+*   `api_cliente_citas.php`: Devuelve la cita más reciente del cliente.
+*   `api_cliente_historial.php`: Devuelve el historial completo de citas del cliente.
+*   `api_negocios_lista_publica.php`: Devuelve la lista de negocios activos.
+*   `api_servicios_publicos.php`: Devuelve los servicios de un negocio específico.
+
+---
+
+## 4. Diagrama de Flujo de Aplicaciones
+
+Este diagrama ilustra el flujo principal de interacción entre los componentes.
+
+```
+                               +-----------------+
+                               |   index.php     | (Portal Principal)
+                               +-----------------+
+                                       |
+                  +--------------------+--------------------+
+                  |                    |                    |
+                  V                    V                    V
+      +---------------------+  +-------------------+  +--------------------+
+      | zapp_citas (Admin)  |  | spa_owner.php     |  | spa_client.php     |
+      +---------------------+  +-------------------+  +--------------------+
+                 |                      |                    |
+                 |                      | (Llama a)          | (Llama a)
+                 V                      V                    V
+      +---------------------+  +-------------------+  +--------------------+
+      | sesion_iniciar.php  |  | api_owner_*.php   |  | api_cliente_*.php  |
+      +---------------------+  +-------------------+  +--------------------+
+                 |                      |                    |
+                 V                      |                    |
+      +---------------------+          |                    |
+      | procesar_login.php  |          |                    |
+      +---------------------+          |                    |
+                 |                      |                    |
+                 V                      V                    V
+      +---------------------+  +-------------------+  +--------------------+
+      | dashboard.php       |  | (JavaScript en    |  | (JavaScript en    |
+      | (Carga auth_check.php)|  |  app_owner.js)    |  |  app_client.js)    |
+      +---------------------+  +-------------------+  +--------------------+
+                 |                      |                    |
+                 |                      |                    |
+                 |                      V                    V
+                 |            +--------------------------------+
+                 +----------->|           Base de Datos        |
+                              |             (MySQL)            |
+                              +--------------------------------+
+```
+
+---
+
+## 5. Estructura Detallada de la Base de Datos
+
+### j100_usuarios
+*   `id_usuario` (PK, AI)
+*   `id_negocio` (FK a j102_negocios)
+*   `nombre_usuario` (UNIQUE)
+*   `correo_electronico` (UNIQUE)
+*   `password_hash`
+*   `rol` ('Master', 'Propietario')
+*   `activo` (TINYINT, 1=Activo, 0=Inactivo)
+*   `fecha_creacion`
+
+### j101_auditoria
+*   `id_audit` (PK, AI)
+*   `id_usuario` (FK a j100_usuarios, NULLABLE)
+*   `id_negocio` (FK a j102_negocios, NULLABLE)
+*   `tipo_evento`
+*   `descripcion`
+*   `ip_address`
+*   `fecha_hora`
+
+### j102_negocios
+*   `id_negocio` (PK, AI)
+*   `id_categoria_negocio` (FK a j103_categorias, NULLABLE)
+*   `nombre_negocio`
+*   `telefono`
+*   `email`
+*   `direccion1`, `direccion2`, `ciudad`, `zip_code`
+*   `id_pais` (FK a j110_paises)
+*   `id_estado` (FK a j111_estados)
+*   `dias_trabajo` (ej. '1,2,3,4,5')
+*   `hora_inicio`, `hora_cierre`
+*   `intervalo_minutos`
+*   `activo` (1=Activo, 2=Suspendido, 3=Eliminado)
+*   `dias_prueba`
+*   `fecha_registro`, `fecha_habilitacion`, `fecha_desactivacion`
+*   `background_image_data`, `background_image_type`
+
+### j103_categorias
+*   `id_categoria` (PK, AI)
+*   `nombre_categoria` (UNIQUE)
+*   `descripcion`
+*   `activo` (TINYINT)
+
+### j104_servicios
+*   `id_servicio` (PK, AI)
+*   `id_negocio` (FK a j102_negocios)
+*   `nombre_servicio`
+*   `duracion_valor`
+*   `duracion_unidad` ('Minutos', 'Horas', 'Dias')
+*   `precio` (DECIMAL, NULLABLE)
+*   `activo` (TINYINT)
+
+### j106_clientes
+*   `id_cliente` (PK, AI)
+*   `id_negocio` (FK a j102_negocios)
+*   `nombre_completo`
+*   `numero_celular`
+*   `correo_electronico`
+*   `notas_adicionales`
+*   `activo` (TINYINT)
+
+### j108_citas
+*   `id_cita` (PK, AI)
+*   `id_negocio` (FK a j102_negocios)
+*   `tipo_cita` ('Servicio', 'Reunion')
+*   `id_cliente` (FK a j106_clientes)
+*   `id_servicio` (FK a j104_servicios, NULLABLE)
+*   `fecha_hora_inicio`, `fecha_hora_fin`
+*   `estado_cita` ('Pendiente', 'Confirmada', 'Completada', 'Cancelada', 'No Asistió', 'Vencida')
+*   `descripcion_trabajo`
+
+---
+
+## 6. Guía de Despliegue
+
+### 6.1. Requisitos del Servidor
+
+-   **Servidor Web:** Apache o Nginx.
+-   **PHP:** Versión 8.0 o superior.
+-   **Gestor de Paquetes:** Acceso a **Composer** para instalar dependencias.
+-   **Extensiones de PHP:** `mysqli`, `json`, `mbstring`, `openssl`.
+-   **Base de Datos:** MySQL o MariaDB.
+
+### 6.2. Preparación de la Base de Datos
+
+1.  **Exportar la Base de Datos Local:**
+    -   Abre phpMyAdmin en tu XAMPP.
+    -   Selecciona tu base de datos.
+    -   Ve a la pestaña "Exportar", elige el método "Rápido" y formato "SQL".
+    -   Haz clic en "Exportar" para descargar el archivo `.sql`.
+
+2.  **Crear e Importar la Base de Datos en el Hosting:**
+    -   En el panel de control de tu hosting (cPanel, hPanel, etc.), crea una **nueva base de datos** y un **nuevo usuario**.
+    -   Asigna todos los privilegios al usuario sobre la base de datos.
+    -   **Anota cuidadosamente:** nombre de la base de datos, nombre de usuario y la contraseña.
+    -   Abre phpMyAdmin en tu hosting, selecciona la base de datos recién creada y, en la pestaña "Importar", sube el archivo `.sql` que exportaste.
+
+### 6.3. Configuración y Subida de Archivos
+
+1.  **Configurar `config.php`:**
+    -   Este es el paso más crítico. Antes de subir los archivos, edita `config.php` en tu computadora con las credenciales de la base de datos de tu hosting.
+    ```php
+    // en config.php
+    $servername = "localhost"; // Generalmente es 'localhost', pero confírmalo en tu hosting.
+    $username   = "NOMBRE_DE_USUARIO_DEL_HOSTING";
+    $password   = "CONTRASEÑA_DEL_HOSTING";
+    $dbname     = "NOMBRE_DE_LA_BD_DEL_HOSTING";
+    ```
+    -   **Importante:** Actualiza también las credenciales `SMTP_*` en este mismo archivo para que el envío de correos funcione en producción.
+
+2.  **Subir Archivos al Servidor:**
+    -   Conéctate a tu hosting usando un cliente FTP (como FileZilla) o el Administrador de Archivos del panel de control.
+    -   Navega al directorio raíz de tu sitio web (normalmente `public_html`).
+    -   Sube **todos los archivos y carpetas** del proyecto `zapp_citas` a este directorio.
+    -   **Excepción:** **NO subas la carpeta `vendor`**. La instalaremos directamente en el servidor.
+
+3.  **Instalar Dependencias con Composer:**
+    -   Una vez subidos los archivos, necesitas instalar las bibliotecas de PHP (PHPMailer, Parsedown, etc.).
+    -   Accede a la terminal de tu hosting.
+    -   Navega al directorio donde subiste los archivos (ej. `cd public_html`).
+    -   Ejecuta el siguiente comando para que Composer descargue e instale todo lo necesario:
+    ```bash
+    composer install --no-dev --optimize-autoloader
+    ```
+
+---
+
+## 7. Verificación Final
+
+Una vez completados los pasos, abre tu dominio en el navegador y realiza pruebas exhaustivas:
+-   Inicia sesión en el Panel de Administración.
+-   Inicia sesión en la SPA del Propietario y del Cliente.
+-   Navega por todas las secciones y verifica que no haya errores.
+-   Realiza una acción que interactúe con la base de datos (ej. editar un cliente) para confirmar que la conexión es correcta.
+-   Verifica que el envío de correos y la subida de documentos funcionen como se espera.
+
+---
+
+## 8. Herramientas de Diagnóstico
+
+### 8.1. Verificador de PHPMailer (`check_phpmailer.php`)
+
+Este script es una herramienta de diagnóstico crucial para resolver problemas relacionados con el envío de correos electrónicos.
+
+*   **Propósito:** Verificar si la librería `PHPMailer` está correctamente instalada a través de Composer y si es accesible para PHP. Esto permite aislar problemas de envío de correo: si este script funciona, el problema está en la lógica de la API que envía el correo; si falla, el problema está en la instalación de las dependencias.
+
+*   **Ubicación:** `c:\xampp\htdocs\zapp_citas\check_phpmailer.php`
+
+*   **Modo de Uso:**
+    1.  Navegar a la URL: `http://localhost/zapp_citas/check_phpmailer.php`
+    2.  Observar el resultado.
+
+*   **Resultados Posibles:**
+    *   **`¡VERIFICACIÓN EXITOSA!` (Verde):** Significa que Composer y PHPMailer están instalados correctamente. Cualquier error de envío de correo se debe a la configuración SMTP (host, usuario, contraseña) o a la lógica del script que intenta enviar el correo.
+    *   **`¡VERIFICACIÓN FALLIDA!` (Rojo):** Indica un problema con la instalación de Composer.
+        *   **Causa Común:** El archivo `composer.lock` no está sincronizado con `composer.json`.
+        *   **Solución:**
+            1.  Abrir una terminal en la carpeta del proyecto (`c:\xampp\htdocs\zapp_citas`).
+            2.  Ejecutar el comando: `composer update`.
+            3.  Volver a ejecutar la prueba en el navegador.

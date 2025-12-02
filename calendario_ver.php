@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-20-2025).
+// Update :Nov-27-2025).
 ?><!DOCTYPE html>
 <html lang='es'>
 <head>
@@ -30,6 +30,19 @@
     <?php
         require_once 'auth_check.php'; // Inicia la sesión y verifica el login
         require_once 'config.php';     // Correcto
+
+        // Obtener la configuración del negocio para ajustar el calendario
+        $stmt_config = $conn->prepare("SELECT hora_inicio, hora_cierre, dias_trabajo FROM j102_negocios WHERE id_negocio = ?");
+        $stmt_config->bind_param("i", $id_negocio_session);
+        $stmt_config->execute();
+        $config = $stmt_config->get_result()->fetch_assoc();
+        $stmt_config->close();
+
+        // Preparar los datos para JavaScript
+        $hora_inicio = $config['hora_inicio'] ?? '08:00:00';
+        $hora_cierre = $config['hora_cierre'] ?? '18:00:00';
+        $dias_trabajo = !empty($config['dias_trabajo']) ? explode(',', $config['dias_trabajo']) : [1, 2, 3, 4, 5]; // Lunes a Viernes por defecto
+
         include 'navbar.php';         // Muestra el menú de navegación
     ?>
 
@@ -37,21 +50,33 @@
 
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        var calendarEl = document.getElementById('calendar');
-        var calendar = new FullCalendar.Calendar(calendarEl, {
-          initialView: 'dayGridMonth', // Vista inicial: mes
+        const calendarEl = document.getElementById('calendar');
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+          themeSystem: 'bootstrap5',
+          initialView: 'timeGridWeek', // Vista inicial: semana
           locale: 'es', // Poner el calendario en español
           headerToolbar: {
             left: 'prev,next today',
             center: 'title',
             right: 'dayGridMonth,timeGridWeek,timeGridDay' // Botones para cambiar de vista
           },
-          // Aquí está la magia: le decimos al calendario dónde buscar los eventos
+          // Le decimos al calendario dónde buscar los eventos
           events: 'api_citas.php',
 
-          // (Opcional) Hacer que los eventos sean clickables para ir a la página de edición
+          // --- AJUSTE DE HORAS LABORABLES ---
+          slotMinTime: '<?php echo $hora_inicio; ?>', // Hora de inicio visible
+          slotMaxTime: '<?php echo $hora_cierre; ?>', // Hora de fin visible
+          // SOLUCIÓN: Ajustar la altura para que se adapte al contenido y no deje espacio extra.
+          height: 'auto',
+          businessHours: {
+            daysOfWeek: <?php echo json_encode($dias_trabajo); ?>, // Días laborables
+            startTime: '<?php echo $hora_inicio; ?>',
+            endTime: '<?php echo $hora_cierre; ?>',
+          },
+          // --- FIN DEL AJUSTE ---
+
+          // Hacer que los eventos sean clickables para ir a la página de edición
           eventClick: function(info) {
-            // Redirigir a la página de edición de la cita
             window.location.href = 'citas_editar.php?id=' + info.event.id;
           }
         });

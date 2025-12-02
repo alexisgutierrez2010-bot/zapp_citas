@@ -1,14 +1,16 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-20-2025).
-session_start();
+// Update :Nov-28-2025).
+session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
 require_once 'config.php';
+require_once 'api_owner_session_check.php';
 
 header('Content-Type: application/json');
 
 // Seguridad: Verificar que el propietario ha iniciado sesión
 if (!isset($_SESSION['owner_loggedin']) || $_SESSION['owner_loggedin'] !== true) {
+    // Este bloque es redundante si se usa api_owner_session_check.php, pero se deja por seguridad.
     http_response_code(401);
     echo json_encode(['error' => 'Acceso no autorizado.']);
     exit;

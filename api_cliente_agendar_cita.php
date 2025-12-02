@@ -1,12 +1,17 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-20-2025).
+// Update :Nov-27-2025).
 session_start();
 require_once 'api_cliente_session_check.php'; // 1. Guardián de sesión y timeout
 header('Content-Type: application/json'); // 2. Establecer cabecera
 require_once 'config.php'; // 3. Configuración de BD
 require_once 'audit_log.php';
+require 'vendor/autoload.php'; // Para PHPMailer
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 
 $input = json_decode(file_get_contents('php://input'), true);
 
@@ -56,6 +61,14 @@ $stmt->bind_param("iiiss", $id_negocio, $id_cliente, $id_servicio, $fecha_hora_i
 if ($stmt->execute()) {
     $id_nueva_cita = $stmt->insert_id;
     registrar_auditoria($conn, null, $id_negocio, 'CLIENT_SELF_BOOKING', "Cliente ID {$id_cliente} agendó nueva cita ID {$id_nueva_cita}.");
+
+    // Enviar correo de notificación
+    $_POST['id_cita'] = $id_nueva_cita;
+    $_POST['accion'] = 'NUEVA';
+    // ob_start(); // Capturar la salida de enviar_email.php para evitar la redirección
+    // include 'enviar_email.php'; // SUSPENDIDO TEMPORALMENTE
+    // ob_end_clean(); // Descartar la salida
+
     echo json_encode(['success' => true, 'message' => '¡Tu cita ha sido agendada con éxito!', 'id_cita' => $id_nueva_cita]);
 } else {
     http_response_code(500);

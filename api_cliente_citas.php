@@ -1,5 +1,5 @@
 <?php
-// Revisado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM en fecha Nov/21/2025 //
+// Revisado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM en fecha Nov/27/2025 //
 header('Content-Type: application/json');
 // session_start(); // ELIMINADO: El guardián ya inicia la sesión.
 require_once 'config.php';

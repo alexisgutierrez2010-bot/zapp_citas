@@ -53,12 +53,7 @@
         <div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div></div>
     </main>
 
-    <?php
-    // Técnica de "Cache Busting":
-    // Añade la fecha de la última modificación del archivo JS como un parámetro de versión.
-    // Esto fuerza al navegador a descargar el archivo nuevo cada vez que lo modificamos.
-    ?>
-    <?php include 'footer.php'; ?>
+    <?php include 'spa_owner_footer.php'; ?>
     <script src="app_owner.js?v=<?php echo filemtime('app_owner.js'); ?>"></script>
 </body>
 </html>

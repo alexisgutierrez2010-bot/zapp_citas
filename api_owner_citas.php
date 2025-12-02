@@ -1,8 +1,8 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
-session_start();
+// Update :Nov-28-2025).
+session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
 require_once 'api_owner_session_check.php'; // 1. Guardián de sesión y timeout
 header('Content-Type: application/json'); // 2. Establecer cabecera
 require_once 'config.php';
@@ -26,6 +26,7 @@ $sql_citas = "SELECT
                 c.fecha_hora_inicio, 
                 c.fecha_hora_fin, 
                 c.estado_cita, 
+                c.IN_EMAIL, c.IN_SMS,
                 cl.nombre_completo AS nombre_cliente,
                 -- CORRECCIÓN: Usar LEFT JOIN y la función IF para incluir Reuniones.
                 IF(c.tipo_cita = 'Reunion', c.descripcion_trabajo, s.nombre_servicio) AS nombre_servicio

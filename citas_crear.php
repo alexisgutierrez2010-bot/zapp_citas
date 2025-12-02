@@ -5,6 +5,11 @@
 require_once 'auth_check.php';
 require_once 'audit_log.php';
 require_once 'config.php';
+require_once 'vendor/autoload.php'; // SOLUCIÓN: Cargar las dependencias de Composer.
+
+// CORRECCIÓN: Añadir las declaraciones 'use' para que PHPMailer sea reconocido.
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 // Obtener la configuración del negocio para validaciones
 $stmt_config = $conn->prepare("SELECT * FROM j102_negocios WHERE id_negocio = ?");
@@ -97,12 +102,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt_check->close();
     }
 
+    // --- INICIO: OBTENER PREFERENCIAS DEL CLIENTE ---
+    // Leemos las preferencias de notificación del cliente para la nueva cita.
+    // SOLUCIÓN: Obtener AMBAS preferencias (SMS y Email) del cliente.
+    $in_email_pref = 0;
+    $in_sms_pref = 0;
+    $stmt_pref = $conn->prepare("SELECT IN_EMAIL, IN_SMS FROM j106_clientes WHERE id_cliente = ?");
+    $stmt_pref->bind_param("i", $id_cliente);
+    $stmt_pref->execute();
+    $result_pref = $stmt_pref->get_result()->fetch_assoc();
+    if ($result_pref) {
+        $in_email_pref = (int)$result_pref['IN_EMAIL'];
+        $in_sms_pref = (int)$result_pref['IN_SMS'];
+    }
+    $stmt_pref->close();
+    // --- FIN: OBTENER PREFERENCIAS DEL CLIENTE ---
 
     // 5. Preparar la consulta SQL para insertar la cita
-    $sql = "INSERT INTO j108_citas (id_cliente, id_servicio, fecha_hora_inicio, fecha_hora_fin, descripcion_trabajo, id_negocio, tipo_cita) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO j108_citas (id_cliente, id_servicio, fecha_hora_inicio, fecha_hora_fin, descripcion_trabajo, id_negocio, tipo_cita, IN_EMAIL, IN_SMS) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     if ($stmt = $conn->prepare($sql)) {
-        $stmt->bind_param("iisssis", $id_cliente, $id_servicio, $fecha_inicio_db, $fecha_fin_db, $descripcion, $id_negocio, $tipo_cita);
+        $stmt->bind_param("iisssisii", $id_cliente, $id_servicio, $fecha_inicio_db, $fecha_fin_db, $descripcion, $id_negocio, $tipo_cita, $in_email_pref, $in_sms_pref);
 
         if ($stmt->execute()) {
             $id_nueva_cita = $stmt->insert_id;
@@ -126,12 +146,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
                 $stmt_invitado->close();
             }
-
-            // Cita guardada con éxito. Ahora obtenemos el ID para enviar el correo.
+            
+            // Cita guardada con éxito.
             $stmt->close();
-            // Redirigir al script de envío de correo
-            header("Location: citas_confirmar_envio.php?id_cita=" . $id_nueva_cita . "&accion=NUEVA");
-            exit(); // Asegurarse de que el script termina aquí
+
+            // Simular un POST para enviar el correo automáticamente
+            // include 'enviar_email.php'; // SUSPENDIDO TEMPORALMENTE
+            header("Location: citas_lista.php?status=success&message=" . urlencode("Cita creada con éxito. El envío de correo está suspendido."));
+            exit();
         } else {
             header("Location: citas_lista.php?status=error&message=" . urlencode($stmt->error));
         }

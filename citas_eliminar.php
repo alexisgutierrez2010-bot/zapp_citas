@@ -6,6 +6,10 @@ require_once 'auth_check.php';
 require_once 'audit_log.php';
 require_once 'config.php';
 
+// CORRECCIÓN: Añadir las declaraciones 'use' para que PHPMailer sea reconocido.
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // 1. Recoger y validar el ID de la cita
@@ -15,6 +19,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         header("Location: citas_lista.php?status=error&message=" . urlencode("ID de cita inválido."));
         exit();
     }
+
+    // Notificar al cliente ANTES de eliminar
+    $_POST['id_cita'] = $id_cita;
+    $_POST['accion'] = 'CANCELADA';
+    // ob_start();
+    // Incluimos el script de envío pero capturamos su salida para que no redirija
+    // include 'enviar_email.php'; // SUSPENDIDO TEMPORALMENTE
+    // ob_end_clean(); // Descartamos la salida (la redirección de enviar_email.php)
 
     // 2. Preparar la consulta SQL de eliminación
     $sql = "DELETE FROM j108_citas WHERE id_cita = ?";

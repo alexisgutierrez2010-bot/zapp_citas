@@ -1,8 +1,8 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
-require_once 'Auth_check.php';
+// Update :Nov-27-2025).
+require_once 'auth_check.php';
 require_once 'audit_log.php';
 require_once 'config.php';
 
@@ -43,7 +43,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if ($stmt->execute()) {
             $descripcion_audit = "Se actualizó el servicio '{$nombre}' (ID: {$id_servicio}).";
-            registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'UPDATE_SERVICE', $descripcion_audit);
+            registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'UPDATE_SERVICE', $descripcion_audit); // CORRECCIÓN: Ya estaba, pero se confirma.
 
             header("Location: servicios_lista.php?status=success_edit");
         } else {

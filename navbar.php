@@ -1,10 +1,8 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
-// Obtener la hora actual del servidor de la base de datos
-// La página que incluye este archivo debe proporcionar la conexión $conn
-
+// Update :Nov-27-2025).
+// La página que incluye este archivo debe proporcionar la conexión $conn y las variables de sesión.
 ?>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container-fluid">
@@ -31,6 +29,9 @@
               <a class="nav-link" href="calendario_ver.php">Calendario</a>
             </li>
             <li class="nav-item">
+              <a class="nav-link" href="citas_cerrar_vencidas.php">Cierre Citas</a>
+            </li>
+            <li class="nav-item">
               <a class="nav-link" href="usuarios_lista.php">Usuarios</a>
             </li>
             <li class="nav-item">
@@ -50,11 +51,11 @@
       <!-- Opciones de usuario a la derecha -->
       <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
         <ul class="navbar-nav ms-auto">
-            <?php if (basename($_SERVER['PHP_SELF']) != 'dashboard.php'): // No mostrar el reloj de la barra si estamos en el dashboard ?>
             <li class="nav-item">
-                <span class="navbar-text me-3" id="admin-clock">--:--:--</span>
+                <?php if (basename($_SERVER['PHP_SELF']) !== 'dashboard.php'): // No mostrar el reloj de la barra si estamos en el dashboard ?>
+                    <span class="navbar-text me-3" id="admin-clock">--:--:--</span>
+                <?php endif; ?>
             </li>
-            <?php endif; ?>
             <li class="nav-item">
                 <a class="nav-link" href="perfil_ver.php">👤 <?php echo htmlspecialchars($_SESSION['nombre_usuario']); ?> (Mi Perfil)</a>
             </li>

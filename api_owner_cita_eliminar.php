@@ -1,13 +1,13 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Fecha de Creación: 28/11/2025
-
-session_start();
+// Update :Nov-27-2025).
+// Update :Nov-28-2025).
+session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
 require_once 'api_owner_session_check.php'; // 1. Guardián de sesión
 header('Content-Type: application/json');      // 2. Cabecera JSON
 require_once 'config.php';
-require_once 'audit_log.php';
+require_once 'audit_log.php'; // Reactivado
 
 // 3. Verificación de método y conexión
 if ($conn->connect_error) {
@@ -40,6 +40,8 @@ $stmt->bind_param("ii", $id_cita, $id_negocio_session);
 
 if ($stmt->execute() && $stmt->affected_rows > 0) {
     registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_CITA_DELETE', "Propietario eliminó la cita ID {$id_cita} desde la SPA.");
+    // --- SOLUCIÓN: Se elimina la siguiente línea que causaba el error fatal. ---
+    // La acción de eliminar no debe incluir ni ejecutar scripts de envío de correo.
     echo json_encode(['success' => true, 'message' => 'Cita eliminada con éxito.']);
 } else {
     http_response_code(404);

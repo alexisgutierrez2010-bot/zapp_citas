@@ -1,17 +1,9 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
-require_once 'Auth_check.php'; // Asegura que el usuario ha iniciado sesión y obtiene $id_negocio_session
+// Update :Nov-27-2025).
+require_once 'auth_check.php'; // Asegura que el usuario ha iniciado sesión y obtiene $id_negocio_session
 require_once 'config.php';
-
-// --- PROCESO AUTOMÁTICO DE ACTUALIZACIÓN DE ESTADO ---
-// Cada vez que se carga esta página, se actualizan las citas pendientes cuya fecha ya pasó.
-$sql_update_vencidas = "UPDATE j108_citas SET estado_cita = 'Vencida' WHERE fecha_hora_inicio < NOW() AND estado_cita = 'Pendiente' AND id_negocio = ?";
-$stmt_update = $conn->prepare($sql_update_vencidas);
-$stmt_update->bind_param("i", $id_negocio_session);
-$stmt_update->execute();
-$stmt_update->close();
 
 // --- OBTENER DATOS ---
 // 1. Obtener la configuración del negocio
@@ -126,7 +118,8 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
                                 <select class="form-select" id="hora_cita" name="hora_cita" required>
                                     <option value="">Seleccione una hora...</option>
                                     <?php
-                                    // Generar los intervalos dinámicamente desde la configuración
+                                    // SOLUCIÓN: Generar los intervalos dinámicamente desde la configuración del negocio.
+                                    // Esto asegura que los horarios mostrados coincidan con el intervalo definido.
                                     $start = new DateTime($config['hora_inicio']);
                                     $end = new DateTime($config['hora_cierre']);
                                     $interval = new DateInterval('PT' . $config['intervalo_minutos'] . 'M');
@@ -155,7 +148,6 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
                                 </button>
                                 <hr>
                             </div>
-
 
                             <div class="d-grid gap-2 d-sm-flex">
                                 <button type="submit" class="btn btn-primary flex-grow-1">Agendar Cita</button>
@@ -200,16 +192,18 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
                                 <th>Servicio</th>
                                 <th>Duración</th>
                                 <th>Estado</th>
+                                <th><abbr title="Contador de Emails Enviados">📧</abbr></th>
+                                <th><abbr title="Contador de SMS Enviados">📱</abbr></th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php
                             // Modificamos la consulta para filtrar por la fecha seleccionada
-                            $sql_citas = "SELECT j108_citas.id_cita, j108_citas.fecha_hora_inicio, j108_citas.fecha_hora_fin, j108_citas.estado_cita, j106_clientes.nombre_completo, j104_servicios.nombre_servicio, j104_servicios.duracion_valor, j104_servicios.duracion_unidad
+                            $sql_citas = "SELECT j108_citas.id_cita, j108_citas.fecha_hora_inicio, j108_citas.fecha_hora_fin, j108_citas.estado_cita, j108_citas.tipo_cita, j108_citas.IN_EMAIL, j108_citas.IN_SMS, j106_clientes.nombre_completo, j104_servicios.nombre_servicio, j104_servicios.duracion_valor, j104_servicios.duracion_unidad
                                           FROM j108_citas
                                           JOIN j106_clientes ON j108_citas.id_cliente = j106_clientes.id_cliente
-                                          JOIN j104_servicios ON j108_citas.id_servicio = j104_servicios.id_servicio
+                                          LEFT JOIN j104_servicios ON j108_citas.id_servicio = j104_servicios.id_servicio
                                           WHERE DATE(j108_citas.fecha_hora_inicio) <= ? AND DATE(j108_citas.fecha_hora_fin) >= ? AND j108_citas.id_negocio = ?
                                           ORDER BY j108_citas.fecha_hora_inicio ASC";
                             
@@ -242,10 +236,14 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
                                     $acciones_html .= '<li><a class="dropdown-item" href="citas_confirmar_envio.php?id_cita=' . $cita['id_cita'] . '&accion=NUEVA">📧 Reenviar Email</a></li>';
                                     
                                     $acciones_estado_html = '';
-                                    if ($estado === 'Pendiente' || $estado === 'Confirmada') {
-                                        $acciones_estado_html .= '<li><a class="dropdown-item" href="citas_actualizar_estado.php?id=' . $cita['id_cita'] . '&estado=Completada">✅ Completar</a></li>';
+                                    if ($estado === 'Pendiente') {
+                                        $acciones_estado_html .= '<li><a class="dropdown-item" href="citas_actualizar_estado.php?id=' . $cita['id_cita'] . '&estado=Confirmada">👍 Confirmar</a></li>';
                                         $acciones_estado_html .= '<li><a class="dropdown-item" href="citas_actualizar_estado.php?id=' . $cita['id_cita'] . '&estado=Cancelada">❌ Cancelar</a></li>';
+                                    }
+                                    if ($estado === 'Confirmada') {
+                                        $acciones_estado_html .= '<li><a class="dropdown-item" href="citas_actualizar_estado.php?id=' . $cita['id_cita'] . '&estado=Completada">✅ Completar</a></li>';
                                         $acciones_estado_html .= '<li><a class="dropdown-item" href="citas_actualizar_estado.php?id=' . $cita['id_cita'] . '&estado=No Asistió">👤 No Asistió</a></li>';
+                                        $acciones_estado_html .= '<li><a class="dropdown-item" href="citas_actualizar_estado.php?id=' . $cita['id_cita'] . '&estado=Cancelada">❌ Cancelar</a></li>';
                                     }
                                     if ($estado === 'Cancelada' || $estado === 'Completada' || $estado === 'No Asistió' || $estado === 'Vencida') {
                                         $acciones_estado_html .= '<li><a class="dropdown-item" href="citas_actualizar_estado.php?id=' . $cita['id_cita'] . '&estado=Pendiente">🔄 Marcar Pendiente</a></li>';
@@ -257,7 +255,9 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
                                     echo "<td>" . htmlspecialchars($cita["nombre_completo"]) . "</td>";
                                     echo "<td>" . ($es_reunion ? '<strong>Reunión</strong>' : htmlspecialchars($cita["nombre_servicio"])) . "</td>";
                                     echo "<td>" . htmlspecialchars($cita["duracion_valor"]) . " " . htmlspecialchars($cita["duracion_unidad"]) . "</td>";
-                                    echo "<td><span class='badge " . $color_clase . "'>" . $estado . "</span></td>";
+                                    echo "<td><span class='badge rounded-pill " . $color_clase . "'>" . $estado . "</span></td>";
+                                    echo "<td><span class='badge rounded-pill bg-dark'>" . htmlspecialchars($cita["IN_EMAIL"]) . "</span></td>";
+                                    echo "<td><span class='badge rounded-pill bg-dark'>" . htmlspecialchars($cita["IN_SMS"]) . "</span></td>";
                                     echo '<td>
                                             <div class="btn-group dropend">
                                                 <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
@@ -276,7 +276,7 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
                                     echo "</tr>";
                                 }
                             } else {
-                                echo "<tr><td colspan='7' class='text-center'>No hay citas agendadas para el día " . date('d/m/Y', strtotime($fecha_filtro)) . ".</td></tr>";
+                                echo "<tr><td colspan='9' class='text-center'>No hay citas agendadas para el día " . date('d/m/Y', strtotime($fecha_filtro)) . ".</td></tr>";
                             }
                             ?>
                         </tbody>
@@ -285,7 +285,6 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const tipoServicioRadio = document.getElementById('tipo_servicio');
@@ -334,5 +333,6 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
         toggleCampos();
     });
     </script>
+    <?php include 'footer.php'; ?>
 </body>
 </html>

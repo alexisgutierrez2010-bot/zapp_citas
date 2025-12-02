@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-20-2025).
+// Update :Nov-27-2025).
 // api_negocio_publico.php
 header('Content-Type: application/json');
 require_once 'config.php'; // Correcto, config.php está en la misma carpeta raíz

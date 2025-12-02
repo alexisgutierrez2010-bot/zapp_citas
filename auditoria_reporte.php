@@ -1,5 +1,5 @@
 <?php
-// Revisado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM en fecha Nov/17/2025 //
+// Revisado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM en fecha Nov/27/2025 //
 require_once 'auth_check.php';
 require_once 'config.php';
 ?>

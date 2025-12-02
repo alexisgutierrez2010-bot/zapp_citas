@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const API_URL = ''; // Todo está en la misma carpeta raíz
-    const navbarBrand = document.getElementById('navbar-brand-title'); // CORRECCIÓN: Obtener el elemento del título
+    const navbarBrand = document.getElementById('navbar-brand-title');
     const appContainer = document.getElementById('app-container');
     const navMenu = document.getElementById('nav-menu');
 
@@ -68,8 +68,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </div>
                                 <!-- SECCIÓN DE CAPTCHA DESACTIVADA PARA DESARROLLO -->
                                 <input type="hidden" name="captcha" id="captcha" value="dev"> <!-- Valor dummy para que el POST no falle -->
-                                <div class="d-grid mt-4">
+                                <div class="d-grid mt-3">
                                     <button type="submit" class="btn btn-primary btn-lg">Ingresar</button>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <a href="#" id="forgot-password-link">¿Olvidaste tu contraseña?</a>
                                 </div>
                             </form>
                         </div>
@@ -79,6 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
 
         document.getElementById('owner-login-form').addEventListener('submit', handleLogin);
+        document.getElementById('forgot-password-link').addEventListener('click', openForgotPasswordModal);
     }
 
     // Función para manejar el intento de login
@@ -114,14 +118,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // ¡Login exitoso!
             ownerActual = data;
-            document.title = `Portal - ${ownerActual.nombre_negocio}`; // CORRECCIÓN: Actualizar título de la página
+            document.title = `Portal - ${ownerActual.nombre_negocio}`;
             navbarBrand.textContent = ownerActual.nombre_negocio; 
-            updateNavbar(); // 1. Dibuja el menú de navegación primero.
+            updateNavbar();
             if (clockInterval) clearInterval(clockInterval); // Limpiar cualquier intervalo anterior
             clockInterval = setInterval(() => {
                 updateClock('owner-clock');
             }, 1000);
-            renderMiAgendaView(); // 2. CORRECCIÓN: Renderiza "Mi Agenda" (la lista de citas) como vista inicial.
+            renderMiAgendaView(); // Renderiza "Mi Agenda" como vista inicial.
 
         } catch (error) {
             errorContainer.innerHTML = `<div class="alert alert-danger mt-3">${error.message}</div>`;
@@ -164,8 +168,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 <li class="nav-item"><a class="nav-link" href="#" id="nav-calendario">Calendario</a></li>
                 <li class="nav-item"><a class="nav-link" href="#" id="nav-clientes">Mis Clientes</a></li>
                 <li class="nav-item"><a class="nav-link" href="#" id="nav-servicios">Mis Servicios</a></li>
-                <li class="nav-item ms-lg-3"><a class="nav-link" href="#" id="nav-mi-negocio">Mi Negocio</a></li>
-                <li class="nav-item"><a class="nav-link" href="#" id="nav-mi-perfil">Mi Perfil</a></li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownAdmin" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Administración
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdownAdmin">
+                        <li><a class="dropdown-item" href="#" id="nav-mi-negocio">Mi Negocio</a></li>
+                        <li><a class="dropdown-item" href="#" id="nav-mi-perfil">Mi Perfil</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" id="nav-cierre-citas">Cerrar Citas Vencidas</a></li>
+                    </ul>
+                </li>
                 <li class="nav-item"><a class="nav-link" href="#" id="nav-salir">Salir</a></li>
                 <li class="nav-item ms-lg-auto">${trialInfoHtml}</li>
                 <li class="nav-item"><span class="navbar-text" id="owner-clock">--:--:--</span></li>
@@ -178,7 +191,8 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('nav-mi-negocio').addEventListener('click', renderMiNegocioView);
             document.getElementById('nav-mi-agenda').addEventListener('click', renderMiAgendaView);
             document.getElementById('nav-disponibilidad').addEventListener('click', renderDisponibilidadView);
-            document.getElementById('nav-mi-perfil').addEventListener('click', renderMiPerfilView);
+            document.getElementById('nav-mi-perfil').addEventListener('click', renderMiPerfilView); // NUEVO LISTENER
+            document.getElementById('nav-cierre-citas').addEventListener('click', handleCierreCitas); // NUEVO LISTENER
             document.getElementById('nav-salir').addEventListener('click', handleLogout);
         }
     }
@@ -193,6 +207,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 navMenu.innerHTML = ''; // Asegurarse de que el menú esté vacío
                 renderLoginView(); // Volver a la vista de login
             });
+    }
+
+    // Maneja el cierre manual de citas vencidas.
+    async function handleCierreCitas(event) {
+        event.preventDefault();
+
+        if (!confirm('¿Estás seguro de que quieres actualizar todas las citas pasadas al estado "Vencida"? Esta acción es útil para limpiar la agenda.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}api_owner_citas_cerrar_vencidas.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'Ocurrió un error desconocido.');
+            }
+
+            alert(`Proceso completado. Se han actualizado ${data.citas_actualizadas} citas.`);
+            renderMiAgendaView(); // Recargamos la vista de agenda para ver los cambios.
+        } catch (error) {
+            alert('Error al ejecutar el cierre: ' + error.message);
+        }
     }
 
     // --- VISTA "MI AGENDA" (GESTOR DE CITAS DIARIAS) ---
@@ -231,16 +271,44 @@ document.addEventListener('DOMContentLoaded', function() {
                     const fin = new Date(cita.fecha_hora_fin);
                     const estado = cita.estado_cita;
                     const color_clase = status_colors[estado] ?? 'bg-light text-dark';
+
+                    // Lógica de acciones dinámicas, como en citas_lista.php
+                    let accionesEstadoHtml = '';
+                    if (estado === 'Pendiente') {
+                        accionesEstadoHtml += `<li><a class="dropdown-item btn-cambiar-estado" href="#" data-id-cita="${cita.id_cita}" data-nuevo-estado="Confirmada">👍 Confirmar</a></li>`;
+                        accionesEstadoHtml += `<li><a class="dropdown-item btn-cambiar-estado" href="#" data-id-cita="${cita.id_cita}" data-nuevo-estado="Cancelada">❌ Cancelar</a></li>`;
+                    }
+                    if (estado === 'Confirmada') {
+                        accionesEstadoHtml += `<li><a class="dropdown-item btn-cambiar-estado" href="#" data-id-cita="${cita.id_cita}" data-nuevo-estado="Completada">✅ Completar</a></li>`;
+                        accionesEstadoHtml += `<li><a class="dropdown-item btn-cambiar-estado" href="#" data-id-cita="${cita.id_cita}" data-nuevo-estado="No Asistió">👤 No Asistió</a></li>`;
+                        accionesEstadoHtml += `<li><a class="dropdown-item btn-cambiar-estado" href="#" data-id-cita="${cita.id_cita}" data-nuevo-estado="Cancelada">❌ Cancelar</a></li>`;
+                    }
+                    if (['Cancelada', 'Completada', 'No Asistió', 'Vencida'].includes(estado)) {
+                        accionesEstadoHtml += `<li><a class="dropdown-item btn-cambiar-estado" href="#" data-id-cita="${cita.id_cita}" data-nuevo-estado="Pendiente">🔄 Marcar Pendiente</a></li>`;
+                    }
+
                     return `
                         <tr>
                             <td>${index + 1}</td>
                             <td>${inicio.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit' })} - ${fin.toLocaleTimeString('es-ES', { hour: 'numeric', minute: '2-digit' })}</td>
                             <td>${cita.nombre_cliente}</td>
                             <td>${cita.nombre_servicio}</td>
-                            <td><span class="badge ${color_clase}">${estado}</span></td>
+                            <td><span class="badge rounded-pill ${color_clase}">${estado}</span></td>
+                            <td><span class="badge rounded-pill bg-dark" title="Emails enviados">${cita.IN_EMAIL}</span></td>
+                            <td><span class="badge rounded-pill bg-dark" title="SMS enviados">${cita.IN_SMS}</span></td>
                             <td>
-                                <button class="btn btn-sm btn-outline-primary btn-edit-cita" data-id-cita="${cita.id_cita}">Ver/Editar</button>
-                                <button class="btn btn-sm btn-outline-danger ms-1 btn-delete-cita" data-id-cita="${cita.id_cita}">Eliminar</button>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Acciones
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        ${accionesEstadoHtml}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item btn-enviar-email" href="#" data-id-cita="${cita.id_cita}">📧 Enviar Email</a></li>
+                                        <li><a class="dropdown-item btn-edit-cita" href="#" data-id-cita="${cita.id_cita}">✏️ Ver/Editar Detalles</a></li>
+                                        <li><a class="dropdown-item text-danger btn-delete-cita" href="#" data-id-cita="${cita.id_cita}">🗑️ Eliminar</a></li>
+                                    </ul>
+                                </div>
                             </td>
                         </tr>
                     `;
@@ -248,7 +316,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 citasHtml = `
                     <table class="table table-striped table-hover">
-                        <thead class="table-dark"><tr><th>#</th><th>Horario</th><th>Cliente</th><th>Servicio</th><th>Estado</th><th>Acciones</th></tr></thead>
+                        <thead class="table-dark"><tr><th>#</th><th>Horario</th><th>Cliente</th><th>Servicio</th><th>Estado</th><th>📧</th><th>📱</th><th>Acciones</th></tr></thead>
                         <tbody>${citasRows}</tbody>
                     </table>`;
             } else {
@@ -278,9 +346,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentDate = new Date(year, month - 1, day);
                 renderMiAgendaView();
             });
-            document.getElementById('btn-agendar-desde-lista').addEventListener('click', () => openAgendarCitaModal());
-            document.querySelectorAll('.btn-edit-cita').forEach(btn => btn.addEventListener('click', (e) => openEditCitaModal(e.target.dataset.idCita)));
+            document.getElementById('btn-agendar-desde-lista').addEventListener('click', () => renderCrearCitaView());
+            document.querySelectorAll('.btn-edit-cita').forEach(btn => btn.addEventListener('click', (e) => renderEditarCitaView(e.target.dataset.idCita)));
             document.querySelectorAll('.btn-delete-cita').forEach(btn => btn.addEventListener('click', (e) => handleDeleteCita(e.target.dataset.idCita)));
+            document.querySelectorAll('.btn-enviar-email').forEach(btn => btn.addEventListener('click', (e) => openEnviarEmailModal(e.target.dataset.idCita)));
+            document.querySelectorAll('.btn-cambiar-estado').forEach(btn => btn.addEventListener('click', (e) => handleCambiarEstado(e.target.dataset.idCita, e.target.dataset.nuevoEstado)));
 
         } catch (error) {
             appContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
@@ -315,7 +385,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
 
-        document.getElementById('btn-agendar-desde-calendario').addEventListener('click', () => openAgendarCitaModal());
+        document.getElementById('btn-agendar-desde-calendario').addEventListener('click', () => renderCrearCitaView());
 
         try {
             // 1. Obtener la configuración del negocio para saber las horas de trabajo
@@ -338,106 +408,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 // --- ¡AQUÍ ESTÁ LA MAGIA! ---
                 slotMinTime: negocio.hora_inicio, // Ej: "09:00:00"
                 slotMaxTime: negocio.hora_cierre, // Ej: "18:00:00"
+                // SOLUCIÓN: Ajustar la altura para que se adapte al contenido y no deje espacio extra.
+                height: 'auto',
                 businessHours: {
                     daysOfWeek: negocio.dias_trabajo.split(',').map(Number), // [1, 2, 3, 4, 5] para L-V
                     startTime: negocio.hora_inicio,
                     endTime: negocio.hora_cierre,
                 },
                 eventClick: function(info) {
-                    openEditCitaModal(info.event.id);
+                    // En lugar de un modal, vamos a una vista de edición.
+                    renderEditarCitaView(info.event.id);
                 },
                 dateClick: function(info) {
-                    openAgendarCitaModal(info.dateStr);
+                    // En lugar de un modal, vamos a una vista de creación.
+                    renderCrearCitaView(info.dateStr);
                 }
             });
             calendar.render();
         } catch (error) {
             appContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
-        }
-    }
-
-    async function openEditCitaModal(idCita) {
-        try {
-            const response = await fetch(`${API_URL}api_owner_cita_detalle.php?id_cita=${idCita}`);
-            if (!response.ok) throw new Error('No se pudo cargar el detalle de la cita.');
-            const cita = await response.json();
-
-            const estados = ['Pendiente', 'Confirmada', 'Completada', 'Cancelada', 'Pospuesta', 'No Asistió'];
-            const opcionesEstado = estados.map(e => `<option value="${e}" ${e === cita.estado_cita ? 'selected' : ''}>${e}</option>`).join('');
-
-            const modalHtml = `
-                <div class="modal fade" id="editCitaModal" tabindex="-1">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Detalle de Cita #${cita.id_cita}</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div id="modal-error-container"></div>
-                                <p><strong>Cliente:</strong> ${cita.nombre_cliente} (${cita.telefono_cliente})</p>
-                                <p><strong>Servicio:</strong> ${cita.nombre_servicio} (${new Date(cita.fecha_hora_inicio).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})</p>
-                                <form id="edit-cita-form">
-                                    <div class="mb-3">
-                                        <label for="estado_cita" class="form-label">Estado de la Cita</label>
-                                        <select class="form-select" id="estado_cita">${opcionesEstado}</select>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="descripcion_trabajo" class="form-label">Descripción / Notas (Opcional)</label>
-                                        <textarea class="form-control" id="descripcion_trabajo" rows="3">${cita.descripcion_trabajo || ''}</textarea>
-                                    </div>
-                                </form>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                                <button type="button" class="btn btn-primary" id="save-cita-btn">Guardar Cambios</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            // Añadir el modal al body y mostrarlo
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-            const modalElement = document.getElementById('editCitaModal');
-            const modal = new bootstrap.Modal(modalElement);
-            modal.show();
-
-            // Listener para guardar
-            document.getElementById('save-cita-btn').addEventListener('click', async () => {
-                const payload = {
-                    id_cita: idCita,
-                    estado_cita: document.getElementById('estado_cita').value,
-                    descripcion_trabajo: document.getElementById('descripcion_trabajo').value
-                };
-                try {
-                    const saveResponse = await fetch(`${API_URL}api_owner_cita_actualizar.php`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    const saveData = await saveResponse.json();
-                    if (!saveResponse.ok) throw new Error(saveData.error);
-                    
-                    modal.hide();
-                    // Recargar la vista activa
-                    const activeLink = navMenu.querySelector('.nav-link.active');
-                    if (activeLink && activeLink.id === 'nav-mi-agenda') {
-                        renderMiAgendaView();
-                    } else {
-                        renderCalendarioView();
-                    }
-                } catch (saveError) {
-                    document.getElementById('modal-error-container').innerHTML = `<div class="alert alert-danger">${saveError.message}</div>`;
-                }
-            });
-
-            // Limpiar el HTML del modal del DOM cuando se cierre
-            modalElement.addEventListener('hidden.bs.modal', () => {
-                modalElement.remove();
-            });
-
-        } catch (error) {
-            alert(error.message);
         }
     }
 
@@ -1152,12 +1141,22 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="fecha_hora_inicio_cita" class="form-label">Fecha y Hora de Inicio</label>
-                                    <input type="datetime-local" class="form-control" id="fecha_hora_inicio_cita" value="${suggestedStartTime}" required>
+                                    <label for="fecha_cita_crear" class="form-label">Fecha de la Cita</label>
+                                    <div class="input-group">
+                                        <input type="date" class="form-control" id="fecha_cita_crear" required>
+                                        <select class="form-select" id="hora_cita_crear" required disabled>
+                                            <option value="">Seleccione una fecha...</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="descripcion_trabajo_cita" class="form-label">Notas (Opcional)</label>
                                     <textarea class="form-control" id="descripcion_trabajo_cita" rows="3"></textarea>
+                                </div>
+                                <div id="disponibilidad-error-container"></div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="notificar_cliente_crear" checked>
+                                    <label class="form-check-label" for="notificar_cliente_crear">Notificar al cliente por correo</label>
                                 </div>
                             </form>
                         </div>
@@ -1175,13 +1174,69 @@ document.addEventListener('DOMContentLoaded', function() {
         const modal = new bootstrap.Modal(modalElement);
         modal.show();
 
+        const fechaInput = document.getElementById('fecha_cita_crear');
+        const horaSelect = document.getElementById('hora_cita_crear');
+        const errorContainer = document.getElementById('disponibilidad-error-container');
+
+        // Función para cargar los horarios disponibles
+        async function cargarHorariosDisponibles(fecha) {
+            horaSelect.disabled = true;
+            horaSelect.innerHTML = '<option value="">Cargando horarios...</option>';
+            errorContainer.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_URL}api_owner_horario_disponible.php?fecha=${fecha}`);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'No se pudo cargar la disponibilidad.');
+
+                const availableSlots = data.slots.filter(slot => slot.status === 'available');
+                
+                if (availableSlots.length > 0) {
+                    horaSelect.innerHTML = '<option value="">Seleccione una hora...</option>';
+                    availableSlots.forEach(slot => {
+                        horaSelect.innerHTML += `<option value="${slot.start_time}">${slot.start_time}</option>`;
+                    });
+                    horaSelect.disabled = false;
+                } else {
+                    horaSelect.innerHTML = '<option value="">No hay horarios disponibles</option>';
+                }
+            } catch (error) {
+                errorContainer.innerHTML = `<div class="alert alert-warning small p-2 mt-2">${error.message}</div>`;
+            }
+        }
+
+        // Lógica de inicialización y eventos
+        if (suggestedStartTime) {
+            const suggestedDate = new Date(suggestedStartTime);
+            const fechaISO = suggestedDate.toISOString().split('T')[0];
+            fechaInput.value = fechaISO;
+            cargarHorariosDisponibles(fechaISO);
+        }
+
+        fechaInput.addEventListener('change', () => cargarHorariosDisponibles(fechaInput.value));
+
         document.getElementById('save-new-cita-btn').addEventListener('click', async () => {
+            // SOLUCIÓN: Construir el payload correctamente, incluyendo tipo_cita y id_servicio.
+            // Esta lógica ahora es consistente con la del formulario de página completa.
             const payload = {
+                tipo_cita: 'Servicio', // El modal solo crea citas de servicio.
                 id_cliente: document.getElementById('cliente_cita').value,
                 id_servicio: document.getElementById('servicio_cita').value,
-                fecha_hora_inicio: document.getElementById('fecha_hora_inicio_cita').value,
+                fecha_hora_inicio: `${fechaInput.value} ${horaSelect.value}`,
                 descripcion_trabajo: document.getElementById('descripcion_trabajo_cita').value,
+                notificar_cliente: document.getElementById('notificar_cliente_crear').checked
             };
+
+            // Validación simple en el frontend
+            if (!payload.id_cliente || !payload.id_servicio || !payload.fecha_hora_inicio.includes(':')) {
+                document.getElementById('modal-error-container').innerHTML = `<div class="alert alert-danger">Por favor, complete todos los campos: Cliente, Servicio y Hora.</div>`;
+                return;
+            }
+
+            const saveButton = document.getElementById('save-new-cita-btn');
+            saveButton.disabled = true;
+            saveButton.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Guardando...`;
+
             try {
                 const saveResponse = await fetch(`${API_URL}api_owner_cita_crear.php`, {
                     method: 'POST',
@@ -1200,6 +1255,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else { renderCalendarioView(); }
             } catch (saveError) {
                 document.getElementById('modal-error-container').innerHTML = `<div class="alert alert-danger">${saveError.message}</div>`;
+            } finally {
+                saveButton.disabled = false;
+                saveButton.innerHTML = 'Agendar Cita';
             }
         });
 
@@ -1227,7 +1285,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const negocio = await negocioResponse.json();
             const paises = await paisesResponse.json();
 
-            // CORRECCIÓN: La variable 'diasSemana' no estaba definida. La añado aquí.
             const diasSemana = { '1': 'Lunes', '2': 'Martes', '3': 'Miércoles', '4': 'Jueves', '5': 'Viernes', '6': 'Sábado', '7': 'Domingo' };
             const diasTrabajoActivos = negocio.dias_trabajo ? negocio.dias_trabajo.split(',') : [];
             const diasTrabajoCheckboxes = Object.entries(diasSemana).map(([num, dia]) => `
@@ -1431,20 +1488,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Nueva función para manejar la eliminación de citas
     async function handleDeleteCita(idCita) {
-        if (!confirm(`¿Estás seguro de que quieres eliminar permanentemente la cita #${idCita}? Esta acción no se puede deshacer.`)) {
+        // Añadir confirmación antes de eliminar.
+        if (!confirm(`¿Estás seguro de que quieres eliminar la cita #${idCita}? Esta acción no se puede deshacer.`)) {
             return;
         }
 
         try {
+            // --- SOLUCIÓN: Cambiar el método a POST y enviar el ID en el cuerpo (body) ---
+            // La API espera una petición POST por seguridad.
             const response = await fetch(`${API_URL}api_owner_cita_eliminar.php`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id_cita: idCita })
             });
             const data = await response.json();
-            if (!response.ok) throw new Error(data.error);
+            // CORRECCIÓN: Se elimina línea duplicada y se mejora el mensaje de error.
+            if (!response.ok) throw new Error(data.error || 'Error desconocido al eliminar.');
             
-            // Recargamos la vista de calendario para reflejar el cambio.
+            // Recargamos la vista activa para reflejar el cambio.
             const activeLink = navMenu.querySelector('.nav-link.active');
             if (activeLink && activeLink.id === 'nav-mi-agenda') {
                 renderMiAgendaView();
@@ -1455,6 +1516,390 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             alert('Error al eliminar la cita: ' + error.message);
         }
+    }
+
+    // Nueva función para manejar el cambio rápido de estado
+    async function handleCambiarEstado(idCita, nuevoEstado) {
+        if (!confirm(`¿Estás seguro de que quieres cambiar el estado de la cita #${idCita} a "${nuevoEstado}"?`)) {
+            return;
+        }
+
+        const payload = {
+            id_cita: idCita,
+            estado_cita: nuevoEstado,
+            // No enviamos descripción, la API no la tocará si no está presente
+        };
+
+        try {
+            const response = await fetch(`${API_URL}api_owner_cita_actualizar.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Error desconocido');
+            renderMiAgendaView(); // Recargar la vista para reflejar el cambio
+        } catch (error) {
+            alert(`Error al cambiar el estado: ${error.message}`);
+        }
+    }
+
+    // --- NUEVAS VISTAS DE PÁGINA COMPLETA (SIMPLIFICADAS) ---
+
+    async function renderCrearCitaView(suggestedStartTime) {
+        setActiveNavLink(''); // Ningún link activo, es una acción
+        appContainer.innerHTML = `<div class="text-center"><div class="spinner-border" role="status"></div></div>`;
+
+        let clientes = [];
+        let servicios = [];
+        try {
+            const [clientesResponse, serviciosResponse] = await Promise.all([
+                fetch(`${API_URL}api_owner_clientes.php`),
+                fetch(`${API_URL}api_owner_servicios.php`)
+            ]);
+            clientes = await clientesResponse.json();
+            servicios = await serviciosResponse.json();
+        } catch (error) {
+            appContainer.innerHTML = `<div class="alert alert-danger">Error al cargar datos: ${error.message}</div>`;
+            return;
+        }
+
+        const clientesOptions = clientes.map(c => `<option value="${c.id_cliente}">${c.nombre_completo}</option>`).join('');
+        const serviciosOptions = servicios.map(s => `<option value="${s.id_servicio}">${s.nombre_servicio}</option>`).join('');
+
+        appContainer.innerHTML = `
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header"><h3>Agendar Nueva Cita</h3></div>
+                        <div class="card-body">
+                            <div id="form-error-container"></div>
+                            <form id="crear-cita-form">
+                                <!-- INICIO: Selector de Tipo de Cita -->
+                                <div class="mb-3">
+                                    <label class="form-label">Tipo de Cita</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tipo_cita_selector" id="tipo_servicio" value="Servicio" checked>
+                                        <label class="form-check-label" for="tipo_servicio">Cita de Servicio</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="tipo_cita_selector" id="tipo_reunion" value="Reunion">
+                                        <label class="form-check-label" for="tipo_reunion">Reunión</label>
+                                    </div>
+                                </div>
+                                <!-- FIN: Selector de Tipo de Cita -->
+                                <div class="mb-3"><label for="cliente_cita" class="form-label">Cliente Principal</label><select class="form-select" id="cliente_cita" required>${clientesOptions}</select></div>
+                                <div class="mb-3" id="campo_servicio"><label for="servicio_cita" class="form-label">Servicio</label><select class="form-select" id="servicio_cita" required>${serviciosOptions}</select></div>
+                                <div class="mb-3">
+                                    <label for="fecha_cita_crear" class="form-label">Fecha y Hora</label>
+                                    <div class="input-group">
+                                        <input type="date" class="form-control" id="fecha_cita_crear" required>
+                                        <select class="form-select" id="hora_cita_crear" required disabled><option value="">Seleccione fecha...</option></select>
+                                    </div>
+                                    <div id="disponibilidad-error-container"></div>
+                                </div>
+                                <div class="mb-3"><label for="descripcion_trabajo_cita" id="label_descripcion" class="form-label">Notas</label><textarea class="form-control" id="descripcion_trabajo_cita" rows="3"></textarea></div>
+                                
+                                <!-- INICIO: Sección de Invitados (oculta por defecto) -->
+                                <div id="seccion_invitados" style="display: none;">
+                                    <hr>
+                                    <h5>Invitados a la Reunión</h5>
+                                    <div id="lista_invitados">
+                                        <!-- Los invitados se añadirán aquí dinámicamente -->
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="btn_anadir_invitado">+ Añadir Invitado</button>
+                                </div>
+                                <!-- FIN: Sección de Invitados -->
+                                <div class="form-check form-switch mt-3">
+                                    <input class="form-check-input" type="checkbox" id="notificar_cliente_crear" checked>
+                                    <label class="form-check-label" for="notificar_cliente_crear">Notificar al cliente por correo</label>
+                                </div>
+                                <hr>
+                                <div class="d-flex justify-content-end">
+                                    <button type="button" class="btn btn-secondary me-2" id="cancel-crear-cita">Cancelar</button>
+                                    <button type="submit" class="btn btn-primary" id="save-new-cita-btn">Agendar Cita</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Lógica del selector de hora inteligente (reutilizada)
+        const fechaInput = document.getElementById('fecha_cita_crear');
+        const horaSelect = document.getElementById('hora_cita_crear');
+        const disponibilidadError = document.getElementById('disponibilidad-error-container');
+
+        async function cargarHorariosDisponibles(fecha) {
+            horaSelect.disabled = true;
+            horaSelect.innerHTML = '<option value="">Cargando...</option>';
+            disponibilidadError.innerHTML = '';
+            try {
+                const response = await fetch(`${API_URL}api_owner_horario_disponible.php?fecha=${fecha}`);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'No se pudo cargar la disponibilidad.');
+                const availableSlots = data.slots.filter(slot => slot.status === 'available');
+                if (availableSlots.length > 0) {
+                    horaSelect.innerHTML = '<option value="">Seleccione hora...</option>' + availableSlots.map(slot => `<option value="${slot.start_time}">${slot.start_time}</option>`).join('');
+                    horaSelect.disabled = false;
+                } else {
+                    horaSelect.innerHTML = '<option value="">No hay horarios</option>';
+                }
+            } catch (error) {
+                disponibilidadError.innerHTML = `<div class="alert alert-warning small p-2 mt-2">${error.message}</div>`;
+            }
+        }
+
+        if (suggestedStartTime) {
+            const fechaISO = new Date(suggestedStartTime).toISOString().split('T')[0];
+            fechaInput.value = fechaISO;
+            cargarHorariosDisponibles(fechaISO);
+        }
+
+        fechaInput.addEventListener('change', () => cargarHorariosDisponibles(fechaInput.value));
+        document.getElementById('cancel-crear-cita').addEventListener('click', renderMiAgendaView);
+        document.getElementById('crear-cita-form').addEventListener('submit', handleCrearCita);
+
+        // --- INICIO: Lógica para alternar campos de Servicio/Reunión ---
+        const tipoServicioRadio = document.getElementById('tipo_servicio');
+        const tipoReunionRadio = document.getElementById('tipo_reunion');
+        const campoServicio = document.getElementById('campo_servicio');
+        const selectServicio = document.getElementById('servicio_cita');
+        const seccionInvitados = document.getElementById('seccion_invitados');
+        const labelDescripcion = document.getElementById('label_descripcion');
+
+        function toggleTipoCitaFields() {
+            if (tipoReunionRadio.checked) {
+                campoServicio.style.display = 'none';
+                selectServicio.required = false; // El servicio no es requerido para reuniones
+                seccionInvitados.style.display = 'block';
+                labelDescripcion.textContent = 'Tema de la Reunión';
+            } else {
+                campoServicio.style.display = 'block';
+                selectServicio.required = true; // El servicio es requerido para citas normales
+                seccionInvitados.style.display = 'none';
+                labelDescripcion.textContent = 'Notas';
+            }
+        }
+
+        tipoServicioRadio.addEventListener('change', toggleTipoCitaFields);
+        tipoReunionRadio.addEventListener('change', toggleTipoCitaFields);
+
+        // Lógica para añadir invitados dinámicamente
+        document.getElementById('btn_anadir_invitado').addEventListener('click', function() {
+            const listaInvitados = document.getElementById('lista_invitados');
+            const divInvitado = document.createElement('div');
+            divInvitado.classList.add('row', 'g-2', 'mb-2', 'align-items-center');
+            divInvitado.innerHTML = `
+                <div class="col-sm-5"><input type="text" name="invitado_nombre" class="form-control form-control-sm" placeholder="Nombre Invitado" required></div>
+                <div class="col-sm-6"><input type="email" name="invitado_email" class="form-control form-control-sm" placeholder="Email Invitado" required></div>
+                <div class="col-sm-1"><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">X</button></div>
+            `;
+            listaInvitados.appendChild(divInvitado);
+        });
+    }
+
+    async function handleCrearCita(event) {
+        event.preventDefault();
+        const errorContainer = document.getElementById('form-error-container');
+        const submitButton = document.getElementById('save-new-cita-btn');
+        errorContainer.innerHTML = '';
+        submitButton.disabled = true;
+        submitButton.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Guardando...`;
+
+        const tipoCitaSeleccionado = document.querySelector('input[name="tipo_cita_selector"]:checked').value;
+
+        const payload = {
+            tipo_cita: tipoCitaSeleccionado,
+            id_cliente: document.getElementById('cliente_cita').value,
+            fecha_hora_inicio: `${document.getElementById('fecha_cita_crear').value} ${document.getElementById('hora_cita_crear').value}`,
+            descripcion_trabajo: document.getElementById('descripcion_trabajo_cita').value,
+            notificar_cliente: document.getElementById('notificar_cliente_crear').checked // REACTIVADO
+        };
+
+        if (tipoCitaSeleccionado === 'Servicio') {
+            payload.id_servicio = document.getElementById('servicio_cita').value;
+        } else { // Es 'Reunion'
+            payload.id_servicio = null;
+            payload.invitados = [];
+            document.querySelectorAll('#lista_invitados .row').forEach(row => {
+                payload.invitados.push({
+                    nombre: row.querySelector('input[name="invitado_nombre"]').value,
+                    email: row.querySelector('input[name="invitado_email"]').value
+                });
+            });
+        }
+
+        try {
+            const response = await fetch(`${API_URL}api_owner_cita_crear.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'Error desconocido desde la API.');
+            }
+            // ¡Éxito! Volvemos a la agenda.
+            renderMiAgendaView();
+        } catch (error) {
+            errorContainer.innerHTML = `<div class="alert alert-danger">Error al crear la cita: ${error.message}. Revise la consola para más detalles.</div>`;
+            console.error("Detalle del error al crear cita:", error);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Agendar Cita';
+        }
+    }
+
+    async function renderEditarCitaView(idCita) {
+        setActiveNavLink(''); // Ningún link activo
+        appContainer.innerHTML = `<div class="text-center"><div class="spinner-border" role="status"></div></div>`;
+
+        try {
+            const response = await fetch(`${API_URL}api_owner_cita_detalle.php?id_cita=${idCita}`);
+            if (!response.ok) throw new Error('No se pudo cargar el detalle de la cita.');
+            const cita = await response.json();
+
+            const estados = ['Pendiente', 'Confirmada', 'Completada', 'Cancelada', 'Pospuesta', 'No Asistió'];
+            const opcionesEstado = estados.map(e => `<option value="${e}" ${e === cita.estado_cita ? 'selected' : ''}>${e}</option>`).join('');
+
+            appContainer.innerHTML = `
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header"><h3>Editar Cita #${cita.id_cita}</h3></div>
+                            <div class="card-body">
+                                <div id="form-error-container"></div>
+                                <p><strong>Cliente:</strong> ${cita.nombre_cliente}</p>
+                                <p><strong>Servicio:</strong> ${cita.nombre_servicio}</p>
+                                <p><strong>Fecha/Hora:</strong> ${new Date(cita.fecha_hora_inicio).toLocaleString('es-ES')}</p>
+                                <form id="editar-cita-form">
+                                    <div class="mb-3">
+                                        <label for="estado_cita" class="form-label">Estado de la Cita</label>
+                                        <select class="form-select" id="estado_cita">${opcionesEstado}</select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="descripcion_trabajo" class="form-label">Notas</label>
+                                        <textarea class="form-control" id="descripcion_trabajo" rows="3">${cita.descripcion_trabajo || ''}</textarea>
+                                    </div>
+                                    <div class="d-flex justify-content-end">
+                                        <button type="button" class="btn btn-secondary me-2" id="cancel-editar-cita">Cancelar</button>
+                                        <button type="submit" class="btn btn-primary" id="save-update-cita-btn">Guardar Cambios</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('cancel-editar-cita').addEventListener('click', renderMiAgendaView);
+            document.getElementById('editar-cita-form').addEventListener('submit', (e) => handleUpdateCita(e, idCita));
+
+        } catch (error) {
+            appContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+        }
+    }
+
+    async function handleUpdateCita(event, idCita) {
+        event.preventDefault();
+        const errorContainer = document.getElementById('form-error-container');
+        const submitButton = document.getElementById('save-update-cita-btn');
+        errorContainer.innerHTML = '';
+        submitButton.disabled = true;
+        submitButton.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Guardando...`;
+
+        const payload = {
+            id_cita: idCita,
+            estado_cita: document.getElementById('estado_cita').value,
+            descripcion_trabajo: document.getElementById('descripcion_trabajo').value,
+            notificar_cliente: false // Simplificado
+        };
+
+        try {
+            const response = await fetch(`${API_URL}api_owner_cita_actualizar.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Error desconocido desde la API.');
+            
+            renderMiAgendaView(); // Éxito, volver a la agenda
+        } catch (error) {
+            errorContainer.innerHTML = `<div class="alert alert-danger">Error al actualizar: ${error.message}</div>`;
+        } finally {
+            submitButton.disabled = false;
+            submitButton.innerHTML = 'Guardar Cambios';
+        }
+    }
+
+    // --- NUEVA FUNCIÓN PARA ENVIAR EMAILS MANUALMENTE ---
+    function openEnviarEmailModal(idCita) {
+        const modalHtml = `
+            <div class="modal fade" id="enviarEmailModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Enviar Notificación por Email</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Selecciona el tipo de notificación que deseas enviar para la cita #${idCita}.</p>
+                            <div id="modal-email-error-container"></div>
+                            <div class="mb-3">
+                                <label for="tipo_accion_email" class="form-label">Tipo de Notificación</label>
+                                <select class="form-select" id="tipo_accion_email">
+                                    <option value="NUEVA">Nueva Cita (o Reenviar Confirmación)</option>
+                                    <option value="MODIFICADA">Cita Modificada</option>
+                                    <option value="CANCELADA">Cita Cancelada</option>
+                                    <option value="COMPLETADA">Cita Completada (Agradecimiento)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-primary" id="confirm-send-email-btn">Enviar Email</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modalElement = document.getElementById('enviarEmailModal');
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+
+        document.getElementById('confirm-send-email-btn').addEventListener('click', async () => {
+            const accion = document.getElementById('tipo_accion_email').value;
+            const errorContainer = document.getElementById('modal-email-error-container');
+            const sendButton = document.getElementById('confirm-send-email-btn');
+            errorContainer.innerHTML = '';
+            sendButton.disabled = true;
+            sendButton.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Enviando...`;
+
+            try {
+                const response = await fetch(`${API_URL}api_owner_cita_enviar_email.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_cita: idCita, accion: accion })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Error desconocido');
+                
+                alert(data.message); // Mostrar mensaje de éxito
+                modal.hide();
+            } catch (error) {
+                document.getElementById('modal-email-error-container').innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+            } finally {
+                sendButton.disabled = false;
+                sendButton.innerHTML = 'Enviar Email';
+            }
+        });
+
+        modalElement.addEventListener('hidden.bs.modal', () => modalElement.remove());
     }
 
     // Función para marcar el enlace activo en la barra de navegación
@@ -1477,3 +1922,85 @@ document.addEventListener('DOMContentLoaded', function() {
     // Iniciar la aplicación mostrando la vista de login
     renderLoginView();
 });
+
+// --- NUEVA FUNCIÓN PARA RECUPERAR CONTRASEÑA ---
+function openForgotPasswordModal(event) {
+    if (event) event.preventDefault();
+
+    const modalHtml = `
+        <div class="modal fade" id="forgotPasswordModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Recuperar Contraseña</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Ingresa el número de teléfono de tu negocio. Si la cuenta existe, te enviaremos una nueva contraseña a tu correo electrónico registrado.</p>
+                        <div id="modal-forgot-error-container"></div>
+                        <div class="mb-3">
+                            <label for="telefono_recuperacion" class="form-label">Teléfono del Negocio</label>
+                            <div class="input-group">
+                                <select class="form-select" id="country_code_recuperacion" style="max-width: 120px;"></select>
+                                <input type="tel" class="form-control" id="telefono_recuperacion" placeholder="Ej: 4121234567" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" id="confirm-recovery-btn">Recuperar Contraseña</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modalElement = document.getElementById('forgotPasswordModal');
+    const modal = new bootstrap.Modal(modalElement);
+    
+    // Rellenar el selector de países (reutilizando la lógica del login)
+    const countryCodeSelect = document.getElementById('country_code_recuperacion');
+    const originalCountrySelect = document.getElementById('country_code');
+    if (originalCountrySelect) {
+        countryCodeSelect.innerHTML = originalCountrySelect.innerHTML;
+    }
+
+    modal.show();
+
+    document.getElementById('confirm-recovery-btn').addEventListener('click', async () => {
+        const telefono = document.getElementById('telefono_recuperacion').value.trim();
+        const countryCode = document.getElementById('country_code_recuperacion').value;
+        const errorContainer = document.getElementById('modal-forgot-error-container');
+        const recoveryButton = document.getElementById('confirm-recovery-btn');
+        
+        if (!telefono) {
+            errorContainer.innerHTML = `<div class="alert alert-danger">Por favor, ingresa un número de teléfono.</div>`;
+            return;
+        }
+
+        errorContainer.innerHTML = '';
+        recoveryButton.disabled = true;
+        recoveryButton.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Procesando...`;
+
+        try {
+            const response = await fetch(`api_owner_recuperar_clave.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ telefono: `${countryCode} ${telefono}` })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Error desconocido');
+            
+            alert(data.message); // Mostrar mensaje de éxito
+            modal.hide();
+        } catch (error) {
+            errorContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+        } finally {
+            recoveryButton.disabled = false;
+            recoveryButton.innerHTML = 'Recuperar Contraseña';
+        }
+    });
+
+    modalElement.addEventListener('hidden.bs.modal', () => modalElement.remove());
+}

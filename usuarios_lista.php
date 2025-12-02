@@ -1,8 +1,8 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
-require_once 'Auth_check.php';
+// Update :Nov-27-2025).
+require_once 'auth_check.php';
 require_once 'config.php';
 
 /*

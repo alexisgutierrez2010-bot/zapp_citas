@@ -6,6 +6,10 @@ require_once 'auth_check.php';
 require_once 'audit_log.php';
 require_once 'config.php';
 
+// CORRECCIÓN: Añadir las declaraciones 'use' para que PHPMailer sea reconocido.
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 // Obtener la configuración del negocio para validaciones
 $stmt_config = $conn->prepare("SELECT * FROM j102_negocios WHERE id_negocio = ?");
 $stmt_config->bind_param("i", $id_negocio_session);
@@ -157,8 +161,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $descripcion_audit = "Se actualizó la cita (ID: {$id_cita}) para el cliente ID: {$id_cliente} a la fecha {$fecha_inicio_db}.";
         registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'UPDATE_APPOINTMENT', $descripcion_audit);
 
-        // Redirigir al script de envío de correo para notificar la modificación
-        header("Location: citas_confirmar_envio.php?id_cita=" . $id_cita . "&accion=MODIFICADA");
+        // Simular un POST para enviar el correo automáticamente
+        $_POST['id_cita'] = $id_cita;
+        $_POST['accion'] = 'MODIFICADA';
+        // include 'enviar_email.php'; // SUSPENDIDO TEMPORALMENTE
+        // La redirección se manejará dentro de enviar_email.php (ahora desactivada)
+        // header("Location: citas_confirmar_envio.php?id_cita=" . $id_cita . "&accion=MODIFICADA");
+        header("Location: citas_lista.php?status=success_edit&message=" . urlencode("Cita actualizada. El envío de correo está suspendido."));
         exit();
 
     } catch (Exception $e) {

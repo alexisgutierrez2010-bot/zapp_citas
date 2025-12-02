@@ -137,6 +137,6 @@ $_SESSION['captcha_hash'] = strtoupper(substr(sha1(session_id() . $_SESSION['cap
         </div>
     </div>    
 
-    <?php include 'footer.php'; // Incluimos el pie de página centralizado ?>
+    <?php include 'footer.php'; ?>
 </body>
 </html>

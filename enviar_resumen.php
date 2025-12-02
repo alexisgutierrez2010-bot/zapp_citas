@@ -2,7 +2,7 @@
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
 // Update :Nov-24-2025).
-require_once 'Auth_check.php';
+require_once 'auth_check.php';
 require_once 'config.php';
 require_once 'audit_log.php'; // <-- ESTA LÍNEA FALTABA
 require 'vendor/autoload.php';

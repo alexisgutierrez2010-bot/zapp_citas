@@ -2,28 +2,41 @@
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
 // Update :Nov-24-2025).
-// 1. Incluir dependencias y configuración
-require_once 'Auth_check.php'; // Para seguridad y acceso a la sesión
+// 1. Incluir dependencias y configuración.
+// SOLUCIÓN DEFINITIVA: Usar una ruta absoluta con __DIR__ para garantizar que el autoloader siempre se encuentre, sin importar cómo se incluya este archivo.
+require_once __DIR__ . '/vendor/autoload.php';
 require_once 'config.php';
-require 'vendor/autoload.php';
 
+// SOLUCIÓN FINAL: Declarar explícitamente las clases que se van a usar en este archivo.
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+function is_api_request() {
+    return !empty($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false;
+}
+
 // 2. Validar el ID de la cita que viene por la URL
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' && !is_api_request()) {
     die('Acceso no permitido.');
 }
 $id_cita = isset($_POST['id_cita']) ? (int)$_POST['id_cita'] : 0;
 $accion = isset($_POST['accion']) ? $_POST['accion'] : '';
 
 if ($id_cita <= 0) {
-    header("Location: citas.php?status=error&message=" . urlencode("No se pudo enviar el correo: ID de cita no válido."));
-    exit();
+    if (!is_api_request()) header("Location: citas.php?status=error&message=" . urlencode("No se pudo enviar el correo: ID de cita no válido."));
+    return; // Salir silenciosamente en una API
 }
 if (empty($accion)) {
     header("Location: citas.php?status=error&message=" . urlencode("No se pudo enviar el correo: Acción no especificada."));
     exit();
+}
+
+// CORRECCIÓN: Hacer el script compatible con ambas sesiones (admin y owner).
+// SOLUCIÓN: Determinar el ID de negocio correcto basado en la sesión activa, sin generar noticias.
+if (isset($_SESSION['owner_loggedin']) && $_SESSION['owner_loggedin'] === true) {
+    $id_negocio_session = $_SESSION['owner_id_negocio'] ?? null;
+} else {
+    $id_negocio_session = $_SESSION['id_negocio'] ?? null;
 }
 
 // 3. Obtener todos los datos necesarios de la base de datos
@@ -34,7 +47,7 @@ $result_config = $stmt_config->get_result();
 $config = $result_config->fetch_assoc();
 $stmt_config->close();
 
-$sql_cita = "SELECT c.*, cl.nombre_completo, cl.correo_electronico, cl.numero_celular, cl.IN_EMAIL, s.nombre_servicio 
+$sql_cita = "SELECT c.*, cl.nombre_completo, cl.correo_electronico, cl.numero_celular, s.nombre_servicio 
              FROM j108_citas c
              JOIN j106_clientes cl ON c.id_cliente = cl.id_cliente
              LEFT JOIN j104_servicios s ON c.id_servicio = s.id_servicio
@@ -46,8 +59,8 @@ $cita_details = $stmt_cita->get_result()->fetch_assoc();
 $stmt_cita->close();
 
 if (!$cita_details) {
-    header("Location: citas.php?status=error&message=" . urlencode("No se pudo enviar el correo: Cita no encontrada."));
-    exit();
+    if (!is_api_request()) header("Location: citas.php?status=error&message=" . urlencode("No se pudo enviar el correo: Cita no encontrada."));
+    return; // Salir silenciosamente en una API
 }
 
 // Si es una reunión, obtener la lista de invitados
@@ -65,8 +78,8 @@ if ($cita_details['tipo_cita'] === 'Reunion') {
 
 // ¡VALIDACIÓN CLAVE! Verificar si el cliente desea recibir correos.
 if (!$cita_details['IN_EMAIL']) {
-    header("Location: citas_lista.php?status=success&message=" . urlencode("Acción completada, pero el cliente ha desactivado las notificaciones por correo."));
-    exit();
+    if (!is_api_request()) header("Location: citas_lista.php?status=success&message=" . urlencode("Acción completada, pero el cliente ha desactivado las notificaciones por correo."));
+    return; // Salir silenciosamente en una API
 }
 
 // 4. Lógica de envío de correo con PHPMailer
@@ -146,8 +159,8 @@ try {
             break;
         default:
             // Si la acción no es reconocida, no se envía el correo y se redirige con un error.
-            header("Location: citas.php?status=error&message=" . urlencode("Acción de correo no reconocida."));
-            exit();
+            if (!is_api_request()) header("Location: citas.php?status=error&message=" . urlencode("Acción de correo no reconocida."));
+            return; // Salir silenciosamente en una API
     }
 
     // --- INICIO: LÓGICA RSVP (GENERACIÓN DE .ICS) ---
@@ -234,17 +247,26 @@ try {
 
     $mail->send();
     
+    // --- INICIO: LÓGICA DE INCREMENTO DEL CONTADOR ---
+    // Si el correo se envió con éxito, incrementamos el contador IN_EMAIL para esta cita.
+    $sql_update_counter = "UPDATE j108_citas SET IN_EMAIL = IN_EMAIL + 1 WHERE id_cita = ?";
+    $stmt_counter = $conn->prepare($sql_update_counter);
+    $stmt_counter->bind_param("i", $id_cita);
+    $stmt_counter->execute();
+    $stmt_counter->close();
+    // --- FIN: LÓGICA DE INCREMENTO DEL CONTADOR ---
+
     // Construir el mensaje de éxito basado en la acción
     $success_message = "Acción completada y correo enviado con éxito.";
-    header("Location: citas_lista.php?status=success&message=" . urlencode($success_message));
+    if (!is_api_request()) header("Location: citas_lista.php?status=success&message=" . urlencode($success_message));
 
 } catch (Exception $e) {
 
     // Si el correo falla, redirigir con un mensaje de error claro.
     $error_message = "La acción se completó, pero hubo un error al enviar el correo de notificación. Error: {$mail->ErrorInfo}";
-    header("Location: citas_lista.php?status=error&message=" . urlencode($error_message));
+    if (!is_api_request()) header("Location: citas_lista.php?status=error&message=" . urlencode($error_message));
 
 }
 
-exit();
+// No hacer exit() para permitir que el script que lo incluye continúe si es una API.
 ?>

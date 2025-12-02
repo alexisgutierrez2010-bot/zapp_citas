@@ -1,19 +1,11 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
-session_start();
+// Update :Nov-28-2025).
+session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
 require_once 'api_owner_session_check.php'; // Guardián de sesión y timeout
 header('Content-Type: application/json'); // CORRECCIÓN: La cabecera se establece ANTES de cualquier lógica.
 require_once 'config.php';
-
-// --- PROCESO AUTOMÁTICO DE ACTUALIZACIÓN DE ESTADO ---
-// Este proceso se ejecuta de forma segura después de que la cabecera JSON ha sido establecida.
-$sql_update_vencidas = "UPDATE j108_citas SET estado_cita = 'Vencida' WHERE fecha_hora_inicio < NOW() AND estado_cita = 'Pendiente' AND id_negocio = ?";
-$stmt_update = $conn->prepare($sql_update_vencidas);
-$stmt_update->bind_param("i", $_SESSION['owner_id_negocio']);
-$stmt_update->execute();
-$stmt_update->close();
 
 $id_negocio_session = $_SESSION['owner_id_negocio'];
 $fecha_str = isset($_GET['fecha']) ? $_GET['fecha'] : date('Y-m-d');
@@ -33,7 +25,11 @@ $response_data = [
 ];
 
 // 1. Obtener configuración del negocio
-$sql_negocio = "SELECT hora_inicio, hora_cierre, intervalo_minutos, dias_trabajo FROM j102_negocios WHERE id_negocio = ?";
+$sql_negocio = "SELECT n.hora_inicio, n.hora_cierre, n.intervalo_minutos, n.dias_trabajo, p.timezone
+                FROM j102_negocios n
+                JOIN j110_paises p ON n.id_pais = p.id_pais
+                WHERE n.id_negocio = ?";
+
 $stmt_negocio = $conn->prepare($sql_negocio);
 $stmt_negocio->bind_param("i", $id_negocio_session);
 $stmt_negocio->execute();
@@ -46,6 +42,12 @@ if (!$config_negocio) {
     echo json_encode(['error' => 'Configuración del negocio no encontrada.']);
     exit;
 }
+
+// SOLUCIÓN: Establecer la zona horaria del negocio y obtener la hora actual correcta.
+$timezone_negocio = new DateTimeZone($config_negocio['timezone'] ?? 'UTC');
+date_default_timezone_set($config_negocio['timezone'] ?? 'UTC');
+$now = new DateTime('now', $timezone_negocio);
+$today_str = $now->format('Y-m-d');
 
 $response_data['info_negocio'] = $config_negocio;
 
@@ -61,7 +63,7 @@ if (!in_array($dia_semana_num, $dias_trabajo_arr)) {
 // 3. Obtener citas existentes para la fecha
 $citas_existentes = [];
 $sql_citas = "SELECT 
-                c.id_cita, c.fecha_hora_inicio, c.fecha_hora_fin, c.estado_cita, c.descripcion_trabajo,
+                c.id_cita, c.fecha_hora_inicio, c.fecha_hora_fin, c.estado_cita, c.descripcion_trabajo, c.IN_EMAIL, c.IN_SMS,
                 cl.nombre_completo AS nombre_cliente, cl.numero_celular AS telefono_cliente,
                 s.nombre_servicio, c.tipo_cita,
                 s.duracion_valor, s.duracion_unidad -- CAMPOS FALTANTES AÑADIDOS
@@ -107,28 +109,37 @@ while ($current_slot_start < $hora_cierre_dt) {
             ($cita_start >= $current_slot_start && $cita_start < $current_slot_end)) {
             
             $slot_info['status'] = 'booked';
-            // CORRECCIÓN LÓGICA: Usar la hora de inicio y fin REAL de la cita para el slot.
+            // Usar la hora de inicio y fin REAL de la cita para el slot.
             $slot_info['start_time'] = $cita_start->format('H:i');
             $slot_info['end_time'] = $cita_end->format('H:i');
             $slot_info['cita'] = [
                 'id_cita' => $cita['id_cita'],
-                'nombre_cliente' => $cita['nombre_cliente'],
-                'nombre_servicio' => $cita['nombre_servicio'],
-                'estado_cita' => $cita['estado_cita'],
-                'duracion_valor' => $cita['duracion_valor'],
-                'duracion_unidad' => $cita['duracion_unidad'],
+                'nombre_cliente' => $cita['nombre_cliente'] ?? 'N/A',
+                'nombre_servicio' => $cita['nombre_servicio'] ?? 'N/A',
+                'estado_cita' => $cita['estado_cita'] ?? 'N/A',
+                'duracion_valor' => $cita['duracion_valor'] ?? 'N/A',
+                'duracion_unidad' => $cita['duracion_unidad'] ?? 'N/A',
             ];
-            // SALTO EN EL TIEMPO: Movemos el cursor al final de la cita encontrada.
-            $current_slot_start = clone $cita_end;
+            // SALTO EN EL TIEMPO: Movemos el cursor al final de la cita encontrada para la siguiente iteración.
+            $current_slot_start = $cita_end; // No es necesario clonar aquí
             break; 
         }
     }
 
-    $response_data['slots'][] = $slot_info;
-
-    // Si el slot no fue 'booked', avanzamos el intervalo normal. Si lo fue, el cursor ya se movió.
+    // SOLUCIÓN: Solo añadir el slot si no es un slot disponible en el pasado del día de hoy.
     if ($slot_info['status'] === 'available') {
-        $current_slot_start->add($intervalo);
+        if ($fecha_str === $today_str && $current_slot_start < $now) {
+            // Es un slot disponible, pero ya pasó la hora en el día de hoy. No lo mostramos.
+            // Simplemente avanzamos el cursor y continuamos con la siguiente iteración.
+            $current_slot_start = $current_slot_end;
+            continue;
+        }
+        // Si es un slot disponible y válido, lo añadimos y avanzamos el cursor.
+        $response_data['slots'][] = $slot_info;
+        $current_slot_start = $current_slot_end; // No es necesario clonar aquí
+    } else { // Si el status es 'booked'
+        // Si es un slot ocupado, siempre lo añadimos para mostrar la cita. El cursor ya se movió.
+        $response_data['slots'][] = $slot_info;
     }
 }
 

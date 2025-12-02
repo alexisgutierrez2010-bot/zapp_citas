@@ -34,7 +34,7 @@
         </div>
     </nav>
     <main id="app-container" class="container mt-4"></main>
-    <?php include 'footer.php'; ?>
+    <?php include 'spa_client_footer.php'; ?>
     <script src="app_client.js?v=<?php echo filemtime('app_client.js'); ?>"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Fecha de Creación: 28/11/2025
+// Update :Nov-27-2025).
 
 session_start();
 require_once 'api_owner_session_check.php';

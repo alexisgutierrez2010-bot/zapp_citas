@@ -1,8 +1,8 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
-require_once 'Auth_check.php';
+// Update :Nov-27-2025).
+require_once 'auth_check.php';
 require_once 'config.php';
 
 // Obtener el nombre del negocio actual para mostrarlo en la página
@@ -133,5 +133,6 @@ $nombre_negocio_actual = $result_negocio['nombre_negocio'] ?? $nombre_negocio_ac
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <?php include 'footer.php'; ?>
 </body>
 </html>

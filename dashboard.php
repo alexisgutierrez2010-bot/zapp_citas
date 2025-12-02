@@ -2,7 +2,7 @@
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
 // Update :Nov-24-2025).
-require_once 'Auth_check.php'; // PRIMERO: Inicia la sesión y define los roles.
+require_once 'auth_check.php'; // PRIMERO: Inicia la sesión y define los roles.
 require_once 'config.php';     // SEGUNDO: Establece la conexión a la BD.
 
 // Obtener la configuración del negocio para el fondo y el título
@@ -139,6 +139,5 @@ $email_negocio = $config['email'] ?? '';
         }
         setInterval(updateDashboardTime, 1000);
     </script>
-    <?php include 'footer.php'; ?>
 </body>
 </html>

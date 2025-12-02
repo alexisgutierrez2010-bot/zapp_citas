@@ -2,7 +2,7 @@
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
 // Update :Nov-24-2025).
-require_once 'Auth_check.php';
+require_once 'auth_check.php';
 require_once 'config.php';
 require_once 'audit_log.php';
 
@@ -17,8 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
         // 1. Validación de seguridad: solo permitir archivos .txt
-        if (!in_array($file_extension, ['txt', 'pdf'])) {
-            header("Location: seleccionar_resumen.php?status=error&message=" . urlencode("Error: Solo se permiten archivos .txt y .pdf."));
+        if (!in_array($file_extension, ['txt', 'pdf', 'md'])) {
+            header("Location: seleccionar_resumen.php?status=error&message=" . urlencode("Error: Solo se permiten archivos .txt, .pdf o .md."));
             exit;
         }
 

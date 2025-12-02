@@ -1,8 +1,8 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
-session_start();
+// Update :Nov-28-2025).
+session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
 require_once 'api_owner_session_check.php'; // 1. Guardián de sesión y timeout
 header('Content-Type: application/json'); // 2. Establecer cabecera
 require_once 'config.php';
@@ -24,7 +24,7 @@ if ($id_cita <= 0) {
 }
 
 $sql = "SELECT 
-            c.id_cita, c.fecha_hora_inicio, c.fecha_hora_fin, c.estado_cita, c.descripcion_trabajo, c.tipo_cita,
+            c.id_cita, c.fecha_hora_inicio, c.fecha_hora_fin, c.estado_cita, c.descripcion_trabajo, c.tipo_cita, c.IN_EMAIL, c.IN_SMS,
             cl.nombre_completo AS nombre_cliente, cl.numero_celular AS telefono_cliente,
             s.nombre_servicio, s.precio
         FROM j108_citas c

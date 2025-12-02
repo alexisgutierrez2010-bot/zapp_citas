@@ -1,10 +1,10 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
-// ©2025. Software development and Authorized by WWW.ACTICVEN.COM All rights reserved.
-// Fecha de Creación: 27/11/2025
+// ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
+// Update :Nov-27-2025).
 
 // 1. Guardián de sesión: Se ejecuta ANTES de cualquier salida.
-session_start();
+session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
 require_once 'api_owner_session_check.php';
 
 // 2. Cabecera JSON: Se establece DESPUÉS de la validación de sesión.
@@ -12,7 +12,7 @@ header('Content-Type: application/json');
 
 // 3. Configuración y lógica de la aplicación.
 require_once 'config.php';
-require_once 'audit_log.php';
+require_once 'audit_log.php'; // Reactivado
 
 // 4. Verificación robusta de la conexión a la BD.
 if ($conn->connect_error) {
@@ -61,7 +61,7 @@ $stmt->bind_param("sssssisssiisi", $nombre_negocio, $email, $dias_trabajo, $hora
                                  $direccion1, $direccion2, $ciudad, $id_pais, $id_estado, $zip_code, $id_negocio_session);
 
 if ($stmt->execute()) {
-    registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_BUSINESS_UPDATE', "Propietario actualizó la configuración de su negocio.");
+    registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_BUSINESS_UPDATE', "Propietario actualizó la configuración de su negocio desde la SPA."); // Reactivado
     echo json_encode(['message' => 'Configuración del negocio guardada con éxito.']);
 } else {
     http_response_code(500);

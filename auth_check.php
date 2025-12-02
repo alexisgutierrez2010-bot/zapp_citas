@@ -1,7 +1,12 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
+// Update :Nov-27-2025).
+
+// --- SOLUCIÓN DEFINITIVA: Cargar el autoloader de Composer ANTES de iniciar la sesión. ---
+// Este archivo es el punto de entrada de seguridad para el panel de admin, es el lugar ideal para cargar las dependencias.
+require_once 'vendor/autoload.php';
+
 session_start();
 
 define('SESSION_TIMEOUT', 300); // 300 segundos = 5 minutos

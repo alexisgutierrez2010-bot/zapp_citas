@@ -1,10 +1,10 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
+// Update :Nov-27-2025).
 session_start();
 require_once 'config.php';
-require_once 'audit_log.php';
+require_once 'audit_log.php'; // Reactivado
 
 header('Content-Type: application/json');
 
@@ -116,7 +116,7 @@ if ($result_user->num_rows > 0) { // Puede haber más de un propietario, validam
                 'nombre_negocio' => $nombre_negocio,
                 'fecha_desactivacion' => $found_negocio['fecha_desactivacion'] // Enviamos la fecha de fin de prueba
             ];
-            registrar_auditoria($conn, $usuario['id_usuario'], $id_negocio, 'OWNER_SPA_LOGIN_SUCCESS', "Propietario '{$usuario['nombre_usuario']}' inició sesión en la SPA.");
+            registrar_auditoria($conn, $usuario['id_usuario'], $id_negocio, 'OWNER_SPA_LOGIN_SUCCESS', "Propietario '{$usuario['nombre_usuario']}' inició sesión en la SPA."); // Reactivado
             echo json_encode($response_data);
             exit; // Salir después de un login exitoso
         }

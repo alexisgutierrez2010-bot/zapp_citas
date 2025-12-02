@@ -2,11 +2,11 @@
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
 // Update :Nov-24-2025).
-require_once 'Auth_check.php';
+require_once 'auth_check.php';
 require_once 'config.php';
 
 $documentos_dir = __DIR__ . '/documentos/';
-$archivos = glob($documentos_dir . '*.{txt,pdf}', GLOB_BRACE); // CORRECCIÓN: Buscar archivos .txt y .pdf
+$archivos = glob($documentos_dir . '*.{txt,pdf,md}', GLOB_BRACE); // CORRECCIÓN: Buscar archivos .txt, .pdf y .md
 
 // Ordenar archivos por fecha, del más reciente al más antiguo
 rsort($archivos);
@@ -54,23 +54,36 @@ rsort($archivos);
                                     $titulo_limpio = ucwords($titulo_limpio); // Pone en mayúscula la primera letra de cada palabra
                                 ?>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span><?php echo htmlspecialchars($titulo_limpio); ?></span>
-                                        <div class="btn-group">
-                                            <a href="documentos/<?php echo urlencode($nombre_archivo); ?>" class="btn btn-sm btn-info" target="_blank">Ver</a>
-                                            <?php if ($extension === 'txt'): // Solo mostrar Editar para archivos .txt ?>
-                                                <a href="documento_editar.php?file=<?php echo urlencode($nombre_archivo); ?>" class="btn btn-sm btn-warning">Editar</a>
-                                            <?php endif; ?>
+                                        <span>
+                                            <?php echo htmlspecialchars($titulo_limpio); ?> <span class="badge bg-secondary align-middle"><?php echo strtoupper($extension); ?></span>
+                                        </span>
+                                        <div class="btn-group">                                            
                                             <?php
-                                            // Lógica de enlace de envío condicional
-                                            if ($extension === 'txt') {
-                                                $enviar_url = "enviar_resumen.php?file=" . urlencode($nombre_archivo);
-                                                $enviar_confirm_msg = "¿Estás seguro de que quieres enviar este documento por correo?";
-                                            } else { // Para PDF
-                                                $enviar_url = "documento_enviar_pdf.php?file=" . urlencode($nombre_archivo);
-                                                $enviar_confirm_msg = ""; // No se necesita confirmación JS, va a otra página
+                                            // Lógica de enlace de "Ver" condicional
+                                            if ($extension === 'md') {
+                                                echo '<a href="documento_ver_md.php?file=' . urlencode($nombre_archivo) . '" class="btn btn-sm btn-info">Ver</a>';
+                                            } else {
+                                                echo '<a href="documentos/' . urlencode($nombre_archivo) . '" class="btn btn-sm btn-info" target="_blank">Ver</a>';
                                             }
                                             ?>
-                                            <a href="<?php echo $enviar_url; ?>" class="btn btn-sm btn-primary" <?php if(!empty($enviar_confirm_msg)) echo "onclick=\"return confirm('{$enviar_confirm_msg}');\""; ?>>Enviar</a>
+                                            <?php if ($extension === 'txt'): // Solo mostrar Editar para archivos .txt ?>
+                                                <a href="documento_editar.php?file=<?php echo urlencode($nombre_archivo); ?>" class="btn btn-sm btn-warning">Editar</a>
+                                            <?php elseif ($extension === 'md'): // Nuevo: botón de editar para Markdown ?>
+                                                <a href="documento_editar_md.php?file=<?php echo urlencode($nombre_archivo); ?>" class="btn btn-sm btn-warning">Editar</a>
+                                            <?php endif; ?>
+                                            <?php // Lógica de enlace de envío condicional ?>
+                                            <?php if ($extension === 'txt' || $extension === 'md'): ?>
+                                                <a href="enviar_resumen.php?file=<?php echo urlencode($nombre_archivo); ?>" 
+                                                   class="btn btn-sm btn-primary" 
+                                                   onclick="return confirm('¿Estás seguro de que quieres enviar este documento por correo?');">
+                                                   Enviar
+                                                </a>
+                                            <?php elseif ($extension === 'pdf'): ?>
+                                                <a href="documento_enviar_pdf.php?file=<?php echo urlencode($nombre_archivo); ?>" 
+                                                   class="btn btn-sm btn-primary">
+                                                   Enviar
+                                                </a>
+                                            <?php endif; ?>
                                             <form action="documento_eliminar.php" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este documento de forma permanente?');">
                                                 <input type="hidden" name="file" value="<?php echo urlencode($nombre_archivo); ?>">
                                                 <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
@@ -89,10 +102,10 @@ rsort($archivos);
                         <h4>Subir Nuevo Documento</h4>
                     </div>
                     <div class="card-body">
-                        <form action="documento_subir.php" method="POST" enctype="multipart/form-data">
+                        <form action="documento_subir.php" method="POST" enctype="multipart/form-data">                            
                             <div class="mb-3">
-                                <label for="documento_subir" class="form-label">Seleccionar archivo (.txt o .pdf)</label>
-                                <input class="form-control" type="file" id="documento_subir" name="documento_subir" accept=".txt,.pdf" required>
+                                <label for="documento_subir" class="form-label">Seleccionar archivo (.txt, .pdf, .md)</label>
+                                <input class="form-control" type="file" id="documento_subir" name="documento_subir" accept=".txt,.pdf,.md" required>
                             </div>
                             <button type="submit" class="btn btn-success">Subir Documento</button>
                         </form>

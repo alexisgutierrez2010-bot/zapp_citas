@@ -1,12 +1,12 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
-session_start();
+// Update :Nov-28-2025).
+session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
 require_once 'api_owner_session_check.php'; // 1. Guardián de sesión y timeout
 header('Content-Type: application/json'); // 2. Establecer cabecera
 require_once 'config.php';
-require_once 'audit_log.php';
+require_once 'audit_log.php'; // Reactivado
 
 // 3. Verificación de la conexión a la base de datos
 if ($conn->connect_error) {
@@ -65,7 +65,7 @@ $stmt = $conn->prepare($sql);
 $stmt->bind_param("ssssssiissii", $nombre_completo, $numero_celular, $correo_electronico, $direccion1, $direccion2, $ciudad, $id_pais, $id_estado, $zip_code, $notas_adicionales, $id_cliente, $id_negocio_session);
 
 if ($stmt->execute() && $stmt->affected_rows > 0) {
-    registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_CLIENT_UPDATE', "Propietario actualizó cliente ID {$id_cliente}.");
+    registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_CLIENT_UPDATE', "Propietario actualizó al cliente '{$nombre_completo}' (ID: {$id_cliente}) desde la SPA.");
     echo json_encode(['success' => true, 'message' => 'Cliente actualizado con éxito.']);
 } else {
     http_response_code(500);

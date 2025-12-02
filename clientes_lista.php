@@ -1,8 +1,8 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
-require_once 'Auth_check.php';
+// Update :Nov-27-2025).
+require_once 'auth_check.php';
 require_once 'config.php'; // Incluimos la conexión aquí para usarla más adelante
 
 // Obtener la lista de países para los menús desplegables
@@ -178,12 +178,14 @@ $nombre_negocio_actual = $result_negocio['nombre_negocio'] ?? $nombre_negocio_ac
                                     $estado_cliente = $row['activo'] ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>';
                                     echo "<td>" . $estado_cliente . "</td>";
                                     echo '<td>
-                                            <a href="clientes_editar.php?id=' . $row['id_cliente'] . '" class="btn btn-sm btn-warning">Editar</a>
-                                            <form action="clientes_eliminar.php" method="POST" style="display:inline-block;" onsubmit="return confirm(\'¿Estás seguro? Se eliminarán también todas sus citas.\');">
+                                            <a href="clientes_editar.php?id=' . $row['id_cliente'] . '" class="btn btn-sm btn-warning">Editar</a>';
+                                    if ($row['activo']) { // Solo mostrar el botón de desactivar si el cliente está activo
+                                        echo '<form action="clientes_eliminar.php" method="POST" style="display:inline-block;" onsubmit="return confirm(\'¿Estás seguro de que quieres desactivar este cliente? No se podrá usar para nuevas citas, pero su historial se conservará.\');">
                                                 <input type="hidden" name="id_cliente" value="' . $row['id_cliente'] . '">
-                                                <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
-                                            </form>
-                                          </td>';
+                                                <button type="submit" class="btn btn-sm btn-danger">Desactivar</button>
+                                            </form>';
+                                    }
+                                    echo '</td>';
                                     echo "</tr>";
                                 }
                             } else {

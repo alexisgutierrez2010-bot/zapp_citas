@@ -25,10 +25,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $stmt_info->close();
 
     // 2. Preparar la consulta SQL de eliminación
-    $sql = "UPDATE j106_clientes SET activo = 0 WHERE id_cliente = ?"; // Borrado lógico
+    $sql = "UPDATE j106_clientes SET activo = 0 WHERE id_cliente = ? AND id_negocio = ?"; // Borrado lógico
 
     if ($stmt = $conn->prepare($sql)) {
-        $stmt->bind_param("i", $id_cliente);
+        $stmt->bind_param("ii", $id_cliente, $id_negocio_session);
 
         if ($stmt->execute()) {
             $descripcion_audit = "Se marcó como inactivo al cliente '{$nombre_cliente_eliminado}' (ID: {$id_cliente}).";

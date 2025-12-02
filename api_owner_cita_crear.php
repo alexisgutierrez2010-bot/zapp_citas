@@ -1,99 +1,245 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
-session_start();
+// Update :Nov-28-2025).
+session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
 require_once 'api_owner_session_check.php'; // 1. Guardián de sesión y timeout
-header('Content-Type: application/json'); // 2. Establecer cabecera
-require_once 'config.php';
-require_once 'audit_log.php';
+header('Content-Type: application/json'); // La cabecera se establece DESPUÉS del guardián.
 
-// 3. Verificación de la conexión a la base de datos
-if ($conn->connect_error) {
-    http_response_code(500); // Internal Server Error
-    echo json_encode(['error' => 'Error de conexión a la base de datos: ' . $conn->connect_error]);
-    exit;
-}
+// --- SOLUCIÓN: Incluir los archivos necesarios para el envío de correo ---
+// El autoload es para la librería PHPMailer, y el sender es para la función `enviarNotificacionCita`.
+// require_once 'config.php'; // ELIMINADO: Ahora lo carga api_owner_session_check.php
+require_once 'audit_log.php'; // Reactivado
+require_once __DIR__ . '/vendor/autoload.php';
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['error' => 'Método no permitido.']);
-    exit;
-}
+// --- NUEVO ESQUEMA TRANSACCIONAL ---
 
-$id_negocio_session = $_SESSION['owner_id_negocio'];
-$input = json_decode(file_get_contents('php://input'), true);
+// Iniciar transacción para asegurar la integridad de los datos
+$conn->begin_transaction();
 
-$tipo_cita = $input['tipo_cita'] ?? 'Servicio';
-$id_cliente = (int)($input['id_cliente'] ?? 0);
-$id_servicio = !empty($input['id_servicio']) ? (int)$input['id_servicio'] : null;
-$fecha_hora_inicio_str = trim($input['fecha_hora_inicio'] ?? ''); // YYYY-MM-DD HH:MM
-$descripcion_trabajo = trim($input['descripcion_trabajo'] ?? '');
-
-if ($id_cliente <= 0 || empty($fecha_hora_inicio_str)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Datos incompletos para agendar la cita.']);
-    exit;
-}
-
-if ($tipo_cita === 'Servicio') {
-    if (empty($id_servicio)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Debe seleccionar un servicio para este tipo de cita.']);
-        exit;
+try {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        throw new Exception('Método no permitido.');
     }
-    // Obtener duración del servicio para calcular fecha_hora_fin
-    $sql_servicio = "SELECT duracion_valor, duracion_unidad FROM j104_servicios WHERE id_servicio = ? AND id_negocio = ?";
-    $stmt_servicio = $conn->prepare($sql_servicio);
-    $stmt_servicio->bind_param("ii", $id_servicio, $id_negocio_session);
-    $stmt_servicio->execute();
-    $result_servicio = $stmt_servicio->get_result();
-    $servicio = $result_servicio->fetch_assoc();
-    $stmt_servicio->close();
-    if (!$servicio) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Servicio no encontrado o no pertenece a su negocio.']);
-        exit;
+
+    $id_negocio_session = $_SESSION['owner_id_negocio'];
+    $input = json_decode(file_get_contents('php://input'), true);
+
+    // 1. Validar datos de entrada
+    $tipo_cita = $input['tipo_cita'] ?? 'Servicio';
+    $id_cliente = (int)($input['id_cliente'] ?? 0);
+    $id_servicio = !empty($input['id_servicio']) ? (int)$input['id_servicio'] : null;
+    $fecha_hora_inicio_str = trim($input['fecha_hora_inicio'] ?? '');
+    $descripcion_trabajo = trim($input['descripcion_trabajo'] ?? '');
+    $notificar_cliente = (bool)($input['notificar_cliente'] ?? false); // REACTIVADO
+
+    // --- MEJORA: Validar todos los campos requeridos ANTES de la transacción ---
+    if ($id_cliente <= 0 || empty($fecha_hora_inicio_str) || ($tipo_cita === 'Servicio' && empty($id_servicio))) {
+        throw new Exception('Datos incompletos para agendar la cita.', 400);
     }
-    $duracion_valor = (int)$servicio['duracion_valor'];
-    $duracion_unidad = $servicio['duracion_unidad'];
-} else { // Reunión
-    $duracion_valor = 60; // Duración por defecto para reuniones
-    $duracion_unidad = 'Minutos';
-}
 
-$fecha_hora_inicio = new DateTime($fecha_hora_inicio_str);
-$fecha_hora_fin = clone $fecha_hora_inicio;
+    // 2. Calcular duración y hora de fin
+    if ($tipo_cita === 'Servicio') {
+        // La validación de empty($id_servicio) ya se hizo arriba.
+        
+        $sql_servicio = "SELECT duracion_valor, duracion_unidad FROM j104_servicios WHERE id_servicio = ? AND id_negocio = ?";
+        $stmt_servicio = $conn->prepare($sql_servicio);
+        $stmt_servicio->bind_param("ii", $id_servicio, $id_negocio_session);
+        $stmt_servicio->execute();
+        $servicio = $stmt_servicio->get_result()->fetch_assoc();
+        $stmt_servicio->close();
 
-// Calcular fecha_hora_fin basado en la duración del servicio
-$interval_spec = 'PT' . $duracion_valor;
-if ($duracion_unidad === 'Horas') $interval_spec .= 'H';
-else if ($duracion_unidad === 'Dias') $interval_spec .= 'D';
-else $interval_spec .= 'M'; // Minutos por defecto
-$fecha_hora_fin->add(new DateInterval($interval_spec));
+        if (!$servicio) throw new Exception('Servicio no encontrado.', 404);
+        if ((int)$servicio['duracion_valor'] <= 0) throw new Exception('El servicio tiene una duración inválida.', 400);
+        
+        $duracion_valor = (int)$servicio['duracion_valor'];
+        $duracion_unidad = $servicio['duracion_unidad'];
+    } else {
+        $duracion_valor = 60;
+        $duracion_unidad = 'Minutos';
+    }
 
-$sql = "INSERT INTO j108_citas (id_negocio, id_cliente, id_servicio, fecha_hora_inicio, fecha_hora_fin, estado_cita, descripcion_trabajo, tipo_cita) VALUES (?, ?, ?, ?, ?, 'Pendiente', ?, ?)";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("iiissss", $id_negocio_session, $id_cliente, $id_servicio, $fecha_hora_inicio->format('Y-m-d H:i:s'), $fecha_hora_fin->format('Y-m-d H:i:s'), $descripcion_trabajo, $tipo_cita);
+    $fecha_hora_inicio = new DateTime($fecha_hora_inicio_str);
+    $fecha_hora_fin = clone $fecha_hora_inicio;
+    $interval_spec = 'PT';
+    if ($duracion_unidad === 'Horas') $interval_spec .= $duracion_valor . 'H';
+    else if ($duracion_unidad === 'Dias') $interval_spec = 'P' . $duracion_valor . 'D';
+    else $interval_spec .= $duracion_valor . 'M';
+    $fecha_hora_fin->add(new DateInterval($interval_spec));
 
-if ($stmt->execute()) {
-    $id_nueva_cita = $stmt->insert_id;
-    registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_CITA_CREATE', "Propietario agendó nueva cita ID {$id_nueva_cita}.");
+    // 3. Insertar la cita
+    // SOLUCIÓN DEFINITIVA: Guardar el resultado de ->format() en variables antes de pasarlas a bind_param.
+    $fecha_inicio_db = $fecha_hora_inicio->format('Y-m-d H:i:s');
+    $fecha_fin_db = $fecha_hora_fin->format('Y-m-d H:i:s');
 
-    // Si es una reunión, guardar los invitados
+    // --- INICIO: OBTENER PREFERENCIAS DEL CLIENTE ---
+    // SOLUCIÓN: Obtener AMBAS preferencias (SMS y Email) del cliente.
+    $in_email_pref = 0;
+    $in_sms_pref = 0;
+    $stmt_pref = $conn->prepare("SELECT IN_EMAIL, IN_SMS FROM j106_clientes WHERE id_cliente = ?");
+    $stmt_pref->bind_param("i", $id_cliente);
+    $stmt_pref->execute();
+    $result_pref = $stmt_pref->get_result()->fetch_assoc();
+    if ($result_pref) {
+        $in_email_pref = (int)$result_pref['IN_EMAIL'];
+        $in_sms_pref = (int)$result_pref['IN_SMS'];
+    }
+    $stmt_pref->close();
+    // --- FIN: OBTENER PREFERENCIAS DEL CLIENTE ---
+
+    $sql_cita = "INSERT IGNORE INTO j108_citas (id_negocio, id_cliente, id_servicio, fecha_hora_inicio, fecha_hora_fin, estado_cita, descripcion_trabajo, tipo_cita, IN_EMAIL, IN_SMS) VALUES (?, ?, ?, ?, ?, 'Pendiente', ?, ?, ?, ?)";
+    $stmt_cita = $conn->prepare($sql_cita);
+    $stmt_cita->bind_param("iiissssii", $id_negocio_session, $id_cliente, $id_servicio, $fecha_inicio_db, $fecha_fin_db, $descripcion_trabajo, $tipo_cita, $in_email_pref, $in_sms_pref);
+    
+    if (!$stmt_cita->execute()) {
+        throw new Exception('Error al ejecutar la inserción de la cita: ' . $stmt_cita->error, 500);
+    }
+
+    if ($stmt_cita->affected_rows === 0) {
+        throw new Exception('Ya existe una cita idéntica para este cliente en la misma fecha y hora.', 409);
+    }
+    $id_nueva_cita = $stmt_cita->insert_id;
+    $stmt_cita->close();
+
+    // 4. Insertar invitados (si es una reunión)
     if ($tipo_cita === 'Reunion' && !empty($input['invitados'])) {
         $sql_invitado = "INSERT INTO j109_invitados_cita (id_cita, nombre_invitado, correo_electronico_invitado, numero_celular_invitado) VALUES (?, ?, ?, ?)";
         $stmt_invitado = $conn->prepare($sql_invitado);
         foreach ($input['invitados'] as $invitado) {
             $stmt_invitado->bind_param("isss", $id_nueva_cita, $invitado['nombre'], $invitado['email'], $invitado['telefono']);
-            $stmt_invitado->execute();
+            if (!$stmt_invitado->execute()) {
+                throw new Exception('Error al guardar un invitado: ' . $stmt_invitado->error, 500);
+            }
         }
         $stmt_invitado->close();
     }
 
-    echo json_encode(['success' => true, 'message' => 'Cita agendada con éxito.', 'id_cita' => $id_nueva_cita]);
-} else {
-    http_response_code(500);
-    echo json_encode(['error' => 'Error al agendar la cita: ' . $stmt->error]);
+    // 5. Registrar auditoría (ahora es seguro hacerlo dentro de la transacción)
+    registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_CITA_CREATE', "Propietario agendó nueva cita ID {$id_nueva_cita}."); // Reactivado
+
+    // 6. Si todo fue exitoso, confirmar la transacción
+    $conn->commit();
+
+    // 7. Enviar notificación por correo si se solicitó (LÓGICA LOCAL ROBUSTA)
+    $email_message_part = '.';
+    if ($notificar_cliente) {
+        try {
+            // Obtener todos los detalles para el correo
+            $sql_email = "SELECT cl.nombre_completo AS nombre_cliente, cl.correo_electronico AS email_cliente, IF(c.tipo_cita = 'Reunion', c.descripcion_trabajo, s.nombre_servicio) AS titulo_evento, n.nombre_negocio, n.email AS email_negocio, n.direccion1, n.ciudad FROM j108_citas c JOIN j106_clientes cl ON c.id_cliente = cl.id_cliente LEFT JOIN j104_servicios s ON c.id_servicio = s.id_servicio JOIN j102_negocios n ON c.id_negocio = n.id_negocio WHERE c.id_cita = ?";
+            $stmt_email = $conn->prepare($sql_email);
+            $stmt_email->bind_param("i", $id_nueva_cita);
+            $stmt_email->execute();
+            $details = $stmt_email->get_result()->fetch_assoc();
+            $stmt_email->close();
+
+            if ($details && !empty($details['email_cliente'])) {
+                $mail = new PHPMailer(true);
+                // --- SOLUCIÓN: Opciones para entorno de desarrollo (XAMPP) ---
+                // Esto soluciona el error "certificate verify failed" en local.
+                $mail->SMTPOptions = array(
+                    'ssl' => array(
+                        'verify_peer' => false,
+                        'verify_peer_name' => false,
+                        'allow_self_signed' => true
+                    )
+                );
+
+                // Configuración SMTP
+                $mail->isSMTP();
+                $mail->Host       = SMTP_HOST;
+                $mail->SMTPAuth   = true;
+                $mail->Username   = SMTP_USERNAME;
+                $mail->Password   = SMTP_PASSWORD;
+                $mail->SMTPSecure = defined('SMTP_SECURE') ? SMTP_SECURE : PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port       = defined('SMTP_PORT') ? SMTP_PORT : 587;
+
+                $mail->setFrom(SMTP_USERNAME, $details['nombre_negocio']);
+                $mail->addAddress($details['email_cliente'], $details['nombre_cliente']);
+                $mail->addReplyTo($details['email_negocio'], $details['nombre_negocio']);
+                // --- SOLUCIÓN: Añadir copia oculta al negocio ---
+                if (!empty($details['email_negocio'])) {
+                    $mail->addBCC($details['email_negocio']);
+                }
+
+                // --- MEJORA: Añadir a los invitados como destinatarios (BCC) ---
+                if ($tipo_cita === 'Reunion' && !empty($input['invitados'])) {
+                    $sql_invitados = "SELECT correo_electronico_invitado FROM j109_invitados_cita WHERE id_cita = ?";
+                    $stmt_invitados = $conn->prepare($sql_invitados);
+                    $stmt_invitados->bind_param("i", $id_nueva_cita);
+                    $stmt_invitados->execute();
+                    $result_invitados = $stmt_invitados->get_result();
+                    while ($invitado = $result_invitados->fetch_assoc()) {
+                        if (!empty($invitado['correo_electronico_invitado'])) {
+                            $mail->addBCC($invitado['correo_electronico_invitado']);
+                        }
+                    }
+                    $stmt_invitados->close();
+                }
+
+
+                $mail->isHTML(true);
+                $mail->CharSet = 'UTF-8';
+                $mail->Subject = 'Confirmación de tu cita en ' . $details['nombre_negocio'];
+                $fecha_cita_obj = new DateTime($fecha_inicio_db);
+                $mail->Body    = "Hola {$details['nombre_cliente']},<br><br>Tu cita para <b>{$details['titulo_evento']}</b> ha sido confirmada para el día <b>" . $fecha_cita_obj->format('d/m/Y') . "</b> a las <b>" . $fecha_cita_obj->format('h:i A') . "</b>.<br><br>Te esperamos en {$details['direccion1']}, {$details['ciudad']}.<br>Atentamente,<br>El equipo de {$details['nombre_negocio']}.";
+
+                // Generar y adjuntar archivo iCalendar (.ics)
+                // --- SOLUCIÓN: Corrección de Zona Horaria para .ics ---
+                // 1. Establecer la zona horaria del servidor (ej. 'America/Caracas') para interpretar correctamente la hora guardada.
+                $server_timezone = new DateTimeZone(date_default_timezone_get());
+                // 2. Crear objetos DateTime con la zona horaria correcta y luego convertirlos a UTC para el .ics
+                $fecha_inicio_utc = (new DateTime($fecha_inicio_db, $server_timezone))->setTimezone(new DateTimeZone('UTC'))->format('Ymd\THis\Z');
+                $fecha_fin_utc = (new DateTime($fecha_fin_db, $server_timezone))->setTimezone(new DateTimeZone('UTC'))->format('Ymd\THis\Z');
+
+                // --- MÉTODO DE DETECCIÓN Y MANEJO DE ERROR ---
+                // Verificamos si la constante BASE_URL está definida. Si no, la definimos con un valor por defecto.
+                // Esto previene el 'Warning' y hace el script más robusto, eliminando el error "Unexpected token '<'".
+                if (!defined('BASE_URL')) {
+                    define('BASE_URL', 'http://localhost/zapp_citas/');
+                }
+
+                $uid = $id_nueva_cita . '@' . parse_url(BASE_URL, PHP_URL_HOST);
+                $location = "{$details['direccion1']}, {$details['ciudad']}";
+                $description = "Cita para {$details['titulo_evento']}. Negocio: {$details['nombre_negocio']}.";
+
+                $icsContent = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//acticven.com//ZAppCitas//ES\r\nBEGIN:VEVENT\r\n";
+                $icsContent .= "UID:{$uid}\r\nDTSTAMP:" . gmdate('Ymd\THis\Z') . "\r\nDTSTART:{$fecha_inicio_utc}\r\nDTEND:{$fecha_fin_utc}\r\n";
+                $icsContent .= "SUMMARY:" . addslashes($details['titulo_evento']) . "\r\nDESCRIPTION:" . addslashes($description) . "\r\nLOCATION:" . addslashes($location) . "\r\n";
+                $icsContent .= "ORGANIZER;CN=\"{$details['nombre_negocio']}\":MAILTO:{$details['email_negocio']}\r\n";
+                $icsContent .= "ATTENDEE;CN=\"{$details['nombre_cliente']}\";ROLE=REQ-PARTICIPANT:MAILTO:{$details['email_cliente']}\r\n";
+                $icsContent .= "BEGIN:VALARM\r\nTRIGGER:-PT30M\r\nACTION:DISPLAY\r\nDESCRIPTION:Recordatorio\r\nEND:VALARM\r\n";
+                $icsContent .= "END:VEVENT\r\nEND:VCALENDAR\r\n";
+                $mail->addStringAttachment($icsContent, 'invitacion.ics', 'base64', 'text/calendar; charset=utf-8; method=REQUEST');
+
+                $mail->send();
+                $email_message_part = ' y se ha enviado la notificación al cliente.';
+                
+                // Actualizar contador de email
+                $conn->query("UPDATE j108_citas SET IN_EMAIL = IN_EMAIL + 1 WHERE id_cita = $id_nueva_cita");
+            } else {
+                $email_message_part = ', pero el cliente no tiene un email registrado para notificar.';
+            }
+        } catch (Exception $mail_e) {
+            // SOLUCIÓN: Manejo de error SMTP robusto.
+            // Se registra el error técnico completo en el log del servidor para depuración.
+            // Se muestra un mensaje genérico y amigable al usuario.
+            $email_message_part = ", pero no se pudo enviar la notificación por correo. Revise la configuración SMTP.";
+            error_log("Fallo al enviar correo para nueva cita ID {$id_nueva_cita}: " . $mail_e->getMessage());
+        }
+    }
+
+    // 8. Enviar respuesta de éxito final
+    echo json_encode(['success' => true, 'message' => 'Cita agendada con éxito' . $email_message_part, 'id_cita' => $id_nueva_cita]);
+
+} catch (Exception $e) {
+    // Si algo falló, deshacer todos los cambios
+    $conn->rollback();
+
+    // Enviar respuesta de error
+    $codigo_error = $e->getCode() >= 400 ? $e->getCode() : 500;
+    http_response_code($codigo_error);
+    echo json_encode(['error' => $e->getMessage()]);
 }
 ?>

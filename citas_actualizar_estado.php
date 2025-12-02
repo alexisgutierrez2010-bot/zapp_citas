@@ -6,6 +6,10 @@ require_once 'auth_check.php';
 require_once 'audit_log.php';
 require_once 'config.php';
 
+// CORRECCIÓN: Añadir las declaraciones 'use' para que PHPMailer sea reconocido.
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 // 1. Recoger y validar los datos de la URL
 $id_cita = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $nuevo_estado = isset($_GET['estado']) ? $_GET['estado'] : '';
@@ -32,17 +36,20 @@ if ($stmt = $conn->prepare($sql)) {
         $descripcion_audit = "Se actualizó el estado de la cita (ID: {$id_cita}) a '{$nuevo_estado}'.";
         registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'UPDATE_APPOINTMENT_STATUS', $descripcion_audit);
 
-        // Aquí, en el futuro, podríamos actualizar el evento en Google Calendar
         $stmt->close();
         
-        // Si el estado es Cancelada o Completada, enviamos un correo.
-        if ($nuevo_estado == 'Cancelada' || $nuevo_estado == 'Completada') {
+        // Si el estado es relevante, preparamos el envío de correo (actualmente suspendido)
+        if ($nuevo_estado == 'Cancelada' || $nuevo_estado == 'Completada' || $nuevo_estado == 'Confirmada') {
             $accion_correo = ($nuevo_estado == 'Cancelada') ? 'CANCELADA' : 'COMPLETADA';
-            header("Location: citas_confirmar_envio.php?id_cita=" . $id_cita . "&accion=" . $accion_correo);
-        } else {
-            header("Location: citas_lista.php?status=success_status");
+            if ($nuevo_estado == 'Confirmada') $accion_correo = 'CONFIRMADA';
+
+            // Simular un POST para enviar el correo automáticamente
+            $_POST['id_cita'] = $id_cita;
+            $_POST['accion'] = $accion_correo;
+            // include 'enviar_email.php'; // SUSPENDIDO TEMPORALMENTE para estabilizar
         }
-        exit();
+        header("Location: citas_lista.php?status=success_status&message=" . urlencode("Estado de la cita actualizado con éxito."));
+        exit(); // Asegurarse de que la redirección se ejecute y el script termine.
     } else {
         header("Location: citas_lista.php?status=error&message=" . urlencode($stmt->error));
     }

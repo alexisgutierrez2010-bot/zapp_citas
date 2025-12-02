@@ -1,12 +1,12 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
-session_start();
+// Update :Nov-28-2025).
+session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
 require_once 'api_owner_session_check.php'; // 1. Guardián de sesión y timeout
 header('Content-Type: application/json'); // 2. Establecer cabecera
 require_once 'config.php';
-require_once 'audit_log.php';
+require_once 'audit_log.php'; // Reactivado
 
 // 3. Verificación de la conexión a la base de datos
 if ($conn->connect_error) {
@@ -65,7 +65,7 @@ $stmt->bind_param("ssssssiissi", $nombre_completo, $numero_celular, $correo_elec
 
 if ($stmt->execute()) {
     $id_nuevo_cliente = $stmt->insert_id;
-    registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_CLIENT_CREATE', "Propietario creó nuevo cliente ID {$id_nuevo_cliente}.");
+    registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_CLIENT_CREATE', "Propietario creó al cliente '{$nombre_completo}' (ID: {$id_nuevo_cliente}) desde la SPA.");
     echo json_encode(['success' => true, 'message' => 'Cliente creado con éxito.', 'id_cliente' => $id_nuevo_cliente]);
 } else {
     http_response_code(500);

@@ -1,15 +1,16 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
-session_start();
+// Update :Nov-28-2025).
+session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
 require_once 'config.php';
-require_once 'audit_log.php';
+// require_once 'audit_log.php'; // SIMPLIFICACIÓN: Auditoría desactivada.
 
 header('Content-Type: application/json');
 
 // Seguridad: Verificar que el propietario ha iniciado sesión
 if (!isset($_SESSION['owner_loggedin']) || $_SESSION['owner_loggedin'] !== true) {
+    // Este bloque es redundante si se usa api_owner_session_check.php, pero se deja por seguridad.
     http_response_code(401);
     echo json_encode(['error' => 'Acceso no autorizado.']);
     exit;
@@ -37,7 +38,12 @@ $stmt = $conn->prepare($sql);
 $stmt->bind_param("ii", $id_servicio, $id_negocio_session);
 
 if ($stmt->execute() && $stmt->affected_rows > 0) {
-    registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_SERVICE_DELETE', "Propietario eliminó servicio ID {$id_servicio}.");
+    // Obtener nombre para auditoría
+    $stmt_info = $conn->prepare("SELECT nombre_servicio FROM j104_servicios WHERE id_servicio = ?");
+    $stmt_info->bind_param("i", $id_servicio);
+    $stmt_info->execute();
+    $nombre_servicio = $stmt_info->get_result()->fetch_assoc()['nombre_servicio'] ?? 'Desconocido';
+    // registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_SERVICE_DEACTIVATE', "Propietario desactivó el servicio '{$nombre_servicio}' (ID: {$id_servicio}) desde la SPA.");
     echo json_encode(['success' => true, 'message' => 'Servicio eliminado con éxito.']);
 } else {
     http_response_code(500);
