@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025).
+// Update :Dec-05-2025). Aplicada la internacionalización (i18n).
 require_once 'auth_check.php';
 require_once 'config.php';
 
@@ -14,11 +14,11 @@ $result_negocio = $stmt_negocio->get_result()->fetch_assoc();
 $nombre_negocio_actual = $result_negocio['nombre_negocio'] ?? $nombre_negocio_actual;
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<?php echo $lang; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Citas - Servicios</title>
+    <title><?php echo __('services_title'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -30,46 +30,51 @@ $nombre_negocio_actual = $result_negocio['nombre_negocio'] ?? $nombre_negocio_ac
             <div class="col-md-4">
                 <div class="card">
                     <div class="card-header">
-                        <h3>Registrar Nuevo Servicio</h3>
+                        <h3><?php echo __('services_register_new'); ?></h3>
                     </div>
                     <div class="card-body">
                         <?php
-                        if (isset($_GET['status'])) {
-                            if ($_GET['status'] == 'success') {
-                                echo '<div class="alert alert-success">Servicio registrado con éxito.</div>';
-                            } elseif ($_GET['status'] == 'success_edit') {
-                                echo '<div class="alert alert-success">Servicio actualizado con éxito.</div>';
-                            } elseif ($_GET['status'] == 'success_delete') {
-                                echo '<div class="alert alert-success">Servicio eliminado con éxito.</div>';
-                            } elseif ($_GET['status'] == 'error') {
-                                $errorMessage = isset($_GET['message']) ? htmlspecialchars($_GET['message']) : 'Ocurrió un error.';
-                                echo '<div class="alert alert-danger">' . $errorMessage . '</div>';
+                        if (isset($_GET['status']) || isset($_GET['message_key'])) {
+                            $status = $_GET['status'] ?? '';
+                            $message_key = $_GET['message_key'] ?? '';
+                            $message = '';
+
+                            if (!empty($message_key)) {
+                                $message = __($message_key);
+                            } elseif ($status === 'success_create') {
+                                $message = __('create_success');
+                            } elseif ($status === 'success_update') {
+                                $message = __('update_success');
+                            }
+                            if (!empty($message)) {
+                                $alert_type = strpos($status, 'error') === false ? 'success' : 'danger';
+                                echo "<div class='alert alert-{$alert_type}'>" . htmlspecialchars($message) . "</div>";
                             }
                         }
                         ?>
                         <form action="servicios_crear.php" method="POST">
                             <div class="mb-3">
-                                <label for="nombre_servicio" class="form-label">Nombre del Servicio</label>
+                                <label for="nombre_servicio" class="form-label"><?php echo __('services_form_name'); ?></label>
                                 <input type="text" class="form-control" id="nombre_servicio" name="nombre_servicio" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Duración</label>
+                                <label class="form-label"><?php echo __('services_form_duration'); ?></label>
                                 <div class="input-group">
                                     <input type="number" class="form-control" id="duracion_valor" name="duracion_valor" value="30" required>
                                     <select class="form-select" name="duracion_unidad">
-                                        <option value="Minutos" selected>Minutos</option>
-                                        <option value="Horas">Horas</option>
-                                        <option value="Dias">Días</option>
+                                        <option value="Minutos" selected><?php echo __('duration_minutes'); ?></option>
+                                        <option value="Horas"><?php echo __('duration_hours'); ?></option>
+                                        <option value="Dias"><?php echo __('duration_days'); ?></option>
                                     </select>
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label for="precio" class="form-label">Precio (opcional)</label>
+                                <label for="precio" class="form-label"><?php echo __('services_form_price'); ?></label>
                                 <input type="number" step="0.01" class="form-control" id="precio" name="precio">
                             </div>
                             <div class="d-grid gap-2 d-sm-flex">
-                                <button type="submit" class="btn btn-primary flex-grow-1">Guardar Servicio</button>
-                                <button type="reset" class="btn btn-secondary flex-grow-1">Limpiar Formulario</button>
+                                <button type="submit" class="btn btn-primary flex-grow-1"><?php echo __('services_form_save'); ?></button>
+                                <button type="reset" class="btn btn-secondary flex-grow-1"><?php echo __('services_form_clear'); ?></button>
                             </div>
                         </form>
                     </div>
@@ -78,18 +83,18 @@ $nombre_negocio_actual = $result_negocio['nombre_negocio'] ?? $nombre_negocio_ac
 
             <!-- Columna para la lista de servicios -->
             <div class="col-md-8">
-                <h3>Lista de Servicios</h3>
-                <h5 class="text-muted mb-3">Para: <?php echo htmlspecialchars($nombre_negocio_actual); ?></h5>
+                <h3><?php echo __('services_list_title'); ?></h3>
+                <h5 class="text-muted mb-3"><?php echo __('clients_list_for'); ?>: <?php echo htmlspecialchars($nombre_negocio_actual); ?></h5>
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
                         <thead class="table-dark">
                             <tr>
                                 <th>#</th>
-                                <th>Servicio</th>
-                                <th>Duración</th>
-                                <th>Precio</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th><?php echo __('services_col_service'); ?></th>
+                                <th><?php echo __('services_col_duration'); ?></th>
+                                <th><?php echo __('services_col_price'); ?></th>
+                                <th><?php echo __('status'); ?></th>
+                                <th><?php echo __('actions'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -108,21 +113,21 @@ $nombre_negocio_actual = $result_negocio['nombre_negocio'] ?? $nombre_negocio_ac
                                     echo "<td>" . htmlspecialchars($row["nombre_servicio"]) . "</td>";
                                     echo "<td>" . htmlspecialchars($row["duracion_valor"]) . " " . htmlspecialchars($row["duracion_unidad"]) . "</td>";
                                     $precio_formateado = $row["precio"] ? '$' . number_format($row["precio"], 2) : 'N/A';
-                                    $estado_servicio = $row['activo'] ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-secondary">Inactivo</span>';
+                                    $estado_servicio = $row['activo'] ? '<span class="badge bg-success">' . __('active') . '</span>' : '<span class="badge bg-secondary">' . __('inactive') . '</span>';
                                     echo "<td>" . $precio_formateado . "</td>";
                                     echo "<td>" . $estado_servicio . "</td>";
                                     // Botones de Acciones
                                     echo '<td>
-                                            <a href="servicios_editar.php?id=' . $row['id_servicio'] . '" class="btn btn-sm btn-warning">Editar</a>
-                                            <form action="servicios_eliminar.php" method="POST" style="display:inline-block;" onsubmit="return confirm(\'¿Estás seguro de que quieres eliminar este servicio?\');">
+                                            <a href="servicios_editar.php?id=' . $row['id_servicio'] . '&lang=' . $lang . '" class="btn btn-sm btn-warning">' . __('edit') . '</a>
+                                            <form action="servicios_eliminar.php" method="POST" style="display:inline-block;" onsubmit="return confirm(\'' . __('services_confirm_deactivate') . '\');">
                                                 <input type="hidden" name="id_servicio" value="' . $row['id_servicio'] . '">
-                                                <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                                                <button type="submit" class="btn btn-sm btn-danger">' . __('deactivate') . '</button>
                                             </form>
                                           </td>';
                                     echo "</tr>";
                                 }
                             } else { // Cambiado de 5 a 6 columnas
-                                echo "<tr><td colspan='6' class='text-center'>No hay servicios registrados.</td></tr>";
+                                echo "<tr><td colspan='6' class='text-center'>" . __('services_no_services') . "</td></tr>";
                             }
                             $stmt->close();
                             ?>
@@ -132,7 +137,6 @@ $nombre_negocio_actual = $result_negocio['nombre_negocio'] ?? $nombre_negocio_ac
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <?php include 'footer.php'; ?>
 </body>
 </html>

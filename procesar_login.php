@@ -23,7 +23,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             // ¡VALIDACIÓN DE SEGURIDAD! Verificar si el usuario está activo.
             if ($usuario['activo'] != 1) {
-                header("Location: sesion_iniciar.php?error=" . urlencode("Tu cuenta de usuario ha sido desactivada."));
+                header("Location: sesion_iniciar.php?error_key=login_error_inactive");
                 exit();
             }
 
@@ -49,13 +49,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit();
             } else {
                 // Contraseña incorrecta
-                header("Location: sesion_iniciar.php?error=" . urlencode("Contraseña incorrecta."));
+                header("Location: sesion_iniciar.php?error_key=login_error_password");
                 exit();
             }
         }
     }
     // Si el bucle termina sin un login exitoso, significa que el usuario no fue encontrado.
-    header("Location: sesion_iniciar.php?error=" . urlencode("Usuario no encontrado."));
+    header("Location: sesion_iniciar.php?error_key=login_error_not_found");
     exit();
 }
 ?>

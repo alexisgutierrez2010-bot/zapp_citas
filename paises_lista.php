@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025).
+// Update :Dec-05-2025). Aplicada la internacionalización (i18n).
 require_once 'auth_check.php';
 require_once 'config.php';
 
@@ -12,11 +12,11 @@ $timezones = DateTimeZone::listIdentifiers(DateTimeZone::ALL);
 $paises_result = $conn->query("SELECT * FROM j110_paises ORDER BY nombre_pais ASC");
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<?php echo $lang; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Países</title>
+    <title><?php echo __('locations_countries_title'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -27,38 +27,48 @@ $paises_result = $conn->query("SELECT * FROM j110_paises ORDER BY nombre_pais AS
             <!-- Formulario para agregar país -->
             <div class="col-md-4">
                 <div class="card">
-                    <div class="card-header"><h3>Registrar Nuevo País</h3></div>
+                    <div class="card-header"><h3><?php echo __('locations_register_country'); ?></h3></div>
                     <div class="card-body">
                         <?php
-                        if (isset($_GET['status'])) {
-                            $status_type = strpos($_GET['status'], 'success') !== false ? 'success' : 'danger';
-                            $message = isset($_GET['message']) ? htmlspecialchars($_GET['message']) : 'Acción completada.';
-                            echo "<div class='alert alert-{$status_type}'>{$message}</div>";
+                        if (isset($_GET['status']) || isset($_GET['message_key'])) {
+                            $status = $_GET['status'] ?? '';
+                            $message_key = $_GET['message_key'] ?? '';
+                            $message = '';
+
+                            if (!empty($message_key)) {
+                                $message = __($message_key);
+                            } elseif ($status === 'success_create') {
+                                $message = __('create_success');
+                            }
+                            if (!empty($message)) {
+                                $alert_type = strpos($status, 'error') === false ? 'success' : 'danger';
+                                echo "<div class='alert alert-{$alert_type}'>" . htmlspecialchars($message) . "</div>";
+                            }
                         }
                         ?>
                         <form action="paises_crear.php" method="POST">
                             <div class="mb-3">
-                                <label for="nombre_pais" class="form-label">Nombre del País</label>
+                                <label for="nombre_pais" class="form-label"><?php echo __('locations_form_country_name'); ?></label>
                                 <input type="text" class="form-control" id="nombre_pais" name="nombre_pais" required>
                             </div>
                             <div class="mb-3">
-                                <label for="codigo_pais" class="form-label">Código (2 letras, ej: US)</label>
+                                <label for="codigo_pais" class="form-label"><?php echo __('locations_form_country_code'); ?></label>
                                 <input type="text" class="form-control" id="codigo_pais" name="codigo_pais" maxlength="2" required>
                             </div>
                             <div class="mb-3">
-                                <label for="codigo_telefono" class="form-label">Código Telefónico (ej: +1)</label>
+                                <label for="codigo_telefono" class="form-label"><?php echo __('locations_form_phone_code'); ?></label>
                                 <input type="text" class="form-control" id="codigo_telefono" name="codigo_telefono" required>
                             </div>
                             <div class="mb-3">
-                                <label for="timezone" class="form-label">Zona Horaria Principal</label>
+                                <label for="timezone" class="form-label"><?php echo __('locations_form_timezone'); ?></label>
                                 <select class="form-select" id="timezone" name="timezone" required>
-                                    <option value="">Seleccione...</option>
+                                    <option value=""><?php echo __('locations_form_select_timezone'); ?></option>
                                     <?php foreach ($timezones as $tz): ?>
                                         <option value="<?php echo $tz; ?>"><?php echo htmlspecialchars($tz); ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <button type="submit" class="btn btn-primary w-100">Guardar País</button>
+                            <button type="submit" class="btn btn-primary w-100"><?php echo __('locations_form_save_country'); ?></button>
                         </form>
                     </div>
                 </div>
@@ -66,17 +76,17 @@ $paises_result = $conn->query("SELECT * FROM j110_paises ORDER BY nombre_pais AS
 
             <!-- Lista de países -->
             <div class="col-md-8">
-                <h3>Lista de Países</h3>
+                <h3><?php echo __('locations_list_countries'); ?></h3>
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
                         <thead class="table-dark">
                             <tr>
                                 <th>#</th>
-                                <th>País</th>
-                                <th>Código</th>
-                                <th>Tel.</th>
-                                <th>Zona Horaria</th>
-                                <th>Acciones</th>
+                                <th><?php echo __('locations_col_country'); ?></th>
+                                <th><?php echo __('locations_col_code'); ?></th>
+                                <th><?php echo __('locations_col_phone'); ?></th>
+                                <th><?php echo __('locations_col_timezone'); ?></th>
+                                <th><?php echo __('actions'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -92,18 +102,18 @@ $paises_result = $conn->query("SELECT * FROM j110_paises ORDER BY nombre_pais AS
                                         <td><?php echo htmlspecialchars($pais['timezone']); ?></td>
                                         <td>
                                             <div class="btn-group">
-                                                <a href="estados_lista.php?id_pais=<?php echo $pais['id_pais']; ?>" class="btn btn-sm btn-info">Estados</a>
-                                                <a href="paises_editar.php?id=<?php echo $pais['id_pais']; ?>" class="btn btn-sm btn-warning">Editar</a>
-                                                <form action="paises_eliminar.php" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que quieres eliminar este país y TODOS sus estados asociados?');">
+                                                <a href="estados_lista.php?id_pais=<?php echo $pais['id_pais']; ?>&lang=<?php echo $lang; ?>" class="btn btn-sm btn-info"><?php echo __('locations_action_states'); ?></a>
+                                                <a href="paises_editar.php?id=<?php echo $pais['id_pais']; ?>&lang=<?php echo $lang; ?>" class="btn btn-sm btn-warning"><?php echo __('edit'); ?></a>
+                                                <form action="paises_eliminar.php" method="POST" class="d-inline" onsubmit="return confirm('<?php echo __('locations_confirm_delete_country'); ?>');">
                                                     <input type="hidden" name="id_pais" value="<?php echo $pais['id_pais']; ?>">
-                                                    <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                                                    <button type="submit" class="btn btn-sm btn-danger"><?php echo __('delete'); ?></button>
                                                 </form>
                                             </div>
                                         </td>
                                     </tr>
                                 <?php endwhile;
                             else: ?>
-                                <tr><td colspan="6" class="text-center">No hay países registrados.</td></tr>
+                                <tr><td colspan="6" class="text-center"><?php echo __('locations_no_countries'); ?></td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

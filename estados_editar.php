@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
+// Update :Dec-05-2025). Aplicada la internacionalización (i18n).
 require_once 'auth_check.php';
 require_once 'config.php';
 
@@ -23,11 +23,11 @@ $estado = $result->fetch_assoc();
 $stmt->close();
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<?php echo $lang; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar Estado</title>
+    <title><?php echo __('locations_edit_state_title'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -36,18 +36,18 @@ $stmt->close();
         <div class="row justify-content-center">
             <div class="col-md-6">
                 <div class="card">
-                    <div class="card-header"><h3>Editando Estado: <?php echo htmlspecialchars($estado['nombre_estado']); ?></h3></div>
+                    <div class="card-header"><h3><?php echo __('locations_editing_state'); ?>: <?php echo htmlspecialchars($estado['nombre_estado']); ?></h3></div>
                     <div class="card-body">
                         <form action="estados_actualizar.php" method="POST">
                             <input type="hidden" name="id_estado" value="<?php echo $estado['id_estado']; ?>">
                             <input type="hidden" name="id_pais" value="<?php echo $estado['id_pais']; ?>">
                             <div class="mb-3">
-                                <label for="nombre_estado" class="form-label">Nombre del Estado</label>
+                                <label for="nombre_estado" class="form-label"><?php echo __('locations_form_state_name'); ?></label>
                                 <input type="text" class="form-control" id="nombre_estado" name="nombre_estado" value="<?php echo htmlspecialchars($estado['nombre_estado']); ?>" required>
                             </div>
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-success">Actualizar Estado</button>
-                                <a href="estados_lista.php?id_pais=<?php echo $estado['id_pais']; ?>" class="btn btn-secondary">Cancelar</a>
+                                <button type="submit" class="btn btn-success"><?php echo __('locations_update_state'); ?></button>
+                                <a href="estados_lista.php?id_pais=<?php echo $estado['id_pais']; ?>&lang=<?php echo $lang; ?>" class="btn btn-secondary"><?php echo __('cancel'); ?></a>
                             </div>
                         </form>
                     </div>

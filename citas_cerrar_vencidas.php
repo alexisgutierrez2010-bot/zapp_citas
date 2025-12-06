@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-27-2025).
+// Update :Dec-05-2025). Aplicada la internacionalización (i18n).
 require_once 'auth_check.php';
 require_once 'config.php';
 require_once 'audit_log.php';
@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if ($stmt_update->execute()) {
         $citas_actualizadas = $stmt_update->affected_rows;
-        $mensaje = "Proceso completado. Se han actualizado {$citas_actualizadas} citas al estado 'Vencida'.";
+        $mensaje = str_replace('{count}', $citas_actualizadas, __('close_appointments_success'));
         $tipo_mensaje = "success";
         
         if ($citas_actualizadas > 0) {
@@ -33,11 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<?php echo $lang; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cierre de Citas Vencidas</title>
+    <title><?php echo __('close_appointments_title'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -47,16 +47,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="col-md-8">
                 <div class="card text-center">
                     <div class="card-header">
-                        <h3>Cierre Manual de Citas Vencidas</h3>
+                        <h3><?php echo __('close_appointments_header'); ?></h3>
                     </div>
                     <div class="card-body">
-                        <p class="lead">Esta herramienta buscará todas las citas con estado 'Pendiente' cuya fecha y hora ya hayan pasado y las actualizará automáticamente al estado 'Vencida'.</p>
-                        <p>Esto ayuda a mantener su agenda limpia y sus reportes actualizados.</p>
+                        <p class="lead"><?php echo __('close_appointments_desc_1'); ?></p>
+                        <p><?php echo __('close_appointments_desc_2'); ?></p>
                         <?php if (!empty($mensaje)): ?>
                             <div class="alert alert-<?php echo $tipo_mensaje; ?>"><?php echo $mensaje; ?></div>
                         <?php endif; ?>
                         <form action="citas_cerrar_vencidas.php" method="POST">
-                            <button type="submit" class="btn btn-primary btn-lg mt-3">Iniciar Proceso de Cierre</button>
+                            <button type="submit" class="btn btn-primary btn-lg mt-3"><?php echo __('close_appointments_button'); ?></button>
                         </form>
                     </div>
                 </div>

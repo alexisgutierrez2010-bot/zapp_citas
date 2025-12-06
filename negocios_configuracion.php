@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025). Corregido para compatibilidad con Linux.
+// Update :Dec-05-2025). Aplicada la internacionalización (i18n).
 require_once 'auth_check.php';
 require_once 'config.php';
 
@@ -70,11 +70,11 @@ if (empty($selected_country_code) && !empty($paises)) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<?php echo $lang; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configuración del Negocio</title>
+    <title><?php echo __('businesses_title'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -84,16 +84,16 @@ if (empty($selected_country_code) && !empty($paises)) {
         <?php // if ($rol_session == 'Master'): ?>
         <div class="card mb-4">
             <div class="card-header">
-                <h4>Gestión de Negocios</h4>
+                <h4><?php echo __('businesses_manage_title'); ?></h4>
             </div>
             <div class="card-body">
-                <p>Seleccione un negocio para editar o cree uno nuevo.</p>
+                <p><?php echo __('businesses_select_or_create'); ?></p>
                 <div class="list-group">
                     <?php
                     $estados_negocio = [
-                        1 => ['texto' => 'Activo', 'clase' => 'success'],
-                        2 => ['texto' => 'Suspendido', 'clase' => 'warning'],
-                        3 => ['texto' => 'Eliminado', 'clase' => 'danger']
+                        1 => ['texto' => __('active'), 'clase' => 'success'],
+                        2 => ['texto' => __('businesses_status_suspended'), 'clase' => 'warning'],
+                        3 => ['texto' => __('businesses_status_deleted'), 'clase' => 'danger']
                     ];
                     $i = 1;
                     foreach ($all_configs as $cfg): 
@@ -101,20 +101,20 @@ if (empty($selected_country_code) && !empty($paises)) {
                         <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center <?php echo ($cfg['id_negocio'] == $id_negocio_a_editar) ? 'active' : ''; ?>">
                             <span><?php echo $i++; ?>. <?php echo htmlspecialchars($cfg['nombre_negocio']); ?></span>
                             <div>
-                                <a href="negocios_configuracion.php?id=<?php echo $cfg['id_negocio']; ?>" class="btn btn-sm btn-outline-light">Editar</a>
+                                <a href="negocios_configuracion.php?id=<?php echo $cfg['id_negocio']; ?>&lang=<?php echo $lang; ?>" class="btn btn-sm btn-outline-light"><?php echo __('edit'); ?></a>
                                 <?php if ($cfg['id_negocio'] == $id_negocio_a_editar && isset($config['activo'])): ?>
                                     <span class="badge bg-<?php echo $estados_negocio[$config['activo']]['clase']; ?> ms-2"><?php echo $estados_negocio[$config['activo']]['texto']; ?></span>
                                 <?php endif; ?>
                                 <form action="negocios_eliminar.php" method="POST" class="d-inline" onsubmit="return confirm('¡ADVERTENCIA! Eliminar este negocio borrará TODOS sus usuarios, clientes y citas. ¿Está absolutamente seguro?');">
                                     <input type="hidden" name="id_negocio" value="<?php echo $cfg['id_negocio']; ?>">
-                                    <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                                    <button type="submit" class="btn btn-sm btn-danger"><?php echo __('delete'); ?></button>
                                 </form>
                             </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
                 <div class="d-grid mt-3">
-                    <a href="crear_negocio.php" class="btn btn-success">Crear Nuevo Negocio</a>
+                    <a href="crear_negocio.php?lang=<?php echo $lang; ?>" class="btn btn-success"><?php echo __('businesses_create_new'); ?></a>
                 </div>
             </div>
         </div>
@@ -124,32 +124,39 @@ if (empty($selected_country_code) && !empty($paises)) {
             <div class="col-md-8">
                 <div class="card">
                     <div class="card-header">
-                        <h3>Configuración de: <?php echo htmlspecialchars($config['nombre_negocio'] ?? 'Nuevo Negocio'); ?></h3>
+                        <h3><?php echo __('businesses_config_for'); ?>: <?php echo htmlspecialchars($config['nombre_negocio'] ?? 'Nuevo Negocio'); ?></h3>
                     </div>
                     <div class="card-body">
                         <?php
-                        if (isset($_GET['status'])) {
-                            if ($_GET['status'] == 'success') {
-                                echo '<div class="alert alert-success">Configuración actualizada con éxito.</div>';
-                            } elseif ($_GET['status'] == 'error') {
-                                $errorMessage = isset($_GET['message']) ? htmlspecialchars($_GET['message']) : 'Ocurrió un error al guardar.';
-                                echo '<div class="alert alert-danger">' . $errorMessage . '</div>';
+                        if (isset($_GET['status']) || isset($_GET['message_key'])) {
+                            $status = $_GET['status'] ?? '';
+                            $message_key = $_GET['message_key'] ?? '';
+                            $message = '';
+
+                            if (!empty($message_key)) {
+                                $message = __($message_key);
+                            } elseif ($status === 'success') {
+                                $message = __('update_success');
+                            }
+                            if (!empty($message)) {
+                                $alert_type = strpos($status, 'error') === false ? 'success' : 'danger';
+                                echo "<div class='alert alert-{$alert_type}'>" . htmlspecialchars($message) . "</div>";
                             }
                         }
                         ?>
                         <form action="negocios_actualizar.php" method="POST" enctype="multipart/form-data">
                             <div class="mb-3">
-                                <label for="id_negocio" class="form-label">ID de Negocio</label>
+                                <label for="id_negocio" class="form-label"><?php echo __('businesses_form_id'); ?></label>
                                 <input type="text" class="form-control" id="id_negocio" name="id_negocio" value="<?php echo htmlspecialchars($id_negocio_a_editar); ?>" readonly>
                             </div>
                             <div class="mb-3">
-                                <label for="nombre_negocio" class="form-label">Nombre del Negocio</label>
+                                <label for="nombre_negocio" class="form-label"><?php echo __('businesses_form_name'); ?></label>
                                 <input type="text" class="form-control" id="nombre_negocio" name="nombre_negocio" value="<?php echo htmlspecialchars($config['nombre_negocio'] ?? ''); ?>">
                             </div>
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="telefono" class="form-label">Teléfono</label>
+                                    <label for="telefono" class="form-label"><?php echo __('businesses_form_phone'); ?></label>
                                     <div class="input-group">
                                         <select class="form-select" id="country_code" name="country_code" style="max-width: 150px;" required>
                                             <?php foreach ($paises as $pais_option): ?>
@@ -158,19 +165,19 @@ if (empty($selected_country_code) && !empty($paises)) {
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
-                                        <input type="tel" class="form-control" id="telefono_local" name="telefono_local" value="<?php echo htmlspecialchars($telefono_local_part); ?>" placeholder="Número local" required>
+                                        <input type="tel" class="form-control" id="telefono_local" name="telefono_local" value="<?php echo htmlspecialchars($telefono_local_part); ?>" placeholder="<?php echo __('businesses_form_phone_local'); ?>" required>
                                     </div>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="email" class="form-label">Email de Contacto</label>
+                                    <label for="email" class="form-label"><?php echo __('businesses_form_email'); ?></label>
                                     <input type="email" class="form-control" id="email" name="email" value="<?php echo htmlspecialchars($config['email'] ?? ''); ?>">
                                 </div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="id_categoria_negocio" class="form-label">Categoría del Negocio</label>
+                                <label for="id_categoria_negocio" class="form-label"><?php echo __('businesses_form_category'); ?></label>
                                 <select class="form-select" id="id_categoria_negocio" name="id_categoria_negocio">
-                                    <option value="">-- Sin Categoría --</option>
+                                    <option value=""><?php echo __('businesses_form_no_category'); ?></option>
                                     <?php foreach ($categorias as $categoria): ?>
                                         <option value="<?php echo $categoria['id_categoria']; ?>" <?php echo (isset($config['id_categoria_negocio']) && $config['id_categoria_negocio'] == $categoria['id_categoria']) ? 'selected' : ''; ?>>
                                             <?php echo htmlspecialchars($categoria['nombre_categoria']); ?>
@@ -180,29 +187,29 @@ if (empty($selected_country_code) && !empty($paises)) {
                             </div>
 
                             <div class="mb-3">
-                                <label for="activo" class="form-label">Estado del Negocio</label>
+                                <label for="activo" class="form-label"><?php echo __('businesses_form_status'); ?></label>
                                 <select class="form-select" id="activo" name="activo">
-                                    <option value="1" <?php echo (isset($config['activo']) && $config['activo'] == 1) ? 'selected' : ''; ?>>Activo</option>
-                                    <option value="2" <?php echo (isset($config['activo']) && $config['activo'] == 2) ? 'selected' : ''; ?>>Suspendido</option>
+                                    <option value="1" <?php echo (isset($config['activo']) && $config['activo'] == 1) ? 'selected' : ''; ?>><?php echo __('active'); ?></option>
+                                    <option value="2" <?php echo (isset($config['activo']) && $config['activo'] == 2) ? 'selected' : ''; ?>><?php echo __('businesses_status_suspended'); ?></option>
                                     <?php if (isset($config['activo']) && $config['activo'] == 3): ?>
-                                    <option value="3" selected>Eliminado</option>
+                                    <option value="3" selected><?php echo __('businesses_status_deleted'); ?></option>
                                     <?php endif; ?>
                                 </select>
                             </div>
 
                             <div class="mb-3">
-                                <label for="direccion1" class="form-label">Dirección 1</label>
+                                <label for="direccion1" class="form-label"><?php echo __('businesses_form_address1'); ?></label>
                                 <input type="text" class="form-control" id="direccion1" name="direccion1" value="<?php echo htmlspecialchars($config['direccion1'] ?? ''); ?>" maxlength="128">
                             </div>
                             <div class="mb-3">
-                                <label for="direccion2" class="form-label">Dirección 2 (Opcional)</label>
+                                <label for="direccion2" class="form-label"><?php echo __('businesses_form_address2'); ?></label>
                                 <input type="text" class="form-control" id="direccion2" name="direccion2" value="<?php echo htmlspecialchars($config['direccion2'] ?? ''); ?>" maxlength="128">
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_pais" class="form-label">País</label>
+                                    <label for="id_pais" class="form-label"><?php echo __('businesses_form_country'); ?></label>
                                     <select class="form-select" id="id_pais" name="id_pais" required>
-                                        <option value="">Seleccione un país...</option>
+                                        <option value=""><?php echo __('businesses_form_select_country'); ?></option>
                                         <?php foreach ($paises as $pais): ?>
                                             <option value="<?php echo $pais['id_pais']; ?>" <?php echo (isset($config['id_pais']) && $config['id_pais'] == $pais['id_pais']) ? 'selected' : ''; ?>>
                                                 <?php echo htmlspecialchars($pais['nombre_pais']); ?>
@@ -211,33 +218,33 @@ if (empty($selected_country_code) && !empty($paises)) {
                                     </select>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_estado" class="form-label">Estado / Provincia</label>
+                                    <label for="id_estado" class="form-label"><?php echo __('businesses_form_state'); ?></label>
                                     <select class="form-select" id="id_estado" name="id_estado" required disabled>
-                                        <option value="">Cargando...</option>
+                                        <option value=""><?php echo __('businesses_form_loading'); ?></option>
                                     </select>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-8 mb-3">
-                                    <label for="ciudad" class="form-label">Ciudad</label>
+                                    <label for="ciudad" class="form-label"><?php echo __('businesses_form_city'); ?></label>
                                     <input type="text" class="form-control" id="ciudad" name="ciudad" value="<?php echo htmlspecialchars($config['ciudad'] ?? ''); ?>">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label for="zip_code" class="form-label">Código Postal</label>
+                                    <label for="zip_code" class="form-label"><?php echo __('businesses_form_zip'); ?></label>
                                     <input type="text" class="form-control" id="zip_code" name="zip_code" value="<?php echo htmlspecialchars($config['zip_code'] ?? ''); ?>">
                                 </div>
                             </div>
 
                             <hr>
-                            <h5 class="mt-4">Horario de Trabajo</h5>
+                            <h5 class="mt-4"><?php echo __('businesses_schedule_title'); ?></h5>
 
                             <div class="mb-3">
-                                <label class="form-label">Días de Trabajo</label>
+                                <label class="form-label"><?php echo __('businesses_schedule_days'); ?></label>
                                 <div>
                                     <?php foreach ($dias_semana as $num => $dia): ?>
                                         <div class="form-check form-check-inline">
                                             <input class="form-check-input" type="checkbox" name="dias_trabajo[]" value="<?php echo $num; ?>" id="dia_<?php echo $num; ?>" <?php echo in_array((string)$num, $dias_trabajo_activos, true) ? 'checked' : ''; ?>>
-                                            <label class="form-check-label" for="dia_<?php echo $num; ?>"><?php echo $dia; ?></label>
+                                            <label class="form-check-label" for="dia_<?php echo $num; ?>"><?php echo __("day_{$num}"); ?></label>
                                         </div>
                                     <?php endforeach; ?>
                                 </div>
@@ -245,40 +252,40 @@ if (empty($selected_country_code) && !empty($paises)) {
 
                             <div class="row">
                                 <div class="col-md-4 mb-3">
-                                    <label for="hora_inicio" class="form-label">Hora de Inicio</label>
+                                    <label for="hora_inicio" class="form-label"><?php echo __('businesses_schedule_start'); ?></label>
                                     <input type="time" class="form-control" id="hora_inicio" name="hora_inicio" value="<?php echo htmlspecialchars($config['hora_inicio'] ?? ''); ?>" required>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label for="hora_cierre" class="form-label">Hora de Cierre</label>
+                                    <label for="hora_cierre" class="form-label"><?php echo __('businesses_schedule_end'); ?></label>
                                     <input type="time" class="form-control" id="hora_cierre" name="hora_cierre" value="<?php echo htmlspecialchars($config['hora_cierre'] ?? ''); ?>" required>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label for="intervalo_minutos" class="form-label">Intervalo (minutos)</label>
+                                    <label for="intervalo_minutos" class="form-label"><?php echo __('businesses_schedule_interval'); ?></label>
                                     <input type="number" class="form-control" id="intervalo_minutos" name="intervalo_minutos" value="<?php echo htmlspecialchars($config['intervalo_minutos'] ?? ''); ?>" required>
                                 </div>
                             </div>
 
                             <hr>
-                            <h5 class="mt-4">Gestión del Período de Prueba</h5>
+                            <h5 class="mt-4"><?php echo __('businesses_trial_title'); ?></h5>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="fecha_registro" class="form-label">Fecha de Registro</label>
+                                    <label for="fecha_registro" class="form-label"><?php echo __('businesses_trial_reg_date'); ?></label>
                                     <input type="datetime-local" class="form-control" id="fecha_registro" name="fecha_registro" value="<?php echo !empty($config['fecha_registro']) ? (new DateTime($config['fecha_registro']))->format('Y-m-d\TH:i') : ''; ?>">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="fecha_habilitacion" class="form-label">Fecha de Habilitación (Inicio Prueba)</label>
+                                    <label for="fecha_habilitacion" class="form-label"><?php echo __('businesses_trial_start_date'); ?></label>
                                     <input type="datetime-local" class="form-control" id="fecha_habilitacion" name="fecha_habilitacion" value="<?php echo !empty($config['fecha_habilitacion']) ? (new DateTime($config['fecha_habilitacion']))->format('Y-m-d\TH:i') : ''; ?>">
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="dias_prueba" class="form-label">Días de Prueba Asignados</label>
+                                    <label for="dias_prueba" class="form-label"><?php echo __('businesses_trial_days'); ?></label>
                                     <input type="number" class="form-control" id="dias_prueba" name="dias_prueba" value="<?php echo htmlspecialchars($config['dias_prueba'] ?? '30'); ?>">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="fecha_desactivacion" class="form-label">Fecha de Desactivación (Manual)</label>
+                                    <label for="fecha_desactivacion" class="form-label"><?php echo __('businesses_trial_end_date'); ?></label>
                                     <input type="datetime-local" class="form-control" id="fecha_desactivacion" name="fecha_desactivacion" value="<?php echo !empty($config['fecha_desactivacion']) ? (new DateTime($config['fecha_desactivacion']))->format('Y-m-d\TH:i') : ''; ?>">
-                                    <small class="form-text text-muted">Ajusta los días o la fecha final. La fecha final tiene prioridad.</small>
+                                    <small class="form-text text-muted"><?php echo __('businesses_trial_note'); ?></small>
                                 </div>
                             </div>
                             <?php
@@ -293,19 +300,19 @@ if (empty($selected_country_code) && !empty($paises)) {
                             ?>
 
                             <hr>
-                            <h5 class="mt-4">Imagen de Fondo</h5>
+                            <h5 class="mt-4"><?php echo __('businesses_bg_image_title'); ?></h5>
                             <div class="mb-3">
-                                <label for="background_image" class="form-label">Subir nueva imagen de fondo (opcional)</label>
+                                <label for="background_image" class="form-label"><?php echo __('businesses_bg_image_upload'); ?></label>
                                 <input class="form-control" type="file" id="background_image" name="background_image" accept="image/jpeg, image/png">
                             </div>
                             <?php if (!empty($config['background_image_data'])): ?>
                                 <div class="mb-3">
-                                    <label class="form-label">Imagen Actual:</label><br>
+                                    <label class="form-label"><?php echo __('businesses_bg_image_current'); ?></label><br>
                                     <img src="get_image.php" alt="Imagen de fondo actual" class="img-fluid rounded" style="max-height: 150px;">
                                 </div>
                             <?php endif; ?>
 
-                            <button type="submit" class="btn btn-primary w-100 mt-3">Guardar Configuración</button>
+                            <button type="submit" class="btn btn-primary w-100 mt-3"><?php echo __('businesses_form_save'); ?></button>
                         </form>
                     </div>
                 </div>

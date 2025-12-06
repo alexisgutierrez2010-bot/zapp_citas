@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025). Corregido para compatibilidad con Linux.
+// Update :Dec-05-2025). Aplicada la internacionalización (i18n).
 require_once 'auth_check.php';
 require_once 'audit_log.php';
 require_once 'config.php';
@@ -29,15 +29,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // 3. Validar que los campos no estén vacíos
         if (empty($nombre_negocio) || empty($email_negocio) || empty($admin_user) || empty($admin_pass) || empty($admin_email)) {
-            throw new Exception("Todos los campos son obligatorios.");
+            throw new Exception("error_all_fields_required");
         }
 
         // --- NUEVA VALIDACIÓN ---
         if (!filter_var($email_negocio, FILTER_VALIDATE_EMAIL)) {
-            throw new Exception("El formato del email del negocio no es válido.");
+            throw new Exception("error_invalid_email");
         }
         if (!filter_var($admin_email, FILTER_VALIDATE_EMAIL)) {
-            throw new Exception("El formato del email del usuario propietario no es válido.");
+            throw new Exception("error_invalid_email");
         }
         // No hay teléfono en el formulario de creación, se valida en la actualización.
 
@@ -48,7 +48,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt_check_negocio->execute();
         $stmt_check_negocio->store_result();
         if ($stmt_check_negocio->num_rows > 0) {
-            throw new Exception("El nombre del negocio o el email de contacto ya existen.");
+            throw new Exception("error_duplicate_entry");
         }
         $stmt_check_negocio->close();
 
@@ -78,7 +78,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt_check_user->execute();
         $stmt_check_user->store_result();
         if ($stmt_check_user->num_rows > 0) {
-            throw new Exception("El nombre de usuario o correo para el Propietario ya existe.");
+            throw new Exception("error_duplicate_entry");
         }
         $stmt_check_user->close();
 
@@ -98,11 +98,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // 6. Si todo fue bien, confirmar la transacción
         $conn->commit();
         registrar_auditoria($conn, $_SESSION['id_usuario'], $id_nuevo_negocio, 'CREATE_BUSINESS', "Se creó el negocio '{$nombre_negocio}' (ID: {$id_nuevo_negocio}) y su usuario Propietario '{$admin_user}'.");
-        header("Location: negocios_configuracion.php?status=success&message=" . urlencode("Negocio y Propietario creados con éxito."));
+        header("Location: negocios_configuracion.php?status=success&message_key=create_success");
 
     } catch (Exception $e) {
         $conn->rollback();
-        header("Location: crear_negocio.php?status=error&message=" . urlencode($e->getMessage()));
+        header("Location: crear_negocio.php?status=error&message_key=" . urlencode($e->getMessage()));
     }
 
     exit();

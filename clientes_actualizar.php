@@ -27,14 +27,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $celular = ''; // Inicializar
 
     if ($id_cliente <= 0) {
-        header("Location: clientes_lista.php?status=error&message=" . urlencode("ID de cliente inválido."));
+        header("Location: clientes_lista.php?status=error&message_key=error_invalid_id");
         exit();
     }
 
     // --- NUEVA VALIDACIÓN ---
     // Validar el formato del correo electrónico
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        header("Location: clientes_editar.php?id=" . $id_cliente . "&status=error&message=" . urlencode("El formato del correo electrónico no es válido."));
+        header("Location: clientes_editar.php?id=" . $id_cliente . "&status=error&message_key=error_invalid_email");
         exit();
     }    
     if (!empty($phone_number)) {
@@ -51,7 +51,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if ($stmt_check->num_rows > 0) {
             // El correo ya está en uso por otro cliente. Redirigir de vuelta a la página de edición.
-            header("Location: clientes_editar.php?id=" . $id_cliente . "&status=error&message=" . urlencode("El correo electrónico '$email' ya está registrado para otro cliente."));
+            header("Location: clientes_editar.php?id=" . $id_cliente . "&status=error&message_key=error_duplicate_entry");
             exit();
         }
         $stmt_check->close();
@@ -70,13 +70,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'UPDATE_CLIENT', $descripcion_audit);
 
             // Si todo va bien, redirigir a index.php con un mensaje de éxito
-            header("Location: clientes_lista.php?status=success_edit");
+            header("Location: clientes_lista.php?status=success_update");
         } else {
-            header("Location: clientes_editar.php?id=" . $id_cliente . "&status=error&message=" . urlencode($stmt->error));
+            header("Location: clientes_editar.php?id=" . $id_cliente . "&status=error&message_key=operation_error");
         }
         $stmt->close();
     } else {
-        header("Location: clientes_editar.php?id=" . $id_cliente . "&status=error&message=" . urlencode($conn->error));
+        header("Location: clientes_editar.php?id=" . $id_cliente . "&status=error&message_key=operation_error");
     }
 
     exit();

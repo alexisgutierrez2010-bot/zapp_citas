@@ -33,11 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $contenido_actual = file_get_contents($file_path);
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<?php echo $lang; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar Documento Markdown</title>
+    <title><?php echo __('documents_edit_md_title'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -46,16 +46,16 @@ $contenido_actual = file_get_contents($file_path);
     <div class="container mt-4">
         <div class="card">
             <div class="card-header">
-                <h3>Editando: <?php echo htmlspecialchars($nombre_archivo); ?></h3>
+                <h3><?php echo __('documents_editing'); ?>: <?php echo htmlspecialchars($nombre_archivo); ?></h3>
             </div>
             <div class="card-body">
-                <form action="documento_editar_md.php?file=<?php echo urlencode($nombre_archivo); ?>" method="POST">
+                <form action="documento_editar_md.php?file=<?php echo urlencode($nombre_archivo); ?>&lang=<?php echo $lang; ?>" method="POST">
                     <div class="mb-3">
                         <textarea name="contenido" class="form-control" rows="20" style="font-family: monospace;"><?php echo htmlspecialchars($contenido_actual); ?></textarea>
                     </div>
                     <div class="d-flex justify-content-end">
-                        <a href="seleccionar_resumen.php" class="btn btn-secondary me-2">Cancelar</a>
-                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                        <a href="seleccionar_resumen.php?lang=<?php echo $lang; ?>" class="btn btn-secondary me-2"><?php echo __('cancel'); ?></a>
+                        <button type="submit" class="btn btn-primary"><?php echo __('save'); ?></button>
                     </div>
                 </form>
             </div>

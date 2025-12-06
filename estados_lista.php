@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025). Corregido para compatibilidad con Linux.
+// Update :Dec-05-2025). Aplicada la internacionalización (i18n).
 require_once 'auth_check.php';
 require_once 'config.php';
 
@@ -25,40 +25,50 @@ if (!$pais) {
 $estados_result = $conn->query("SELECT * FROM j111_estados WHERE id_pais = $id_pais ORDER BY nombre_estado ASC");
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<?php echo $lang; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Estados para <?php echo htmlspecialchars($pais['nombre_pais']); ?></title>
+    <title><?php echo str_replace('{country}', htmlspecialchars($pais['nombre_pais']), __('locations_states_title')); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <?php include 'navbar.php'; ?>
 
     <div class="container mt-4">
-        <a href="paises_lista.php" class="btn btn-secondary mb-3">← Volver a Países</a>
-        <h2>Gestión de Estados para: <strong><?php echo htmlspecialchars($pais['nombre_pais']); ?></strong></h2>
+        <a href="paises_lista.php?lang=<?php echo $lang; ?>" class="btn btn-secondary mb-3"><?php echo __('locations_back_to_countries'); ?></a>
+        <h2><?php echo str_replace('{country}', '<strong>' . htmlspecialchars($pais['nombre_pais']) . '</strong>', __('locations_states_title')); ?></h2>
 
         <div class="row mt-4">
             <!-- Formulario para agregar estado -->
             <div class="col-md-4">
                 <div class="card">
-                    <div class="card-header"><h4>Registrar Nuevo Estado</h4></div>
+                    <div class="card-header"><h4><?php echo __('locations_register_state'); ?></h4></div>
                     <div class="card-body">
                         <?php
-                        if (isset($_GET['status'])) {
-                            $status_type = strpos($_GET['status'], 'success') !== false ? 'success' : 'danger';
-                            $message = isset($_GET['message']) ? htmlspecialchars($_GET['message']) : 'Acción completada.';
-                            echo "<div class='alert alert-{$status_type}'>{$message}</div>";
+                        if (isset($_GET['status']) || isset($_GET['message_key'])) {
+                            $status = $_GET['status'] ?? '';
+                            $message_key = $_GET['message_key'] ?? '';
+                            $message = '';
+
+                            if (!empty($message_key)) {
+                                $message = __($message_key);
+                            } elseif (strpos($status, 'success') !== false) {
+                                $message = __('operation_success');
+                            }
+                            if (!empty($message)) {
+                                $alert_type = strpos($status, 'error') === false ? 'success' : 'danger';
+                                echo "<div class='alert alert-{$alert_type}'>" . htmlspecialchars($message) . "</div>";
+                            }
                         }
                         ?>
                         <form action="estados_crear.php" method="POST">
                             <input type="hidden" name="id_pais" value="<?php echo $id_pais; ?>">
                             <div class="mb-3">
-                                <label for="nombre_estado" class="form-label">Nombre del Estado / Provincia</label>
+                                <label for="nombre_estado" class="form-label"><?php echo __('locations_form_state_name'); ?></label>
                                 <input type="text" class="form-control" id="nombre_estado" name="nombre_estado" required>
                             </div>
-                            <button type="submit" class="btn btn-primary w-100">Guardar Estado</button>
+                            <button type="submit" class="btn btn-primary w-100"><?php echo __('locations_form_save_state'); ?></button>
                         </form>
                     </div>
                 </div>
@@ -66,14 +76,14 @@ $estados_result = $conn->query("SELECT * FROM j111_estados WHERE id_pais = $id_p
 
             <!-- Lista de estados -->
             <div class="col-md-8">
-                <h4>Lista de Estados</h4>
+                <h4><?php echo __('locations_list_states'); ?></h4>
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
                         <thead class="table-dark">
                             <tr>
                                 <th>#</th>
-                                <th>Nombre del Estado</th>
-                                <th>Acciones</th>
+                                <th><?php echo __('locations_form_state_name'); ?></th>
+                                <th><?php echo __('actions'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -85,17 +95,17 @@ $estados_result = $conn->query("SELECT * FROM j111_estados WHERE id_pais = $id_p
                                         <td><?php echo $i++; ?></td>
                                         <td><?php echo htmlspecialchars($estado['nombre_estado']); ?></td>
                                         <td>
-                                            <a href="estados_editar.php?id=<?php echo $estado['id_estado']; ?>" class="btn btn-sm btn-warning">Editar</a>
-                                            <form action="estados_eliminar.php" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro?');">
+                                            <a href="estados_editar.php?id=<?php echo $estado['id_estado']; ?>&lang=<?php echo $lang; ?>" class="btn btn-sm btn-warning"><?php echo __('edit'); ?></a>
+                                            <form action="estados_eliminar.php" method="POST" class="d-inline" onsubmit="return confirm('<?php echo __('locations_confirm_delete_state'); ?>');">
                                                 <input type="hidden" name="id_estado" value="<?php echo $estado['id_estado']; ?>">
                                                 <input type="hidden" name="id_pais" value="<?php echo $id_pais; ?>">
-                                                <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                                                <button type="submit" class="btn btn-sm btn-danger"><?php echo __('delete'); ?></button>
                                             </form>
                                         </td>
                                     </tr>
                                 <?php endwhile;
                             else: ?>
-                                <tr><td colspan="3" class="text-center">No hay estados registrados para este país.</td></tr>
+                                <tr><td colspan="3" class="text-center"><?php echo __('locations_no_states'); ?></td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

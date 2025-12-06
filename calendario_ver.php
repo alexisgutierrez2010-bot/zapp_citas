@@ -1,14 +1,17 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025).
+// Update :Dec-05-2025). Aplicada la internacionalización (i18n).
+require_once 'auth_check.php'; // Inicia la sesión, carga el idioma y verifica el login
 ?><!DOCTYPE html>
-<html lang='es'>
+<html lang='<?php echo $lang; ?>'>
 <head>
     <meta charset='utf-8' />
-    <title>Calendario de Citas</title>
+    <title><?php echo __('calendar_title'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FullCalendar CSS y JS desde CDN -->
+    <!-- SOLUCIÓN: Cargar los locales de FullCalendar para que se traduzca la interfaz del calendario -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/locales-all.global.min.js'></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js'></script>
     <style>
         /* Pequeños ajustes para que el calendario se vea bien */
@@ -28,7 +31,6 @@
 <body>
 
     <?php
-        require_once 'auth_check.php'; // Inicia la sesión y verifica el login
         require_once 'config.php';     // Correcto
 
         // Obtener la configuración del negocio para ajustar el calendario
@@ -54,7 +56,7 @@
         const calendar = new FullCalendar.Calendar(calendarEl, {
           themeSystem: 'bootstrap5',
           initialView: 'timeGridWeek', // Vista inicial: semana
-          locale: 'es', // Poner el calendario en español
+          locale: '<?php echo $lang; ?>', // Poner el calendario en el idioma seleccionado
           headerToolbar: {
             left: 'prev,next today',
             center: 'title',
@@ -77,7 +79,7 @@
 
           // Hacer que los eventos sean clickables para ir a la página de edición
           eventClick: function(info) {
-            window.location.href = 'citas_editar.php?id=' + info.event.id;
+            window.location.href = 'citas_editar.php?id=' + info.event.id + '&lang=<?php echo $lang; ?>';
           }
         });
         calendar.render();

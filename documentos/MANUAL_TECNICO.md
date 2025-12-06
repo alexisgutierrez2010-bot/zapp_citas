@@ -1,7 +1,7 @@
 # Manual Técnico y Guía de Despliegue - ZApp Citas
 
-**Versión:** 1.3
-**Última Actualización:** 01 de Diciembre de 2025
+**Versión:** 1.7
+**Última Actualización:** 05 de Diciembre de 2025
 
 ---
 
@@ -428,3 +428,64 @@ Este script es una herramienta de diagnóstico más completa para resolver probl
 *   **Resultados Posibles:**
     *   **Todo en Verde (✅):** La configuración de Composer es correcta.
     *   **Algún error en Rojo (❌):** El script indicará la causa exacta (ej. `composer.json` inválido, `vendor/` no encontrado) y la solución recomendada.
+
+
+ ## 9.  Internacionalización (i18n) - (Implementado en Diciembre 2025)
+
+Se implementó una estrategia global para permitir que la aplicación funcione fluidamente en español (`es`) e inglés (`en`).
+
+#### ESTRATEGIA APLICADA:
+
+*   **Archivo Central de Traducciones**: `languages.php` contiene un array PHP `$translations` con todas las cadenas de texto para 'es' y 'en'. Esto centraliza y facilita la gestión de los textos.
+*   **Función de Ayuda (Helper)**: Se creó una función global `__()` que toma una clave como argumento (ej. `__('login_button')`) y devuelve la cadena traducida según el idioma activo.
+*   **Detección y Persistencia del Idioma**: El sistema detecta el idioma con la siguiente prioridad:
+    1.  Parámetro en URL (`?lang=en`)
+    2.  Cookie de idioma guardada en el navegador.
+    3.  Variable de sesión.
+    El idioma seleccionado se guarda en la sesión y en una cookie para futuras visitas.
+*   **Mensajes de Operación Traducibles**: Se estandarizó el uso de un parámetro `message_key` en las URL de redirección para mostrar mensajes de éxito o error (ej. "Registro creado con éxito") de forma traducible.
+*   **Cobertura Completa**: La estrategia se aplicó a todos los componentes de la interfaz de usuario (menús, formularios, tablas), mensajes del servidor, y al contenido de los correos electrónicos transaccionales (confirmación de citas, recuperación de clave, etc.).
+
+#### TABLA DE CHEQUEO DE ARCHIVOS MODIFICADOS PARA I18N:
+
+| #  | Archivo                     | Menú | Formulario | Mensajes |
+|----|-----------------------------|:----:|:----------:|:--------:|
+| 1  | `index.php`                   | N/A  | N/A        |    ✅    |
+| 2  | `sesion_iniciar.php`          | N/A  |     ✅     |    ✅    |
+| 3  | `olvide_clave.php`            | N/A  |     ✅     |    ✅    |
+| 4  | `auth_check.php`              | N/A  | N/A        |    ✅    |
+| 5  | `languages.php`               |  ✅  |     ✅     |    ✅    |
+| 6  | `navbar.php`                  |  ✅  | N/A        |    ✅    |
+| 7  | `dashboard.php`               |  ✅  | N/A        |    ✅    |
+| 8  | `clientes_lista.php`          |  ✅  |     ✅     |    ✅    |
+| 9  | `clientes_editar.php`         |  ✅  |     ✅     |    ✅    |
+| 10 | `servicios_lista.php`         |  ✅  |     ✅     |    ✅    |
+| 11 | `servicios_editar.php`        |  ✅  |     ✅     |    ✅    |
+| 12 | `citas_lista.php`             |  ✅  |     ✅     |    ✅    |
+| 13 | `citas_editar.php`            |  ✅  |     ✅     |    ✅    |
+| 14 | `calendario_ver.php`          |  ✅  | N/A        |    ✅    |
+| 15 | `citas_cerrar_vencidas.php`   |  ✅  | N/A        |    ✅    |
+| 16 | `negocios_configuracion.php`  |  ✅  |     ✅     |    ✅    |
+| 17 | `crear_negocio.php`           |  ✅  |     ✅     |    ✅    |
+| 18 | `usuarios_lista.php`          |  ✅  |     ✅     |    ✅    |
+| 19 | `usuarios_editar.php`         |  ✅  |     ✅     |    ✅    |
+| 20 | `categorias_lista.php`        |  ✅  | N/A        |    ✅    |
+| 21 | `categoria_crear.php`         |  ✅  |     ✅     |    ✅    |
+| 22 | `categoria_editar.php`        |  ✅  |     ✅     |    ✅    |
+| 23 | `paises_lista.php`            |  ✅  |     ✅     |    ✅    |
+| 24 | `paises_editar.php`           |  ✅  |     ✅     |    ✅    |
+| 25 | `estados_lista.php`           |  ✅  |     ✅     |    ✅    |
+| 26 | `estados_editar.php`          |  ✅  |     ✅     |    ✅    |
+| 27 | `auditoria_reporte.php`       |  ✅  |     ✅     |    ✅    |
+| 28 | `seleccionar_resumen.php`     |  ✅  |     ✅     |    ✅    |
+| 29 | `documento_editar_md.php`     |  ✅  |     ✅     |    ✅    |
+| 30 | `documento_enviar_pdf.php`    |  ✅  |     ✅     |    ✅    |
+| 31 | `documento_ver.php`           |  ✅  | N/A        |    ✅    |
+| 32 | `perfil_ver.php`              |  ✅  |     ✅     |    ✅    |
+| 33 | `enviar_email.php`            | N/A  | N/A        |    ✅    |
+| 34 | `procesar_olvide_clave.php`   | N/A  | N/A        |    ✅    |
+
+---
+***FIN DEL DOCUMENTO***
+
+Author: Alexis Gutierrez y Gemeni Assist ( UPdate : 12/5/2025)

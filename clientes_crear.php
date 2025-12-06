@@ -29,7 +29,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // --- NUEVA VALIDACIÓN ---
     // Validar el formato del correo electrónico
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        header("Location: clientes_lista.php?status=error&message=" . urlencode("El formato del correo electrónico no es válido."));
+        header("Location: clientes_lista.php?status=error&message_key=error_invalid_email");
         exit();
     }    
     // Unir código de país y número si se proporcionó un número
@@ -47,7 +47,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if ($stmt_check->num_rows > 0) {
             // Si encontramos un resultado, el correo ya existe.
-            header("Location: clientes_lista.php?status=error&message=" . urlencode("El correo electrónico '$email' ya está registrado."));
+            header("Location: clientes_lista.php?status=error&message_key=error_duplicate_entry");
             exit();
         }
         $stmt_check->close();
@@ -69,12 +69,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'CREATE_CLIENT', $descripcion_audit);
 
             // Si todo va bien, redirigir
-            header("Location: clientes_lista.php?status=success"); // Redirigir primero
+            header("Location: clientes_lista.php?status=success_create"); // Redirigir primero
             $stmt->close(); // Luego cerrar la sentencia
             exit(); // Terminar el script
         } else {
             // Si hay un error, redirigir con un mensaje de error
-            header("Location: clientes_lista.php?status=error&message=" . urlencode($stmt->error));
+            header("Location: clientes_lista.php?status=error&message_key=operation_error");
         }
 
         // 7. Cerrar la sentencia

@@ -1,14 +1,16 @@
 <?php
-// Revisado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM en fecha Nov/27/2025 //
+// Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
+// ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
+// Update :Dec-05-2025). Aplicada la internacionalización (i18n).
 require_once 'auth_check.php';
 require_once 'config.php';
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<?php echo $lang; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reporte de Auditoría</title>
+    <title><?php echo __('audit_title'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -28,6 +30,7 @@ require_once 'config.php';
         $params = [];
         $types = '';
         $query_string_parts = [];
+        $query_string_parts[] = "lang=" . $lang; // Mantener el idioma en la paginación
 
         if ($filtro_usuario > 0) {
             $where_clauses[] = "a.id_usuario = ?";
@@ -78,13 +81,17 @@ require_once 'config.php';
         $total_paginas = ceil($total_registros / $registros_por_pagina);
 
         // --- Consulta de Auditoría ---
+        // SOLUCIÓN: Obtener los textos traducidos ANTES de la consulta y pasarlos como parámetros.
+        $audit_user_system_text = __('audit_user_system');
+        $audit_business_na_text = __('audit_business_na');
+
         $sql = "SELECT 
                     a.fecha_hora,
                     a.accion,
                     a.descripcion,
                     a.ip_address,
-                    COALESCE(u.nombre_usuario, 'Sistema/Eliminado') AS nombre_usuario,
-                    COALESCE(n.nombre_negocio, 'N/A') AS nombre_negocio
+                    COALESCE(u.nombre_usuario, ?) AS nombre_usuario,
+                    COALESCE(n.nombre_negocio, ?) AS nombre_negocio
                 FROM j099_auditorias a
                 LEFT JOIN j100_usuarios u ON a.id_usuario = u.id_usuario
                 LEFT JOIN j102_negocios n ON a.id_negocio = n.id_negocio"
@@ -92,11 +99,13 @@ require_once 'config.php';
                 " ORDER BY a.id_audit DESC
                 LIMIT ?, ?";
 
-        // Añadir los parámetros de paginación al final
-        $params_paginacion = $params;
+        // Añadir los parámetros de texto y paginación al final
+        $params_paginacion = array_merge([$audit_user_system_text, $audit_business_na_text], $params);
         $params_paginacion[] = $offset;
         $params_paginacion[] = $registros_por_pagina;
-        $types_paginacion = $types . 'ii';
+        
+        // Añadir los tipos para los textos ('ss') al principio
+        $types_paginacion = 'ss' . $types . 'ii';
 
         $stmt_audit = $conn->prepare($sql);
         $stmt_audit->bind_param($types_paginacion, ...$params_paginacion);
@@ -110,59 +119,60 @@ require_once 'config.php';
 
         <div class="card mb-4">
             <div class="card-header">
-                <h4>Filtrar Registros</h4>
+                <h4><?php echo __('audit_filter_title'); ?></h4>
             </div>
             <div class="card-body">
                 <form action="auditoria_reporte.php" method="GET" class="row g-3 align-items-end">
+                    <input type="hidden" name="lang" value="<?php echo $lang; ?>">
                     <div class="col-md-3">
-                        <label for="filtro_usuario" class="form-label">Usuario</label>
+                        <label for="filtro_usuario" class="form-label"><?php echo __('users_col_user'); ?></label>
                         <select name="filtro_usuario" id="filtro_usuario" class="form-select">
-                            <option value="0">Todos</option>
+                            <option value="0"><?php echo __('audit_filter_all'); ?></option>
                             <?php while($u = $usuarios_filtro->fetch_assoc()): ?>
                                 <option value="<?php echo $u['id_usuario']; ?>" <?php if($filtro_usuario == $u['id_usuario']) echo 'selected'; ?>><?php echo htmlspecialchars($u['nombre_usuario']); ?></option>
                             <?php endwhile; ?>
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label for="filtro_negocio" class="form-label">Negocio</label>
+                        <label for="filtro_negocio" class="form-label"><?php echo __('users_col_business'); ?></label>
                         <select name="filtro_negocio" id="filtro_negocio" class="form-select">
-                            <option value="0">Todos</option>
+                            <option value="0"><?php echo __('audit_filter_all'); ?></option>
                             <?php while($n = $negocios_filtro->fetch_assoc()): ?>
                                 <option value="<?php echo $n['id_negocio']; ?>" <?php if($filtro_negocio == $n['id_negocio']) echo 'selected'; ?>><?php echo htmlspecialchars($n['nombre_negocio']); ?></option>
                             <?php endwhile; ?>
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label for="filtro_fecha_desde" class="form-label">Desde</label>
+                        <label for="filtro_fecha_desde" class="form-label"><?php echo __('audit_filter_from'); ?></label>
                         <input type="date" name="filtro_fecha_desde" id="filtro_fecha_desde" class="form-control" value="<?php echo htmlspecialchars($filtro_fecha_desde); ?>">
                     </div>
                     <div class="col-md-2">
-                        <label for="filtro_fecha_hasta" class="form-label">Hasta</label>
+                        <label for="filtro_fecha_hasta" class="form-label"><?php echo __('audit_filter_to'); ?></label>
                         <input type="date" name="filtro_fecha_hasta" id="filtro_fecha_hasta" class="form-control" value="<?php echo htmlspecialchars($filtro_fecha_hasta); ?>">
                     </div>
                     <div class="col-md-2 d-grid">
-                        <button type="submit" class="btn btn-primary">Filtrar</button>
-                        <a href="auditoria_reporte.php" class="btn btn-secondary mt-1">Limpiar</a>
+                        <button type="submit" class="btn btn-primary"><?php echo __('appointments_filter_button'); ?></button>
+                        <a href="auditoria_reporte.php?lang=<?php echo $lang; ?>" class="btn btn-secondary mt-1"><?php echo __('audit_filter_clear'); ?></a>
                     </div>
                 </form>
             </div>
         </div>
 
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3>Reporte de Auditoría (Audit Trail)</h3>
-            <span class="badge bg-info text-dark">Mostrando <?php echo $result->num_rows; ?> de <?php echo $total_registros; ?> Registros</span>
+            <h3><?php echo __('audit_report_title'); ?></h3>
+            <span class="badge bg-info text-dark"><?php echo str_replace(['{count}', '{total}'], [$result->num_rows, $total_registros], __('audit_showing_records')); ?></span>
         </div>
         
         <div class="table-responsive">
             <table class="table table-striped table-hover table-bordered">
                 <thead class="table-dark">
                     <tr>
-                        <th>Fecha y Hora</th>
-                        <th>Usuario</th>
-                        <th>Negocio</th>
-                        <th>Acción</th>
-                        <th>Descripción</th>
-                        <th>Dirección IP</th>
+                        <th><?php echo __('audit_col_datetime'); ?></th>
+                        <th><?php echo __('users_col_user'); ?></th>
+                        <th><?php echo __('users_col_business'); ?></th>
+                        <th><?php echo __('actions'); ?></th>
+                        <th><?php echo __('categories_col_desc'); ?></th>
+                        <th><?php echo __('audit_col_ip'); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -178,7 +188,7 @@ require_once 'config.php';
                             </tr>
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr><td colspan="6" class="text-center">No hay registros de auditoría que coincidan con los filtros.</td></tr>
+                        <tr><td colspan="6" class="text-center"><?php echo __('audit_no_records'); ?></td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

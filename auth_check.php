@@ -1,11 +1,15 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025).
+// Update :Dec-05-2025). Añadido el cargador del sistema de idiomas.
 
 // --- SOLUCIÓN DEFINITIVA: Cargar el autoloader de Composer ANTES de iniciar la sesión. ---
 // Este archivo es el punto de entrada de seguridad para el panel de admin, es el lugar ideal para cargar las dependencias.
 require_once 'vendor/autoload.php';
+
+// --- INICIO: Cargar sistema de internacionalización (i18n) ---
+require_once __DIR__ . '/languages.php';
+// --- FIN: Cargar sistema de internacionalización (i18n) ---
 
 session_start();
 
@@ -34,7 +38,7 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > 
     session_unset();     // Eliminar todas las variables de sesión
     session_destroy();   // Destruir la sesión
 
-    header("location: sesion_iniciar.php?error=" . urlencode("Tu sesión ha expirado por inactividad. Por favor, inicia sesión de nuevo."));
+    header("location: sesion_iniciar.php?error_key=login_error_session_expired");
     exit;
 }
 $_SESSION['last_activity'] = time(); // Actualizar la hora de la última actividad

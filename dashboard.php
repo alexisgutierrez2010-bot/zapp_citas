@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025).
+// Update :Dec-05-2025). Aplicada la internacionalización (i18n).
 require_once 'auth_check.php'; // PRIMERO: Inicia la sesión y define los roles.
 require_once 'config.php';     // SEGUNDO: Establece la conexión a la BD.
 
@@ -19,11 +19,11 @@ $email_negocio = $config['email'] ?? '';
 // La imagen de fondo ahora se carga a través de un script dedicado
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<?php echo $lang; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bienvenido a <?php echo htmlspecialchars($nombre_negocio); ?></title>
+    <title><?php echo __('welcome'); ?> a <?php echo htmlspecialchars($nombre_negocio); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body, html {
@@ -96,7 +96,7 @@ $email_negocio = $config['email'] ?? '';
             <div class="time" id="dashboard-time"><?php echo date('h:i:s A'); ?></div>
         </div>
         <div class="hero-text">
-            <h1>Bienvenido a <?php echo htmlspecialchars($nombre_negocio); ?></h1>
+            <h1><?php echo __('dashboard_welcome_to'); ?> <?php echo htmlspecialchars($nombre_negocio); ?></h1>
             <?php if (!empty($telefono_negocio) || !empty($email_negocio)): ?>
                 <p class="lead mt-3">
                     <?php if (!empty($telefono_negocio)): ?>
@@ -108,22 +108,22 @@ $email_negocio = $config['email'] ?? '';
                 </p>
             <?php endif; ?>
 
-            <p>Su asistente personal para la gestión de citas.</p>
+            <p><?php echo __('dashboard_subtitle'); ?></p>
 
             <div class="row mt-5 g-4">
                 <div class="col-md-4">
                     <div class="card action-card">
-                        <a href="citas_lista.php" class="card-body">Agendar Cita</a>
+                        <a href="citas_lista.php?lang=<?php echo $lang; ?>" class="card-body"><?php echo __('dashboard_card_schedule'); ?></a>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="card action-card">
-                        <a href="calendario_ver.php" class="card-body">Ver Calendario</a>
+                        <a href="calendario_ver.php?lang=<?php echo $lang; ?>" class="card-body"><?php echo __('dashboard_card_calendar'); ?></a>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="card action-card">
-                        <a href="clientes_lista.php" class="card-body">Gestionar Clientes</a>
+                        <a href="clientes_lista.php?lang=<?php echo $lang; ?>" class="card-body"><?php echo __('dashboard_card_clients'); ?></a>
                     </div>
                 </div>
             </div>

@@ -127,35 +127,38 @@ try {
     // Personalizar el correo según la acción
     switch ($accion) {
         case 'NUEVA':
-            $mail->Subject = ($cita_details['tipo_cita'] === 'Reunion') ? "Invitación a Reunión: " . $titulo_evento : "Confirmación de tu cita en " . $nombre_negocio;
-            $titulo_correo = ($cita_details['tipo_cita'] === 'Reunion') ? "¡Has sido invitado a una reunión!" : "¡Tu cita ha sido agendada con éxito!";
-            $mensaje_principal = "Aquí están los detalles:";
-            $nota_final = '<p style="margin-top: 20px; font-style: italic; color: #555;"><strong>Importante:</strong> Por favor, asiste 5 minutos antes de la hora acordada para respetar el tiempo de agenda de otros clientes.</p>';
+            $subject_key = ($cita_details['tipo_cita'] === 'Reunion') ? 'email_new_subject_meeting' : 'email_new_subject_service';
+            $mail->Subject = str_replace(['{business_name}', '{event_title}'], [$nombre_negocio, $titulo_evento], __($subject_key));
+            $titulo_correo = ($cita_details['tipo_cita'] === 'Reunion') ? __('email_new_title_meeting') : __('email_new_title_service');
+            $mensaje_principal = __('email_new_body');
+            $nota_final = '<p style="margin-top: 20px; font-style: italic; color: #555;">' . __('email_new_footer') . '</p>';
             break;
         case 'MODIFICADA':
-            $mail->Subject = ($cita_details['tipo_cita'] === 'Reunion') ? "Actualización de Reunión: " . $titulo_evento : "Actualización de tu cita en " . $nombre_negocio;
-            $titulo_correo = ($cita_details['tipo_cita'] === 'Reunion') ? "La reunión ha sido modificada" : "¡Tu cita ha sido modificada!";
-            $mensaje_principal = "Estos son los nuevos detalles:";
-            $nota_final = '<p style="margin-top: 20px; font-style: italic; color: #555;">Por favor, revisa los nuevos detalles y contáctanos si tienes alguna pregunta.</p>';
+            $subject_key = ($cita_details['tipo_cita'] === 'Reunion') ? 'email_modified_subject_meeting' : 'email_modified_subject_service';
+            $mail->Subject = str_replace(['{business_name}', '{event_title}'], [$nombre_negocio, $titulo_evento], __($subject_key));
+            $titulo_correo = ($cita_details['tipo_cita'] === 'Reunion') ? __('email_modified_title_meeting') : __('email_modified_title_service');
+            $mensaje_principal = __('email_modified_body');
+            $nota_final = '<p style="margin-top: 20px; font-style: italic; color: #555;">' . __('email_modified_footer') . '</p>';
             break;
         case 'CANCELADA':
-            $mail->Subject = ($cita_details['tipo_cita'] === 'Reunion') ? "Cancelación de Reunión: " . $titulo_evento : "Cancelación de tu cita en " . $nombre_negocio;
-            $titulo_correo = ($cita_details['tipo_cita'] === 'Reunion') ? "La reunión ha sido cancelada" : "Tu cita ha sido cancelada.";
-            $mensaje_principal = "Lamentamos informarte que el siguiente evento ha sido cancelado:";
-            $nota_final = '<p style="margin-top: 20px;">Si deseas reagendar, no dudes en ponerte en contacto con nosotros.</p>';
+            $subject_key = ($cita_details['tipo_cita'] === 'Reunion') ? 'email_cancelled_subject_meeting' : 'email_cancelled_subject_service';
+            $mail->Subject = str_replace(['{business_name}', '{event_title}'], [$nombre_negocio, $titulo_evento], __($subject_key));
+            $titulo_correo = ($cita_details['tipo_cita'] === 'Reunion') ? __('email_cancelled_title_meeting') : __('email_cancelled_title_service');
+            $mensaje_principal = __('email_cancelled_body');
+            $nota_final = '<p style="margin-top: 20px;">' . __('email_cancelled_footer') . '</p>';
             break;
         case 'COMPLETADA':
+            // Este caso no estaba implementado, pero lo dejamos preparado
             if ($cita_details['tipo_cita'] === 'Reunion') {
-                $mail->Subject = "Resumen de Reunión: " . $titulo_evento;
-                $titulo_correo = "¡Gracias por tu participación!";
-                $mensaje_principal = "Aquí tienes un resumen de la reunión completada:";
+                $mail->Subject = str_replace('{event_title}', $titulo_evento, __('email_completed_subject_meeting'));
+                $titulo_correo = __('email_completed_title_meeting');
+                $mensaje_principal = __('email_completed_body_meeting');
             } else {
-                $mail->Subject = "Resumen de tu servicio en " . $nombre_negocio;
-                $titulo_correo = "¡Gracias por tu visita!";
-                $mensaje_principal = "Esperamos que hayas quedado satisfecho/a con tu servicio. Aquí tienes un resumen de la cita completada:";
+                $mail->Subject = str_replace('{business_name}', $nombre_negocio, __('email_completed_subject_service'));
+                $titulo_correo = __('email_completed_title_service');
+                $mensaje_principal = __('email_completed_body_service');
             }
-            // Aquí se podría añadir en el futuro la lógica para generar y adjuntar un PDF con el invoice.
-            $nota_final = '<p style="margin-top: 20px;">¡Esperamos verte de nuevo pronto!</p>';
+            $nota_final = '<p style="margin-top: 20px;">' . __('email_completed_footer') . '</p>';
             break;
         default:
             // Si la acción no es reconocida, no se envía el correo y se redirige con un error.
@@ -227,19 +230,19 @@ try {
 
     $mail->Body = '
         <html><body style="font-family: Arial, sans-serif; line-height: 1.6;">
-            <h2 style="color: #333;">¡Hola ' . $nombre_cliente . '!</h2>
+            <h2 style="color: #333;">' . str_replace('{name}', $nombre_cliente, __('email_hello')) . '</h2>
             <p>' . $titulo_correo . '</p>
             <p>' . $mensaje_principal . '</p>
             <table style="width: 100%; border-collapse: collapse;">
-                <tr style="background-color: #f2f2f2;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>' . ($cita_details['tipo_cita'] === 'Reunion' ? 'Tema:' : 'Servicio:') . '</strong></td><td style="padding: 8px; border: 1px solid #ddd;">' . $titulo_evento . '</td></tr>
-                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Fecha:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">' . $fecha_hora_inicio->format('d/m/Y') . '</td></tr>
-                <tr style="background-color: #f2f2f2;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>Hora:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">' . $fecha_hora_inicio->format('h:i A') . '</td></tr>
+                <tr style="background-color: #f2f2f2;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>' . ($cita_details['tipo_cita'] === 'Reunion' ? __('email_meeting_subject') : __('email_service')) . ':</strong></td><td style="padding: 8px; border: 1px solid #ddd;">' . $titulo_evento . '</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>' . __('email_date') . ':</strong></td><td style="padding: 8px; border: 1px solid #ddd;">' . $fecha_hora_inicio->format('d/m/Y') . '</td></tr>
+                <tr style="background-color: #f2f2f2;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>' . __('email_time') . ':</strong></td><td style="padding: 8px; border: 1px solid #ddd;">' . $fecha_hora_inicio->format('h:i A') . '</td></tr>
             </table>
-            <h3 style="color: #333; margin-top: 20px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Datos del Cliente</h3>
+            <h3 style="color: #333; margin-top: 20px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">' . __('email_client_data') . '</h3>
             <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Nombre:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($cita_details['nombre_completo']) . '</td></tr>
-                <tr style="background-color: #f2f2f2;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>Email:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($cita_details['correo_electronico']) . '</td></tr>
-                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Teléfono:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($cita_details['numero_celular'] ?? 'No especificado') . '</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>' . __('email_name') . ':</strong></td><td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($cita_details['nombre_completo']) . '</td></tr>
+                <tr style="background-color: #f2f2f2;"><td style="padding: 8px; border: 1px solid #ddd;"><strong>' . __('email_email') . ':</strong></td><td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($cita_details['correo_electronico']) . '</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>' . __('email_phone') . ':</strong></td><td style="padding: 8px; border: 1px solid #ddd;">' . htmlspecialchars($cita_details['numero_celular'] ?? __('email_not_specified')) . '</td></tr>
             </table>
             ' . $nota_final . '
             <p><strong>' . $nombre_negocio . '</strong><br>' . nl2br(htmlspecialchars($config['direccion1'] ?? '')) . '<br>' . htmlspecialchars($config['telefono'] ?? '') . '</p>

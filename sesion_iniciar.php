@@ -1,55 +1,59 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025).
-session_start();
+// Update :Dec-05-2025). Corregido el inicio de sesión para evitar pantalla en blanco.
+session_start(); // SOLUCIÓN: Iniciar la sesión al principio de todo.
 
 // Si el usuario ya ha iniciado sesión, redirigirlo a la página principal
 if (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
+    // No necesitamos cargar el idioma aquí, solo redirigir.
+    // El dashboard.php se encargará de cargar el idioma correcto.
     header("location: dashboard.php");
     exit;
 }
 
+// Cargar sistema de internacionalización (i18n) DESPUÉS de la posible redirección.
+require_once __DIR__ . '/languages.php';
+
 // Si se recibe un mensaje de error desde procesar_login.php, se mostrará.
 $error_msg = "";
-if (isset($_GET['error'])) {
+if (isset($_GET['error_key'])) {
+    // Usamos la clave para obtener el mensaje traducido
+    $error_msg = __($_GET['error_key']);
+} elseif (isset($_GET['error'])) {
     $error_msg = htmlspecialchars($_GET['error']);
 }
-
-// Generar un nuevo código CAPTCHA para mostrar en el formulario
-// Se genera un hash corto basado en la hora actual y un "salt" aleatorio.
-$_SESSION['captcha_time'] = time();
-$_SESSION['captcha_hash'] = strtoupper(substr(sha1(session_id() . $_SESSION['captcha_time']), 0, 6));
 
 ?>
 
 
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<?php echo $lang; ?>">
 <head>
     <meta charset="UTF-8">
-    <title>Login</title>
+    <title><?php echo __('login_title'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container vh-100 d-flex justify-content-center align-items-center">
         <div class="card" style="width: 22rem;">
             <div class="card-header text-center">
-                <h3>Iniciar Sesión</h3>
+                <h3><?php echo __('login_title'); ?></h3>
             </div>
             <div class="card-body">
                 <?php 
                 if(!empty($error_msg)){
-                    echo '<div class="alert alert-danger">' . $error_msg . '</div>';
+                    // Los mensajes de error del backend aún no están traducidos, se hará en un paso posterior.
+                    echo '<div class="alert alert-danger">' . $error_msg . '</div>'; 
                 }        
                 ?>
                 <form action="procesar_login.php" method="post">
                     <div class="mb-3">
-                        <label class="form-label">Usuario</label>
+                        <label class="form-label"><?php echo __('login_user'); ?></label>
                         <input type="text" name="nombre_usuario" class="form-control" autocomplete="username">
                     </div>    
                     <div class="mb-3">
-                        <label class="form-label">Contraseña</label>
+                        <label class="form-label"><?php echo __('login_password'); ?></label>
                         <input type="password" name="password" class="form-control" autocomplete="current-password">
                     </div>
                     <!-- SECCIÓN DE CAPTCHA DESACTIVADA PARA DESARROLLO -->
@@ -64,10 +68,21 @@ $_SESSION['captcha_hash'] = strtoupper(substr(sha1(session_id() . $_SESSION['cap
                     </div>
                     -->
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">Entrar</button>
+                        <button type="submit" class="btn btn-primary"><?php echo __('login_button'); ?></button>
                     </div>
                     <div class="text-center mt-3">
-                        <a href="olvide_clave.php">Olvidé mi clave de usuario</a>
+                        <small>
+                            <a href="?lang=es" class="text-decoration-none <?php echo $lang === 'es' ? 'fw-bold' : ''; ?>">Español</a>
+                            |
+                            <a href="?lang=en" class="text-decoration-none <?php echo $lang === 'en' ? 'fw-bold' : ''; ?>">English</a>
+                        </small>
+                    </div>
+                    <hr>
+                    <div class="text-center mt-3">
+                        <a href="olvide_clave.php?lang=<?php echo $lang; ?>"><?php echo __('login_forgot_password'); ?></a>
+                    </div>
+                    <div class="text-center mt-2">
+                        <a href="index.php?lang=<?php echo $lang; ?>" class="text-muted"><small><?php echo __('login_back_to_home'); ?></small></a>
                     </div>
                 </form>
             </div>

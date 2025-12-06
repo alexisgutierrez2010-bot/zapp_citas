@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025).
+// Update :Dec-05-2025). Aplicada la internacionalización (i18n).
 require_once 'auth_check.php'; // Asegura que el usuario ha iniciado sesión y obtiene $id_negocio_session
 require_once 'config.php';
 
@@ -37,11 +37,11 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
 
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<?php echo $lang; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Citas</title>
+    <title><?php echo __('appointments_title'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -53,43 +53,44 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
             <div class="col-md-4">
                 <div class="card">
                     <div class="card-header">
-                        <h3>Agendar Nueva Cita</h3>
+                        <h3><?php echo __('appointments_schedule_new'); ?></h3>
                     </div>
                     <div class="card-body">
                         <?php
-                        if (isset($_GET['status'])) {
-                            if ($_GET['status'] == 'success') {
-                                echo '<div class="alert alert-success">Cita agendada con éxito.</div>';
-                            } elseif ($_GET['status'] == 'success_edit') {
-                                echo '<div class="alert alert-success">Cita actualizada con éxito.</div>';
-                            } elseif ($_GET['status'] == 'success_status') {
-                                echo '<div class="alert alert-success">Estado de la cita actualizado con éxito.</div>';
-                            } elseif ($_GET['status'] == 'success_delete') {
-                                echo '<div class="alert alert-success">Cita eliminada con éxito.</div>';
-                            } elseif ($_GET['status'] == 'error') {
-                                $errorMessage = isset($_GET['message']) ? htmlspecialchars($_GET['message']) : 'Ocurrió un error.';
-                                echo '<div class="alert alert-danger">' . $errorMessage . '</div>';
+                        if (isset($_GET['status']) || isset($_GET['message_key'])) {
+                            $status = $_GET['status'] ?? '';
+                            $message_key = $_GET['message_key'] ?? '';
+                            $message = '';
+
+                            if (!empty($message_key)) {
+                                $message = __($message_key);
+                            } elseif (strpos($status, 'success') !== false) {
+                                $message = __('operation_success');
+                            }
+                            if (!empty($message)) {
+                                $alert_type = strpos($status, 'error') === false ? 'success' : 'danger';
+                                echo "<div class='alert alert-{$alert_type}'>" . htmlspecialchars($message) . "</div>";
                             }
                         }
                         ?>
                         <form action="citas_crear.php" method="POST">
                             <!-- Selector de Tipo de Cita -->
                             <div class="mb-3">
-                                <label class="form-label">Tipo de Cita</label>
+                                <label class="form-label"><?php echo __('appointments_type'); ?></label>
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="tipo_cita" id="tipo_servicio" value="Servicio" checked>
-                                    <label class="form-check-label" for="tipo_servicio">Cita de Servicio</label>
+                                    <label class="form-check-label" for="tipo_servicio"><?php echo __('appointments_type_service'); ?></label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="tipo_cita" id="tipo_reunion" value="Reunion">
-                                    <label class="form-check-label" for="tipo_reunion">Reunión</label>
+                                    <label class="form-check-label" for="tipo_reunion"><?php echo __('appointments_type_meeting'); ?></label>
                                 </div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="id_cliente" class="form-label">Cliente</label>
+                                <label for="id_cliente" class="form-label"><?php echo __('appointments_client'); ?></label>
                                 <select class="form-select" id="id_cliente" name="id_cliente" required>
-                                    <option value="">Seleccione un cliente...</option>
+                                    <option value=""><?php echo __('appointments_select_client'); ?></option>
                                     <?php while($cliente = $clientes_result->fetch_assoc()): ?>
                                         <option value="<?php echo $cliente['id_cliente']; ?>"><?php echo htmlspecialchars($cliente['nombre_completo']); ?></option>
                                     <?php endwhile; ?>
@@ -99,9 +100,9 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
 
                             <!-- Campo de Servicio (se muestra/oculta con JS) -->
                             <div class="mb-3" id="campo_servicio">
-                                <label for="id_servicio" class="form-label">Servicio</label>
+                                <label for="id_servicio" class="form-label"><?php echo __('appointments_service'); ?></label>
                                 <select class="form-select" id="id_servicio" name="id_servicio">
-                                    <option value="">Seleccione un servicio...</option>
+                                    <option value=""><?php echo __('appointments_select_service'); ?></option>
                                     <?php while($servicio = $servicios_result->fetch_assoc()): ?>
                                         <option value="<?php echo $servicio['id_servicio']; ?>"><?php echo htmlspecialchars($servicio['nombre_servicio']); ?></option>
                                     <?php endwhile; ?>
@@ -110,13 +111,13 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
                             </div>
 
                             <div class="mb-3">
-                                <label for="fecha_cita" class="form-label">Fecha de la Cita</label>
+                                <label for="fecha_cita" class="form-label"><?php echo __('appointments_date'); ?></label>
                                 <input type="date" class="form-control" id="fecha_cita" name="fecha_cita" required>
                             </div>
                             <div class="mb-3">
-                                <label for="hora_cita" class="form-label">Hora de la Cita</label>
+                                <label for="hora_cita" class="form-label"><?php echo __('appointments_time'); ?></label>
                                 <select class="form-select" id="hora_cita" name="hora_cita" required>
-                                    <option value="">Seleccione una hora...</option>
+                                    <option value=""><?php echo __('appointments_select_time'); ?></option>
                                     <?php
                                     // SOLUCIÓN: Generar los intervalos dinámicamente desde la configuración del negocio.
                                     // Esto asegura que los horarios mostrados coincidan con el intervalo definido.
@@ -132,26 +133,26 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label for="descripcion_trabajo" class="form-label" id="label_descripcion">Descripción Adicional</label>
+                                <label for="descripcion_trabajo" class="form-label" id="label_descripcion"><?php echo __('appointments_additional_desc'); ?></label>
                                 <textarea class="form-control" id="descripcion_trabajo" name="descripcion_trabajo" rows="2"></textarea>
                             </div>
 
                             <!-- Sección de Invitados (se muestra/oculta con JS) -->
                             <div id="seccion_invitados" style="display: none;">
                                 <hr>
-                                <h5>Invitados a la Reunión</h5>
+                                <h5><?php echo __('appointments_meeting_guests'); ?></h5>
                                 <div id="lista_invitados">
                                     <!-- Los invitados se añadirán aquí dinámicamente -->
                                 </div>
                                 <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="btn_anadir_invitado">
-                                    + Añadir Invitado
+                                    <?php echo __('appointments_add_guest'); ?>
                                 </button>
                                 <hr>
                             </div>
 
                             <div class="d-grid gap-2 d-sm-flex">
-                                <button type="submit" class="btn btn-primary flex-grow-1">Agendar Cita</button>
-                                <button type="reset" class="btn btn-secondary flex-grow-1">Limpiar Formulario</button>
+                                <button type="submit" class="btn btn-primary flex-grow-1"><?php echo __('appointments_schedule_button'); ?></button>
+                                <button type="reset" class="btn btn-secondary flex-grow-1"><?php echo __('services_form_clear'); ?></button>
                             </div>
                         </form>
                     </div>
@@ -161,7 +162,7 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
             <!-- Columna para la lista de citas -->
             <div class="col-md-8">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h3>Lista de Citas</h3>
+                    <h3><?php echo __('appointments_list_title'); ?></h3>
                     <div class="text-end">
                         <span class="fs-5 text-muted">🗓️ <?php echo (new DateTime())->format('d/m/Y'); ?></span><br>
                         <span class="fs-4 fw-bold"><?php echo (new DateTime())->format('H:i:s'); ?></span>
@@ -171,14 +172,14 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
                 
                 <!-- Formulario de filtro por fecha -->
                 <form action="citas_lista.php" method="GET" class="d-flex flex-wrap justify-content-between align-items-center mb-3 bg-light p-3 rounded gap-2">
-                    <a href="<?php echo $url_anterior; ?>" class="btn btn-secondary">⬅️ Anterior</a>
+                    <a href="<?php echo $url_anterior; ?>" class="btn btn-secondary"><?php echo __('appointments_prev_day'); ?></a>
                     <div class="d-flex align-items-center flex-grow-1 justify-content-center">
-                        <label for="fecha_filtro" class="col-form-label fw-bold me-2">Día:</label>
+                        <label for="fecha_filtro" class="col-form-label fw-bold me-2"><?php echo __('appointments_filter_day'); ?></label>
                         <input type="date" class="form-control me-2" id="fecha_filtro" name="fecha_filtro" value="<?php echo htmlspecialchars($fecha_filtro); ?>">
-                        <button type="submit" class="btn btn-info">Filtrar</button>
+                        <button type="submit" class="btn btn-info"><?php echo __('appointments_filter_button'); ?></button>
                     </div>
                     <div class="col-auto">
-                        <a href="<?php echo $url_siguiente; ?>" class="btn btn-secondary">Siguiente ➡️</a>
+                        <a href="<?php echo $url_siguiente; ?>" class="btn btn-secondary"><?php echo __('appointments_next_day'); ?></a>
                     </div>
                 </form>
 
@@ -187,14 +188,14 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
                         <thead class="table-dark">
                             <tr>
                                 <th>#</th>
-                                <th>Horario</th>
-                                <th>Cliente</th>
-                                <th>Servicio</th>
-                                <th>Duración</th>
-                                <th>Estado</th>
+                                <th><?php echo __('appointments_col_schedule'); ?></th>
+                                <th><?php echo __('clients'); ?></th>
+                                <th><?php echo __('services'); ?></th>
+                                <th><?php echo __('appointments_col_duration'); ?></th>
+                                <th><?php echo __('status'); ?></th>
                                 <th><abbr title="Contador de Emails Enviados">📧</abbr></th>
                                 <th><abbr title="Contador de SMS Enviados">📱</abbr></th>
-                                <th>Acciones</th>
+                                <th><?php echo __('actions'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -276,7 +277,7 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
                                     echo "</tr>";
                                 }
                             } else {
-                                echo "<tr><td colspan='9' class='text-center'>No hay citas agendadas para el día " . date('d/m/Y', strtotime($fecha_filtro)) . ".</td></tr>";
+                                echo "<tr><td colspan='9' class='text-center'>" . __('appointments_no_appointments_for_day') . " " . date('d/m/Y', strtotime($fecha_filtro)) . ".</td></tr>";
                             }
                             ?>
                         </tbody>
