@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-27-2025).
+// Update :Dec-01-2025).
 require_once 'auth_check.php'; // Asegura que el usuario ha iniciado sesión y obtiene $id_negocio_session
 require_once 'config.php';
 

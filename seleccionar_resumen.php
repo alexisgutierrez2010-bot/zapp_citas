@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
+// Update :Dec-01-2025).
 require_once 'auth_check.php';
 require_once 'config.php';
 
@@ -59,17 +59,15 @@ rsort($archivos);
                                         </span>
                                         <div class="btn-group">                                            
                                             <?php
-                                            // Lógica de enlace de "Ver" condicional
+                                            // CORRECCIÓN: Se reestructura la lógica para generar la URL de forma explícita y evitar errores de truncamiento.
                                             if ($extension === 'md') {
-                                                echo '<a href="documento_ver_md.php?file=' . urlencode($nombre_archivo) . '" class="btn btn-sm btn-info">Ver</a>';
+                                                echo '<a href="documento_ver.php?file=' . urlencode($nombre_archivo) . '" class="btn btn-sm btn-info" target="_blank">Ver</a>';
                                             } else {
                                                 echo '<a href="documentos/' . urlencode($nombre_archivo) . '" class="btn btn-sm btn-info" target="_blank">Ver</a>';
                                             }
                                             ?>
                                             <?php if ($extension === 'txt'): // Solo mostrar Editar para archivos .txt ?>
                                                 <a href="documento_editar.php?file=<?php echo urlencode($nombre_archivo); ?>" class="btn btn-sm btn-warning">Editar</a>
-                                            <?php elseif ($extension === 'md'): // Nuevo: botón de editar para Markdown ?>
-                                                <a href="documento_editar_md.php?file=<?php echo urlencode($nombre_archivo); ?>" class="btn btn-sm btn-warning">Editar</a>
                                             <?php endif; ?>
                                             <?php // Lógica de enlace de envío condicional ?>
                                             <?php if ($extension === 'txt' || $extension === 'md'): ?>

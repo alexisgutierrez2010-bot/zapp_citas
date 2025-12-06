@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-28-2025).
+// Update :Dec-01-2025).
 // session_start(); // CORRECTO: El guardián NO debe iniciar la sesión.
 
 // SOLUCIÓN DEFINITIVA: Cargar la configuración aquí, una sola vez.
@@ -16,9 +16,10 @@ if (!isset($_SESSION['owner_loggedin']) || $_SESSION['owner_loggedin'] !== true)
 }
 
 if (isset($_SESSION['owner_last_activity']) && (time() - $_SESSION['owner_last_activity'] > SESSION_TIMEOUT)) {
-    // require_once 'audit_log.php'; // SIMPLIFICACIÓN: Auditoría desactivada.
-    // registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $_SESSION['owner_id_negocio'], 'SESSION_TIMEOUT', "La sesión del propietario '{$_SESSION['owner_nombre_usuario']}' en la SPA expiró por inactividad.");
-    
+    // Reactivando la auditoría para consistencia
+    require_once 'audit_log.php';
+    registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $_SESSION['owner_id_negocio'], 'SESSION_TIMEOUT', "La sesión del propietario '{$_SESSION['owner_nombre_usuario']}' en la SPA expiró por inactividad.");
+
     session_unset();
     session_destroy();
 

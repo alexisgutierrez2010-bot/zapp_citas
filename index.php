@@ -1,8 +1,8 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
-date_default_timezone_set('America/Caracas'); // Establecer la zona horaria
+// Update :Dec-01-2025). Retoque para ajustar la zona horaria del portal público.
+date_default_timezone_set('America/Chicago'); // Establecer la zona horaria a US Central Time
 ?>
 <!DOCTYPE html>
 <html lang="es">

@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-27-2025).
+// Update :Dec-01-2025).
 header('Content-Type: application/json');
 require_once 'config.php';
 

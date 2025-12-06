@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-28-2025).
+// Update :Dec-01-2025).
 session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
 require_once 'api_owner_session_check.php'; // 1. Guardián de sesión y timeout
 header('Content-Type: application/json'); // La cabecera se establece DESPUÉS del guardián.
@@ -192,13 +192,6 @@ try {
                 // 2. Crear objetos DateTime con la zona horaria correcta y luego convertirlos a UTC para el .ics
                 $fecha_inicio_utc = (new DateTime($fecha_inicio_db, $server_timezone))->setTimezone(new DateTimeZone('UTC'))->format('Ymd\THis\Z');
                 $fecha_fin_utc = (new DateTime($fecha_fin_db, $server_timezone))->setTimezone(new DateTimeZone('UTC'))->format('Ymd\THis\Z');
-
-                // --- MÉTODO DE DETECCIÓN Y MANEJO DE ERROR ---
-                // Verificamos si la constante BASE_URL está definida. Si no, la definimos con un valor por defecto.
-                // Esto previene el 'Warning' y hace el script más robusto, eliminando el error "Unexpected token '<'".
-                if (!defined('BASE_URL')) {
-                    define('BASE_URL', 'http://localhost/zapp_citas/');
-                }
 
                 $uid = $id_nueva_cita . '@' . parse_url(BASE_URL, PHP_URL_HOST);
                 $location = "{$details['direccion1']}, {$details['ciudad']}";

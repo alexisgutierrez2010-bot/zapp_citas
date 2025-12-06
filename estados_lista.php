@@ -1,8 +1,8 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
-require_once 'Auth_check.php';
+// Update :Dec-01-2025). Corregido para compatibilidad con Linux.
+require_once 'auth_check.php';
 require_once 'config.php';
 
 $id_pais = isset($_GET['id_pais']) ? (int)$_GET['id_pais'] : 0;

@@ -1,7 +1,7 @@
 # Manual Técnico y Guía de Despliegue - ZApp Citas
 
 **Versión:** 1.3
-**Última Actualización:** 28 de Noviembre de 2025
+**Última Actualización:** 01 de Diciembre de 2025
 
 ---
 
@@ -81,37 +81,40 @@ El sistema utiliza una arquitectura mixta:
 
 ## 2.5. Flujo de Comunicaciones por Email
 
-Para garantizar una experiencia de usuario profesional y consistente, el sistema implementa un flujo de notificaciones por correo electrónico automatizado. La regla general es: **toda acción significativa sobre una cita debe generar una notificación automática por correo electrónico tanto al cliente como al negocio.**
+Para garantizar una experiencia de usuario profesional y flexible, el sistema implementa un flujo de notificaciones por correo electrónico. La funcionalidad se ha centralizado en la **SPA del Propietario (`spa_owner`)** para dar control total al dueño del negocio, mientras que los envíos automáticos desde el panel de administración (`zapp_citas`) han sido suspendidos para evitar redundancias.
 
 A continuación se detalla el comportamiento homologado del sistema:
 
-| Evento de la Cita | Rol / Aplicación | Comportamiento del Email |
-| :--- | :--- | :--- |
-| **Crear Cita** | Admin, Propietario, Cliente | ✅ **Automático:** Envía correo de "Nueva Cita" con detalles y archivo de calendario (.ics). |
-| **Modificar Cita** | Admin, Propietario | ✅ **Automático:** Envía correo de "Cita Modificada" con los nuevos detalles y un .ics actualizado. |
-| **Confirmar Cita** | Cliente, Propietario | ✅ **Automático:** Envía correo de "Cita Confirmada". |
-| **Cancelar Cita** | Admin, Propietario, Cliente | ✅ **Automático:** Envía correo de "Cita Cancelada" con una actualización de calendario. |
-| **Completar Cita** | Admin, Propietario | ✅ **Automático:** Envía correo de "Cita Completada" como resumen y agradecimiento. |
-| **Eliminar Cita** | Admin, Propietario | ✅ **Automático:** Envía un correo de "Cita Cancelada" **antes** de eliminar el registro de la base de datos para notificar al cliente. |
+| Evento de la Cita | Aplicación | Comportamiento del Email | Notas |
+| :--- | :--- | :--- | :--- |
+| **Crear Cita** | `spa_owner` | ✅ **Automático (Opcional):** Al crear la cita, el propietario puede marcar una casilla para notificar al cliente. Si se marca, envía correo de "Nueva Cita" con detalles y archivo `.ics`. | El envío desde `zapp_citas` está suspendido. |
+| **Modificar Cita** | `spa_owner` | 🟡 **Manual:** Después de modificar, el propietario debe usar la acción "📧 Enviar Email" para notificar los cambios. | El envío desde `zapp_citas` está suspendido. |
+| **Confirmar Cita** | `spa_owner` | 🟡 **Manual:** El propietario debe usar la acción "📧 Enviar Email" y seleccionar la plantilla "Cita Confirmada". | |
+| **Cancelar Cita** | `spa_owner` | 🟡 **Manual:** El propietario debe usar la acción "📧 Enviar Email" y seleccionar la plantilla "Cita Cancelada". | |
+| **Completar Cita** | `spa_owner` | 🟡 **Manual:** El propietario debe usar la acción "📧 Enviar Email" y seleccionar la plantilla "Cita Completada". | |
+| **Eliminar Cita** | `spa_owner` | ❌ **Sin Email:** La acción de eliminar es inmediata y no envía notificación. Se recomienda cancelar primero. | El envío desde `zapp_citas` está suspendido. |
 
 ---
 
 ## 2.6. Sistema de Auditoría
 
 El sistema cuenta con un robusto módulo de auditoría que registra todas las operaciones críticas realizadas en las tres aplicaciones. El objetivo es mantener una trazabilidad completa de las acciones que modifican datos, mejorando la seguridad y el control. Todos los eventos se almacenan en la tabla `j101_auditoria`.
+El sistema cuenta con un robusto módulo de auditoría que registra todas las operaciones críticas realizadas en las tres aplicaciones. El objetivo es mantener una trazabilidad completa de las acciones que modifican datos, mejorando la seguridad y el control. Todos los eventos se almacenan en la tabla `j099_auditorias`.
 
 La siguiente tabla de diagnóstico detalla la cobertura de auditoría en todo el sistema:
 
 | Evento | Aplicación | Archivo(s) Involucrados | ¿Auditado? |
-| :--- | :--- | :---: |
-| **Login / Logout** | `zapp_citas` | `procesar_login.php`, `logout.php`, `auth_check.php` | ✅ **Sí** |
+| :--- | :--- | :--- | :---: |
+| **Login / Logout / Timeout** | `zapp_citas` | `procesar_login.php`, `logout.php`, `auth_check.php` | ✅ **Sí** |
 | | `spa_owner` | `api_owner_login.php`, `api_owner_logout.php` | ✅ **Sí** |
 | | `spa_client` | `api_cliente_login.php` | ✅ **Sí** |
+| **Recuperar Contraseña** | `zapp_citas` | `procesar_olvide_clave.php` | ✅ **Sí** |
+| | `spa_owner` | `api_owner_recuperar_clave.php` | ✅ **Sí** |
 | | | | |
 | **Crear Negocio** | `zapp_citas` | `negocios_crear.php` | ✅ **Sí** |
 | **Actualizar Negocio** | `zapp_citas` | `negocios_actualizar.php` | ✅ **Sí** |
 | | `spa_owner` | `api_owner_negocio_update.php` | ✅ **Sí** |
-| **Eliminar Negocio** | `zapp_citas` | `negocios_eliminar.php` | ✅ **Sí** |
+| **Desactivar Negocio** | `zapp_citas` | `negocios_eliminar.php` | ✅ **Sí** |
 | | | | |
 | **Crear Usuario** | `zapp_citas` | `usuarios_crear.php` | ✅ **Sí** |
 | **Actualizar Usuario** | `zapp_citas` | `usuarios_actualizar.php` | ✅ **Sí** |
@@ -135,7 +138,16 @@ La siguiente tabla de diagnóstico detalla la cobertura de auditoría en todo el
 | **Desactivar Servicio** | `zapp_citas` | `servicios_eliminar.php` | ✅ **Sí** |
 | | `spa_owner` | `api_owner_servicio_eliminar.php` | ✅ **Sí** |
 | | | | |
-| **CRUD de Citas** | `zapp_citas`, `spa_owner`, `spa_client` | ✅ **Sí** |
+| **Crear Cita** | `zapp_citas` | `citas_crear.php` | ✅ **Sí** |
+| | `spa_owner` | `api_owner_cita_crear.php` | ✅ **Sí** |
+| **Actualizar Cita** | `zapp_citas` | `citas_actualizar.php` | ✅ **Sí** |
+| **Actualizar Estado Cita** | `zapp_citas` | `citas_actualizar_estado.php` | ✅ **Sí** |
+| **Eliminar Cita** | `zapp_citas` | `citas_eliminar.php` | ✅ **Sí** |
+| **Cerrar Citas Vencidas** | `spa_owner` | `api_owner_citas_cerrar_vencidas.php` | ✅ **Sí** |
+| | | | |
+| **CRUD de Categorías** | `zapp_citas` | `categorias_*.php` | ✅ **Sí** |
+| | | | |
+| **Manejo de Documentos** | `zapp_citas` | `documento_subir.php`, `documento_editar.php`, `enviar_resumen.php` | ✅ **Sí** |
 
 **Conclusión:** Todas las operaciones que implican creación, modificación o eliminación de datos (CRUD) están siendo auditadas correctamente en todas las interfaces.
 
@@ -151,6 +163,8 @@ Esta sección detalla cada programa y su propósito dentro del sistema.
 *   `index.php`: Portal de bienvenida principal que redirige a las tres aplicaciones.
 *   `footer.php` / `navbar.php`: Componentes de UI para el panel de administración.
 *   `get_image.php`: Script seguro para servir la imagen de fondo de un negocio.
+*   `check_composer.php`: Script de diagnóstico para verificar la instalación de dependencias de Composer.
+*   `documento_ver.php`: Visor que convierte archivos Markdown (.md) a HTML para una lectura fácil.
 
 #### 3.2. Autenticación y Sesión
 *   `auth_check.php`: **Guardián de sesión** para el panel de administración.
@@ -178,6 +192,7 @@ Esta sección detalla cada programa y su propósito dentro del sistema.
 *   `api_owner_cita_crear.php`: Permite al propietario crear una nueva cita.
 *   `api_owner_clientes.php`: Devuelve la lista de clientes activos del negocio.
 *   `api_owner_servicios.php`: Devuelve la lista de servicios activos del negocio.
+*   `api_owner_recuperar_clave.php`: Gestiona la solicitud de recuperación de contraseña para el propietario.
 *   `api_owner_citas_cerrar_vencidas.php`: Procesa y marca como 'Vencidas' las citas pasadas que no fueron completadas.
 
 #### 3.5. API para SPA del Cliente (spa_client)
@@ -247,11 +262,11 @@ Este diagrama ilustra el flujo principal de interacción entre los componentes.
 *   `activo` (TINYINT, 1=Activo, 0=Inactivo)
 *   `fecha_creacion`
 
-### j101_auditoria
+### j099_auditorias
 *   `id_audit` (PK, AI)
 *   `id_usuario` (FK a j100_usuarios, NULLABLE)
 *   `id_negocio` (FK a j102_negocios, NULLABLE)
-*   `tipo_evento`
+*   `accion`
 *   `descripcion`
 *   `ip_address`
 *   `fecha_hora`
@@ -360,6 +375,7 @@ Este diagrama ilustra el flujo principal de interacción entre los componentes.
     ```bash
     composer install --no-dev --optimize-autoloader
     ```
+    -   **Plan B (Si no tienes terminal):** Si tu plan de hosting no incluye acceso a la terminal, ejecuta `composer install --no-dev --optimize-autoloader` en tu computadora local (dentro de `c:\xampp\htdocs\zapp_citas\`). Luego, sube la carpeta `vendor` generada a tu servidor usando FTP (FileZilla).
 
 ---
 
@@ -393,6 +409,22 @@ Este script es una herramienta de diagnóstico crucial para resolver problemas r
     *   **`¡VERIFICACIÓN FALLIDA!` (Rojo):** Indica un problema con la instalación de Composer.
         *   **Causa Común:** El archivo `composer.lock` no está sincronizado con `composer.json`.
         *   **Solución:**
-            1.  Abrir una terminal en la carpeta del proyecto (`c:\xampp\htdocs\zapp_citas`).
+            1.  Abrir una terminal en la carpeta del proyecto (`c:\xampp\htdocs\zapp_citas\`).
             2.  Ejecutar el comando: `composer update`.
             3.  Volver a ejecutar la prueba en el navegador.
+
+### 8.2. Verificador de Composer (`check_composer.php`)
+
+Este script es una herramienta de diagnóstico más completa para resolver problemas con las dependencias del proyecto.
+
+*   **Propósito:** Verificar que el archivo `composer.json` es válido, que la carpeta `vendor` y el `autoload.php` existen, y que las clases principales (como `PHPMailer` y `Parsedown`) son accesibles para PHP.
+
+*   **Ubicación:** `c:\xampp\htdocs\zapp_citas\check_composer.php`
+
+*   **Modo de Uso:**
+    1.  Navegar a la URL: `http://localhost/zapp_citas/check_composer.php` (no requiere iniciar sesión).
+    2.  Observar el resultado de los 3 pasos de verificación.
+
+*   **Resultados Posibles:**
+    *   **Todo en Verde (✅):** La configuración de Composer es correcta.
+    *   **Algún error en Rojo (❌):** El script indicará la causa exacta (ej. `composer.json` inválido, `vendor/` no encontrado) y la solución recomendada.

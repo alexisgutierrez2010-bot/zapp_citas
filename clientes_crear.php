@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-20-2025).
+// Update :Dec-01-2025).
 require_once 'auth_check.php';
 // 1. Incluir la configuración de la base de datos
 require_once 'audit_log.php';

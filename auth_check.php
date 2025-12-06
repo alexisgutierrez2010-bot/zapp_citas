@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-27-2025).
+// Update :Dec-01-2025).
 
 // --- SOLUCIÓN DEFINITIVA: Cargar el autoloader de Composer ANTES de iniciar la sesión. ---
 // Este archivo es el punto de entrada de seguridad para el panel de admin, es el lugar ideal para cargar las dependencias.
@@ -18,8 +18,11 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 }
 
 // Guardamos los datos de la sesión en variables para fácil acceso
-$id_negocio_session = $_SESSION['id_negocio'];
-$rol_session = $_SESSION['rol']; // Guardamos el rol del usuario
+// --- SOLUCIÓN DEFINITIVA: Lectura directa de la sesión ---
+// Se lee directamente el id_negocio y el rol que fueron establecidos correctamente en procesar_login.php.
+// Se elimina la lógica condicional que sobrescribía el id_negocio para usuarios no-Master.
+$id_negocio_session = $_SESSION['id_negocio'] ?? null;
+$rol_session = $_SESSION['rol'] ?? null;
 
 // --- LÓGICA DE EXPIRACIÓN DE SESIÓN POR INACTIVIDAD ---
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > SESSION_TIMEOUT)) {

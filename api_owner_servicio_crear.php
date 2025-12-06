@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-28-2025).
+// Update :Dec-01-2025).
 session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
 require_once 'config.php';
 require_once 'audit_log.php'; // Reactivado

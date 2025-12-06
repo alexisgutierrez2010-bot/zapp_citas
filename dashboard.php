@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
+// Update :Dec-01-2025).
 require_once 'auth_check.php'; // PRIMERO: Inicia la sesión y define los roles.
 require_once 'config.php';     // SEGUNDO: Establece la conexión a la BD.
 

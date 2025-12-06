@@ -1,12 +1,14 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-24-2025).
+// Update :Dec-01-2025).
+session_start(); // CORRECCIÓN: Iniciar la sesión al principio del script.
+
 require_once 'config.php';
 require_once 'audit_log.php'; // CORRECCIÓN: Incluir antes de usar la función
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $nombre_usuario = $_POST['usuario'];
+    $nombre_usuario = $_POST['nombre_usuario'];
     $password = $_POST['password'];
 
     $sql = "SELECT id_usuario, password_hash, id_negocio, rol, activo FROM j100_usuarios WHERE nombre_usuario = ?";
@@ -21,18 +23,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             // ¡VALIDACIÓN DE SEGURIDAD! Verificar si el usuario está activo.
             if ($usuario['activo'] != 1) {
-                header("Location: login.php?error=" . urlencode("Tu cuenta de usuario ha sido desactivada."));
+                header("Location: sesion_iniciar.php?error=" . urlencode("Tu cuenta de usuario ha sido desactivada."));
                 exit();
             }
 
             // Verificar la contraseña
             if (password_verify($password, $usuario['password_hash'])) {
                 // Contraseña correcta, iniciar sesión
-                session_start();
                 $_SESSION['loggedin'] = true;
                 $_SESSION['id_usuario'] = $usuario['id_usuario'];
                 $_SESSION['nombre_usuario'] = $nombre_usuario; // ¡La clave para multiempresa!
-                $_SESSION['id_negocio'] = $usuario['id_negocio'];
+                
+                // --- SOLUCIÓN DEFINITIVA PARA EL USUARIO MASTER ---
+                // Si el usuario es 'Master', su id_negocio en la BD es NULL. Le asignamos el negocio 1 por defecto para que pueda operar.
+                $_SESSION['id_negocio'] = ($usuario['rol'] === 'Master') ? 1 : $usuario['id_negocio'];
+
                 $_SESSION['rol'] = $usuario['rol'];
                 $_SESSION['last_activity'] = time(); // Iniciar el contador de inactividad
 
@@ -42,11 +47,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 // Redirigir a la página de inicio
                 header("Location: dashboard.php"); // CORRECCIÓN: Redirigir directamente al dashboard
                 exit();
+            } else {
+                // Contraseña incorrecta
+                header("Location: sesion_iniciar.php?error=" . urlencode("Contraseña incorrecta."));
+                exit();
             }
         }
     }
-    // Si algo falla, redirigir de vuelta al login con un error
-    header("Location: login.php?error=" . urlencode("Usuario o contraseña incorrectos."));
+    // Si el bucle termina sin un login exitoso, significa que el usuario no fue encontrado.
+    header("Location: sesion_iniciar.php?error=" . urlencode("Usuario no encontrado."));
     exit();
 }
 ?>
