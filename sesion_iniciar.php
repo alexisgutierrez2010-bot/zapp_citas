@@ -48,9 +48,12 @@ if (isset($_GET['error_key'])) {
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-                <?php echo __('zapp_citas'); ?>
-                <span class="ms-2 fw-normal text-white-50" style="font-size: 0.8em;"><?php echo __('login_app_admin'); ?></span>
+            <a class="navbar-brand d-flex align-items-center" href="index.php?lang=<?php echo $lang; ?>" style="padding-top: 0; padding-bottom: 0;">
+                <img src="logo_zapp_citas.png" alt="Logo ZApp Citas" style="height: 1.5em; margin-right: 10px; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.5));">
+                <span style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                    <?php echo __('zapp_citas'); ?>
+                    <span class="ms-2 fw-normal text-white-50" style="font-size: 0.8em;"><?php echo __('login_app_admin'); ?></span>
+                </span>
             </a>
             <ul class="navbar-nav ms-auto">
                 <?php

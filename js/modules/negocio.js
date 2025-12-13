@@ -15,8 +15,8 @@ export async function renderNegocioView(context) {
         ]);
 
         if (!negocioResponse.ok) {
-            const errorData = await negocioResponse.json();
-            throw new Error(errorData.error || T.error_loading_config || 'Could not load configuration.');
+            const errorData = await negocioResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || T.error_loading_config || 'Could not load business configuration.');
         }
         
         const negocio = await negocioResponse.json();
@@ -39,7 +39,7 @@ export async function renderNegocioView(context) {
             <div class="row justify-content-center">
                 <div class="col-md-10 col-lg-8">
                     <div class="card">
-                        <div class="card-header"><h3>${T.businesses_title}</h3></div>
+                        <div class="card-header"><h3>${T.businesses_title || 'Business Configuration'}</h3></div>
                         <div class="card-body">
                             <div id="error-container-negocio"></div>
                             <form id="negocio-form">
@@ -48,12 +48,12 @@ export async function renderNegocioView(context) {
                                 <hr><h5 class="mt-4">${T.clients_form_address || 'Address'}</h5>
                                 <div class="mb-3"><label for="direccion1" class="form-label">${T.clients_form_address1 || 'Address 1'}</label><input type="text" class="form-control" id="direccion1" value="${negocio.direccion1 || ''}"></div>
                                 <div class="row"><div class="col-md-6 mb-3"><label for="id_pais" class="form-label">${T.clients_form_country || 'Country'}</label><select class="form-select" id="id_pais" required>${paisesOptions}</select></div><div class="col-md-6 mb-3"><label for="id_estado" class="form-label">${T.clients_form_state || 'State'}</label><select class="form-select" id="id_estado" required disabled><option>${T.businesses_form_loading}</option></select></div></div>
-                                <hr><h5 class="mt-4">${T.businesses_schedule_title}</h5>
-                                <div class="mb-3"><label class="form-label">${T.businesses_schedule_days}</label><div>${diasTrabajoCheckboxes}</div></div>
-                                <div class="row"><div class="col-md-4 mb-3"><label for="hora_inicio" class="form-label">${T.businesses_schedule_start}</label><input type="time" class="form-control" id="hora_inicio" value="${negocio.hora_inicio || ''}" required></div><div class="col-md-4 mb-3"><label for="hora_cierre" class="form-label">${T.businesses_schedule_end}</label><input type="time" class="form-control" id="hora_cierre" value="${negocio.hora_cierre || ''}" required></div><div class="col-md-4 mb-3"><label for="intervalo_minutos" class="form-label">${T.businesses_schedule_interval}</label><input type="number" class="form-control" id="intervalo_minutos" value="${negocio.intervalo_minutos || 30}" required></div></div>
+                                <hr><h5 class="mt-4">${T.businesses_schedule_title || 'Work Schedule'}</h5>
+                                <div class="mb-3"><label class="form-label">${T.businesses_schedule_days || 'Work Days'}</label><div>${diasTrabajoCheckboxes}</div></div>
+                                <div class="row"><div class="col-md-4 mb-3"><label for="hora_inicio" class="form-label">${T.businesses_schedule_start || 'Start Time'}</label><input type="time" class="form-control" id="hora_inicio" value="${negocio.hora_inicio || ''}" required></div><div class="col-md-4 mb-3"><label for="hora_cierre" class="form-label">${T.businesses_schedule_end || 'End Time'}</label><input type="time" class="form-control" id="hora_cierre" value="${negocio.hora_cierre || ''}" required></div><div class="col-md-4 mb-3"><label for="intervalo_minutos" class="form-label">${T.businesses_schedule_interval || 'Interval (minutes)'}</label><input type="number" class="form-control" id="intervalo_minutos" value="${negocio.intervalo_minutos || 30}" required></div></div>
                                 <div class="d-flex justify-content-end gap-2 mt-4">
                                     <button type="button" class="btn btn-secondary" id="btn-cancelar-negocio">${T.cancel || 'Cancel'}</button>
-                                    <button type="submit" class="btn btn-primary">${T.businesses_form_save}</button>
+                                    <button type="submit" class="btn btn-primary">${T.businesses_form_save || 'Save Configuration'}</button>
                                 </div>
                             </form>
                         </div>
@@ -67,7 +67,7 @@ export async function renderNegocioView(context) {
         
         async function cargarEstados(idPais, idEstadoSeleccionado) {
             const response = await fetch(`${API_URL}api_estados.php?id_pais=${idPais}`);
-            const estados = await response.json();
+            const estados = await response.json().catch(() => []);
             estadoSelect.innerHTML = `<option value="">${T.businesses_form_select_country}</option>`;
             estados.forEach(estado => {
                 estadoSelect.innerHTML += `<option value="${estado.id_estado}" ${estado.id_estado == idEstadoSeleccionado ? 'selected' : ''}>${estado.nombre_estado}</option>`;
@@ -123,6 +123,6 @@ async function handleUpdateNegocio(e, context) {
         errorContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
     } finally {
         submitButton.disabled = false;
-        submitButton.innerHTML = T.businesses_form_save;
+        submitButton.innerHTML = T.businesses_form_save || 'Save Configuration';
     }
 }

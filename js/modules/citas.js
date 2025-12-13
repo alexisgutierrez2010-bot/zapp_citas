@@ -23,8 +23,13 @@ export async function renderCrearCitaView(context, prefillData = {}) {
         const clientes = await clientesResponse.json();
         const servicios = await serviciosResponse.json();
 
-        const clientesOptions = clientes.map(c => `<option value="${c.id_cliente}">${c.nombre_completo}</option>`).join('');
-        const serviciosOptions = servicios.map(s => `<option value="${s.id_servicio}">${s.nombre_servicio} (${s.duracion_valor} ${s.duracion_unidad})</option>`).join('');
+        // FILTRADO: Mostrar solo clientes y servicios activos.
+        // Asumimos que la API devuelve un campo 'activo' (1 para activo, 0 para inactivo).
+        const clientesActivos = clientes.filter(c => c.activo == 1);
+        const serviciosActivos = servicios.filter(s => s.activo == 1);
+
+        const clientesOptions = clientesActivos.map(c => `<option value="${c.id_cliente}">${c.nombre_completo}</option>`).join('');
+        const serviciosOptions = serviciosActivos.map(s => `<option value="${s.id_servicio}">${s.nombre_servicio} (${s.duracion_valor} ${s.duracion_unidad})</option>`).join('');
 
         // Formatear fecha y hora pre-rellenadas si existen
         const ahora = new Date();
@@ -168,8 +173,13 @@ export async function renderEditarCitaView(context, params) {
         const clientes = await clientesResponse.json();
         const servicios = await serviciosResponse.json();
 
-        const clientesOptions = clientes.map(c => `<option value="${c.id_cliente}" ${c.id_cliente == cita.id_cliente ? 'selected' : ''}>${c.nombre_completo}</option>`).join('');
-        const serviciosOptions = servicios.map(s => `<option value="${s.id_servicio}" ${s.id_servicio == cita.id_servicio ? 'selected' : ''}>${s.nombre_servicio} (${s.duracion_valor} ${s.duracion_unidad})</option>`).join('');
+        // FILTRADO: Mostrar solo clientes y servicios activos, pero asegurando que el cliente/servicio
+        // de la cita actual siempre aparezca, incluso si fue desactivado después.
+        const clientesActivos = clientes.filter(c => c.activo == 1 || c.id_cliente == cita.id_cliente);
+        const serviciosActivos = servicios.filter(s => s.activo == 1 || s.id_servicio == cita.id_servicio);
+
+        const clientesOptions = clientesActivos.map(c => `<option value="${c.id_cliente}" ${c.id_cliente == cita.id_cliente ? 'selected' : ''}>${c.nombre_completo}</option>`).join('');
+        const serviciosOptions = serviciosActivos.map(s => `<option value="${s.id_servicio}" ${s.id_servicio == cita.id_servicio ? 'selected' : ''}>${s.nombre_servicio} (${s.duracion_valor} ${s.duracion_unidad})</option>`).join('');
 
         const fechaHora = new Date(cita.fecha_hora_inicio);
         const fechaPrefill = fechaHora.toISOString().split('T')[0];

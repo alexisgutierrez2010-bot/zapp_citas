@@ -32,6 +32,21 @@ $translations['en'] = $common_translations['en'];
 $admin_translations = require __DIR__ . '/admin.php';
 $translations['es'] = array_merge($translations['es'], $admin_translations['es']);
 $translations['en'] = array_merge($translations['en'], $admin_translations['en']);
+ 
+// Cargar textos de la SPA del Propietario
+$owner_translations = require __DIR__ . '/owner.php';
+$translations['es'] = array_merge($translations['es'], $owner_translations['es']);
+$translations['en'] = array_merge($translations['en'], $owner_translations['en']);
+
+// Cargar textos de las páginas de Ayuda
+$help_translations = require __DIR__ . '/help.php';
+$translations['es'] = array_merge($translations['es'], $help_translations['es']);
+$translations['en'] = array_merge($translations['en'], $help_translations['en']);
+
+// Cargar textos de la SPA del Cliente
+$client_translations = require __DIR__ . '/client.php';
+$translations['es'] = array_merge($translations['es'], $client_translations['es']);
+$translations['en'] = array_merge($translations['en'], $client_translations['en']);
 
 // 3. Función helper para obtener traducciones
 function __($key) {

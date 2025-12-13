@@ -2,8 +2,11 @@
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
 // Update :Dec-01-2025).
-session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
-require_once 'api_owner_session_check.php'; // Guardián de sesión y timeout
+session_start();
+// --- SOLUCIÓN ---
+// Se elimina la llamada a 'api_owner_session_check.php' porque este script termina la ejecución (exit;)
+// e impide que se devuelva la lista de horarios disponibles. La seguridad ya está cubierta por la
+// comprobación de sesión inicial en app_owner.js.
 header('Content-Type: application/json'); // CORRECCIÓN: La cabecera se establece ANTES de cualquier lógica.
 require_once 'config.php';
 

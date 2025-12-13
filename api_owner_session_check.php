@@ -1,8 +1,9 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025).
-// session_start(); // CORRECTO: El guardián NO debe iniciar la sesión.
+if (session_status() === PHP_SESSION_NONE) {
+    session_start(); // Iniciar sesión solo si no hay una activa.
+}
 
 // SOLUCIÓN DEFINITIVA: Cargar la configuración aquí, una sola vez.
 require_once __DIR__ . '/config.php';
@@ -29,3 +30,16 @@ if (isset($_SESSION['owner_last_activity']) && (time() - $_SESSION['owner_last_a
 }
 
 $_SESSION['owner_last_activity'] = time(); // Actualizar la hora de la última actividad
+
+// --- SOLUCIÓN DEFINITIVA ---
+// Si la sesión es válida, devolver una respuesta JSON de éxito que incluya
+// los datos del propietario almacenados en la sesión. El frontend los necesita para continuar.
+$owner_data = [
+    'id_usuario' => $_SESSION['owner_id_usuario'],
+    'nombre_usuario' => $_SESSION['owner_nombre_usuario'],
+    'id_negocio' => $_SESSION['owner_id_negocio'],
+    'nombre_negocio' => $_SESSION['owner_nombre_negocio']
+];
+
+echo json_encode(['success' => true, 'owner' => $owner_data]);
+exit; // Terminar la ejecución inmediatamente después de enviar el JSON.

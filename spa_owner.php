@@ -39,15 +39,22 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="#" id="navbar-brand-title">
-                App Propietario
-                <span class="ms-2 fw-normal text-white-50" style="font-size: 0.8em;">Gestión de Citas del Negocio</span>
+            <a class="navbar-brand d-flex align-items-center" href="#" style="padding-top: 0; padding-bottom: 0;">
+                <img src="logo_zapp_citas.png" alt="Logo ZApp Citas" style="height: 1.5em; margin-right: 10px; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.5));">
+                <span id="navbar-brand-title" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                    <!-- El título y subtítulo se cargarán aquí por JavaScript -->
+                </span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto" id="nav-menu"></ul>
+                <ul class="navbar-nav ms-auto align-items-center" id="nav-menu">
+                    <!-- El menú dinámico se insertará aquí por JS -->
+                    <div id="nav-menu-items" class="d-flex flex-column flex-lg-row"></div>
+                    <!-- Enlace de ayuda estático -->
+                    <li class="nav-item ms-lg-2"><a class="nav-link" id="help-link" href="ayuda_spa_owner.php?lang=es" target="_blank">❓ Ayuda</a></li>
+                </ul>
             </div>
         </div>
     </nav>

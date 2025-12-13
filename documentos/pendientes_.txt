@@ -22,18 +22,23 @@ Este documento resume las tareas de optimización y corrección para la aplicaci
 
 ---
 
-## 3. [PENDIENTE - ALTA PRIORIDAD] Estandarizar Borrado Lógico y Funcionalidad en SPAs
+## 3. [COMPLETADO] Estandarizar Borrado Lógico y Funcionalidad en SPAs
 
 *   **Problema:** La lógica de "eliminar" es inconsistente. Algunas entidades se desactivan (borrado lógico, como en Clientes), pero otras, como **Usuarios, Servicios y Citas**, se eliminan físicamente (`DELETE`), lo cual es un riesgo de seguridad de datos. Además, las SPAs no son multi-idioma.
 *   **Estrategia Unificada:**
-    1.  **Backend:** Implementar el borrado lógico en `usuarios_eliminar.php`, `servicios_eliminar.php` y `citas_eliminar.php` usando `UPDATE ... SET activo = 0` (o `estado_cita = 'Cancelada'` para las citas).
-    2.  **Frontend (zapp_citas):** Cambiar el texto de los botones de "Eliminar" a "Desactivar" o "Cancelar" en las listas correspondientes para reflejar la acción real.
-    3.  **Internacionalización de SPAs:**
-        *   Crear un nuevo endpoint `api_get_translations.php` que devuelva las traducciones del archivo `languages.php` en formato JSON.
-        *   Modificar `app_owner.js` y `app_client.js` para que carguen estas traducciones al iniciar.
-        *   Reemplazar todo el texto estático en los archivos JS por las claves de traducción (ej: `T.loading`, `T.confirm_delete`).
-    4.  **Borrado Lógico en SPAs:** Actualizar la UI y las llamadas a las APIs en `app_owner.js` y `app_client.js` para que los botones de "Eliminar" ahora realicen la acción de desactivación/cancelación, mostrando el texto correcto (traducido).
-    5.  **Filtrado de Datos:** Asegurarse de que los elementos inactivos (clientes, servicios) no aparezcan en los menús desplegables al agendar nuevas citas en las SPAs.
+    1.  **Backend:** Se implementó el borrado lógico en todas las entidades críticas.
+    2.  **Frontend (zapp_citas):** Se actualizaron los textos de los botones para reflejar las nuevas acciones.
+    3.  **Internacionalización de SPAs:** Se refactorizó la SPA del propietario (`spa_owner`) para ser completamente multi-idioma (ES/EN) cargando traducciones desde una API.
+    4.  **Borrado Lógico en SPAs:** La interfaz de la SPA ahora realiza acciones de desactivación/cancelación.
+    5.  **Filtrado de Datos:** La SPA ahora oculta clientes y servicios inactivos de los formularios de creación de citas.
+
+---
+
+## 4. [PENDIENTE] Próximos Pasos
+
+*   **Probar Citas tipo "Reunión":** Validar el flujo completo de creación de reuniones en la SPA del propietario, incluyendo el guardado de invitados y el envío de notificaciones a múltiples correos.
+*   **Refactorizar SPA del Cliente:** Aplicar las mismas mejoras (internacionalización, borrado lógico, etc.) a la `spa_client` para unificar la calidad del código en todo el proyecto.
+*   **Revisar Notificaciones por Email:** Auditar y estandarizar todas las plantillas de correo electrónico para asegurar que el contenido y el formato sean consistentes y estén completamente traducidos.
 
 ---
 

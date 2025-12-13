@@ -1,7 +1,7 @@
 # Manual Técnico y Guía de Despliegue - ZApp Citas
 
 **Versión:** 1.7
-**Última Actualización:** 05 de Diciembre de 2025
+**Última Actualización:** 08 de Diciembre de 2025
 
 ---
 
@@ -49,10 +49,9 @@ El sistema utiliza una arquitectura mixta:
 
 *   **Flujo de Seguridad y Sesión:**
     1.  La SPA carga `renderLoginView()` que llama a la API `api_owner_login.php` para obtener un CAPTCHA.
-    2.  El usuario envía sus credenciales a `api_owner_login.php` (vía POST). La API valida al usuario y, si es exitoso, crea una sesión de PHP en el servidor con variables específicas (`$_SESSION['owner_loggedin']`).
+    2.  El usuario envía sus credenciales a `api_owner_login.php` (vía POST). La API valida al usuario y, si tiene éxito, crea una sesión de PHP en el servidor con variables específicas (`$_SESSION['owner_loggedin']`).
     3.  Cada acción posterior que requiere datos hace una llamada `fetch` a una API protegida (ej. `api_owner_calendario_eventos.php`).
     4.  Cada API protegida incluye `require_once 'api_owner_session_check.php';` al principio. Este guardián verifica que `$_SESSION['owner_loggedin']` sea `true`. Si no, la API devuelve un error 401 (No Autorizado).
-
 *   **Variables Clave de Sesión:**
     - `$_SESSION['owner_loggedin']`: Booleano.
     - `$_SESSION['owner_id_usuario']`: ID del usuario propietario.
@@ -97,8 +96,6 @@ A continuación se detalla el comportamiento homologado del sistema:
 ---
 
 ## 2.6. Sistema de Auditoría
-
-El sistema cuenta con un robusto módulo de auditoría que registra todas las operaciones críticas realizadas en las tres aplicaciones. El objetivo es mantener una trazabilidad completa de las acciones que modifican datos, mejorando la seguridad y el control. Todos los eventos se almacenan en la tabla `j101_auditoria`.
 El sistema cuenta con un robusto módulo de auditoría que registra todas las operaciones críticas realizadas en las tres aplicaciones. El objetivo es mantener una trazabilidad completa de las acciones que modifican datos, mejorando la seguridad y el control. Todos los eventos se almacenan en la tabla `j099_auditorias`.
 
 La siguiente tabla de diagnóstico detalla la cobertura de auditoría en todo el sistema:
@@ -114,7 +111,7 @@ La siguiente tabla de diagnóstico detalla la cobertura de auditoría en todo el
 | **Crear Negocio** | `zapp_citas` | `negocios_crear.php` | ✅ **Sí** |
 | **Actualizar Negocio** | `zapp_citas` | `negocios_actualizar.php` | ✅ **Sí** |
 | | `spa_owner` | `api_owner_negocio_update.php` | ✅ **Sí** |
-| **Desactivar Negocio** | `zapp_citas` | `negocios_eliminar.php` | ✅ **Sí** |
+| **Desactivar/Eliminar Negocio** | `zapp_citas` | `negocios_eliminar.php` | ✅ **Sí** |
 | | | | |
 | **Crear Usuario** | `zapp_citas` | `usuarios_crear.php` | ✅ **Sí** |
 | **Actualizar Usuario** | `zapp_citas` | `usuarios_actualizar.php` | ✅ **Sí** |
@@ -185,15 +182,30 @@ Esta sección detalla cada programa y su propósito dentro del sistema.
 *   **Localizaciones:** `paises_lista.php` (y su CRUD), `estados_lista.php` (y su CRUD).
 
 #### 3.4. API para SPA del Propietario (spa_owner)
-*   `api_owner_login.php`: Valida las credenciales del propietario y crea su sesión.
-*   `api_owner_logout.php`: Cierra la sesión del propietario.
-*   `api_owner_horario_disponible.php`: Devuelve los slots de tiempo y las citas de un día.
-*   `api_owner_cita_detalle.php`: Devuelve los detalles completos de una cita.
-*   `api_owner_cita_crear.php`: Permite al propietario crear una nueva cita.
-*   `api_owner_clientes.php`: Devuelve la lista de clientes activos del negocio.
-*   `api_owner_servicios.php`: Devuelve la lista de servicios activos del negocio.
-*   `api_owner_recuperar_clave.php`: Gestiona la solicitud de recuperación de contraseña para el propietario.
-*   `api_owner_citas_cerrar_vencidas.php`: Procesa y marca como 'Vencidas' las citas pasadas que no fueron completadas.
+
+*   **Autenticación y Sesión:**
+    *   `api_owner_login.php`: Valida las credenciales del propietario y crea su sesión.
+    *   `api_owner_logout.php`: Cierra la sesión del propietario.
+    *   `api_owner_recuperar_clave.php`: Gestiona la solicitud de recuperación de contraseña.
+*   **Citas y Calendario:**
+    *   `api_owner_citas.php`: Devuelve la lista de citas para una fecha específica (vista de agenda).
+    *   `api_owner_calendario_eventos.php`: Devuelve las citas en formato de evento para FullCalendar.
+    *   `api_owner_horario_disponible.php`: Devuelve los slots de tiempo (libres y ocupados) para un día.
+    *   `api_owner_cita_detalle.php`: Obtiene los detalles completos de una cita.
+    *   `api_owner_cita_crear.php`: Crea una nueva cita (de servicio o reunión).
+    *   `api_owner_cita_actualizar.php`: Actualiza los datos o el estado de una cita.
+    *   `api_owner_cita_eliminar.php`: Cancela una cita (borrado lógico).
+    *   `api_owner_citas_cerrar_vencidas.php`: Marca como 'Vencidas' las citas pasadas.
+*   **Gestión (CRUDs):**
+    *   `api_owner_clientes.php`, `_detalle.php`, `_crear.php`, `_actualizar.php`, `_eliminar.php`: CRUD completo para Clientes.
+    *   `api_owner_servicios.php`, `_crear.php`, `_actualizar.php`, `_eliminar.php`: CRUD completo para Servicios.
+*   **Configuración:**
+    *   `api_owner_negocio_get.php`, `_update.php`: Obtiene y actualiza la configuración del negocio.
+    *   `api_owner_perfil_detalle.php`, `_actualizar.php`: Obtiene y actualiza el perfil del usuario propietario.
+*   **Datos Auxiliares:**
+    *   `api_get_translations.php`: Devuelve el diccionario de traducciones (ES/EN) para la interfaz.
+    *   `api_paises.php`, `api_estados.php`: Devuelven las listas de localizaciones para los formularios.
+
 
 #### 3.5. API para SPA del Cliente (spa_client)
 *   `api_cliente_login.php`: Valida el número de celular del cliente y crea su sesión.
@@ -212,40 +224,57 @@ Esta sección detalla cada programa y su propósito dentro del sistema.
 Este diagrama ilustra el flujo principal de interacción entre los componentes.
 
 ```
-                               +-----------------+
-                               |   index.php     | (Portal Principal)
-                               +-----------------+
-                                       |
-                  +--------------------+--------------------+
-                  |                    |                    |
-                  V                    V                    V
-      +---------------------+  +-------------------+  +--------------------+
-      | zapp_citas (Admin)  |  | spa_owner.php     |  | spa_client.php     |
-      +---------------------+  +-------------------+  +--------------------+
-                 |                      |                    |
-                 |                      | (Llama a)          | (Llama a)
-                 V                      V                    V
-      +---------------------+  +-------------------+  +--------------------+
-      | sesion_iniciar.php  |  | api_owner_*.php   |  | api_cliente_*.php  |
-      +---------------------+  +-------------------+  +--------------------+
-                 |                      |                    |
-                 V                      |                    |
-      +---------------------+          |                    |
-      | procesar_login.php  |          |                    |
-      +---------------------+          |                    |
-                 |                      |                    |
-                 V                      V                    V
-      +---------------------+  +-------------------+  +--------------------+
-      | dashboard.php       |  | (JavaScript en    |  | (JavaScript en    |
-      | (Carga auth_check.php)|  |  app_owner.js)    |  |  app_client.js)    |
-      +---------------------+  +-------------------+  +--------------------+
-                 |                      |                    |
-                 |                      |                    |
-                 |                      V                    V
-                 |            +--------------------------------+
-                 +----------->|           Base de Datos        |
-                              |             (MySQL)            |
-                              +--------------------------------+
+
+                                     +-----------------------------------------+
+                                     |          index.php (Portal)             |
+                                     +-----------------------------------------+
+                                                        |
+                 +--------------------------------------+--------------------------------------+
+                 |                                      |                                      |
+                 V                                      V                                      V
++-------------------------------------+ +-------------------------------------+ +-------------------------------------+
+|   Panel Administración (zapp_citas)   |      SPA Propietario (spa_owner)      |         SPA Cliente (spa_client)        |
+|           (PHP Tradicional)           |            (JavaScript)             |              (JavaScript)             |
++=====================================+=====================================+=====================================+
+|                                                                                                                     |
+|                                             NAVEGADOR DEL USUARIO (FRONTEND)                                        |
+|                                                                                                                     |
++-------------------------------------+-------------------------------------+-------------------------------------+
+| 1. El usuario navega a páginas como | 1. Se carga `spa_owner.php` (HTML).   | 1. Se carga `spa_client.php` (HTML).  |
+|    `sesion_iniciar.php` o           |    `app_owner.js` toma el control.    |    `app_client.js` toma el control.   |
+|    `clientes_lista.php`.            |                                     |                                     |
+|                                     | 2. JS realiza una llamada `fetch()` | 2. JS realiza una llamada `fetch()` |
+| 2. El navegador envía una solicitud |    a la API para autenticarse o     |    a la API para autenticarse o     |
+|    HTTP al servidor.                |    pedir datos.                     |    pedir datos.                     |
+|                                     |    (Ej: `api_owner_citas.php`)      |    (Ej: `api_cliente_citas.php`)    |
++-------------------------------------+-------------------------------------+-------------------------------------+
+                 |                                      |                                      |
+                 |                                      |                                      |
+                 V                                      V                                      V
++-------------------------------------+-------------------------------------+-------------------------------------+
+|                                                                                                                     |
+|                                                SERVIDOR (BACKEND)                                                   |
+|                                                                                                                     |
++-------------------------------------+-------------------------------------+-------------------------------------+
+| 3. El servidor recibe la solicitud. | 3. El servidor recibe la llamada a  | 3. El servidor recibe la llamada a  |
+|    El script PHP (ej. `clientes_   |    la API (ej. `api_owner_citas.php`).|    la API (ej. `api_cliente_citas.php`).|
+|    lista.php`) se ejecuta.          |                                     |                                     |
+|                                     | 4. El script de la API (PHP) se     | 4. El script de la API (PHP) se     |
+| 4. El script PHP se conecta         |    ejecuta y se conecta a la BD.    |    ejecuta y se conecta a la BD.    |
+|    directamente a la BD.            |                                     |                                     |
++-------------------------------------+-------------------------------------+-------------------------------------+
+                 |                                      |                                      |
+                 +-----------------------+--------------+-----------------------+--------------+
+                                         |                                      |
+                                         V                                      V
+                               +------------------+                   +------------------+
+                               |  Base de Datos   |                   |  Base de Datos   |
+                               |     (MySQL)      |                   |     (MySQL)      |
+                               +------------------+                   +------------------+
+                                         ^                                      ^
+                                         |                                      |
+                                         +--------------------------------------+
+
 ```
 
 ---
@@ -309,8 +338,8 @@ Este diagrama ilustra el flujo principal de interacción entre los componentes.
 *   `nombre_completo`
 *   `numero_celular`
 *   `correo_electronico`
-*   `notas_adicionales`
-*   `activo` (TINYINT)
+*   `activo` (TINYINT, 1=Activo, 0=Inactivo)
+*   `notas_adicionales` (TEXT, NULLABLE)
 
 ### j108_citas
 *   `id_cita` (PK, AI)
@@ -448,44 +477,16 @@ Se implementó una estrategia global para permitir que la aplicación funcione f
 
 #### TABLA DE CHEQUEO DE ARCHIVOS MODIFICADOS PARA I18N:
 
-| #  | Archivo                     | Menú | Formulario | Mensajes |
-|----|-----------------------------|:----:|:----------:|:--------:|
-| 1  | `index.php`                   | N/A  | N/A        |    ✅    |
-| 2  | `sesion_iniciar.php`          | N/A  |     ✅     |    ✅    |
-| 3  | `olvide_clave.php`            | N/A  |     ✅     |    ✅    |
-| 4  | `auth_check.php`              | N/A  | N/A        |    ✅    |
-| 5  | `languages.php`               |  ✅  |     ✅     |    ✅    |
-| 6  | `navbar.php`                  |  ✅  | N/A        |    ✅    |
-| 7  | `dashboard.php`               |  ✅  | N/A        |    ✅    |
-| 8  | `clientes_lista.php`          |  ✅  |     ✅     |    ✅    |
-| 9  | `clientes_editar.php`         |  ✅  |     ✅     |    ✅    |
-| 10 | `servicios_lista.php`         |  ✅  |     ✅     |    ✅    |
-| 11 | `servicios_editar.php`        |  ✅  |     ✅     |    ✅    |
-| 12 | `citas_lista.php`             |  ✅  |     ✅     |    ✅    |
-| 13 | `citas_editar.php`            |  ✅  |     ✅     |    ✅    |
-| 14 | `calendario_ver.php`          |  ✅  | N/A        |    ✅    |
-| 15 | `citas_cerrar_vencidas.php`   |  ✅  | N/A        |    ✅    |
-| 16 | `negocios_configuracion.php`  |  ✅  |     ✅     |    ✅    |
-| 17 | `crear_negocio.php`           |  ✅  |     ✅     |    ✅    |
-| 18 | `usuarios_lista.php`          |  ✅  |     ✅     |    ✅    |
-| 19 | `usuarios_editar.php`         |  ✅  |     ✅     |    ✅    |
-| 20 | `categorias_lista.php`        |  ✅  | N/A        |    ✅    |
-| 21 | `categoria_crear.php`         |  ✅  |     ✅     |    ✅    |
-| 22 | `categoria_editar.php`        |  ✅  |     ✅     |    ✅    |
-| 23 | `paises_lista.php`            |  ✅  |     ✅     |    ✅    |
-| 24 | `paises_editar.php`           |  ✅  |     ✅     |    ✅    |
-| 25 | `estados_lista.php`           |  ✅  |     ✅     |    ✅    |
-| 26 | `estados_editar.php`          |  ✅  |     ✅     |    ✅    |
-| 27 | `auditoria_reporte.php`       |  ✅  |     ✅     |    ✅    |
-| 28 | `seleccionar_resumen.php`     |  ✅  |     ✅     |    ✅    |
-| 29 | `documento_editar_md.php`     |  ✅  |     ✅     |    ✅    |
-| 30 | `documento_enviar_pdf.php`    |  ✅  |     ✅     |    ✅    |
-| 31 | `documento_ver.php`           |  ✅  | N/A        |    ✅    |
-| 32 | `perfil_ver.php`              |  ✅  |     ✅     |    ✅    |
-| 33 | `enviar_email.php`            | N/A  | N/A        |    ✅    |
-| 34 | `procesar_olvide_clave.php`   | N/A  | N/A        |    ✅    |
+La implementación de i18n abarcó todos los archivos que presentan texto al usuario en el panel de administración (`zapp_citas`). Esto incluye:
+
+*   **Vistas Principales:** `dashboard.php`, `calendario_ver.php`, etc.
+*   **Formularios y Listas CRUD:** Todos los archivos `*_lista.php`, `*_editar.php`, `*_crear.php` para todas las entidades (clientes, servicios, usuarios, etc.).
+*   **Componentes de UI:** `navbar.php`, `footer.php`.
+*   **Páginas de Autenticación:** `sesion_iniciar.php`, `olvide_clave.php`.
+*   **Scripts de Proceso:** Todos los scripts que generan mensajes de feedback para el usuario.
+*   **Plantillas de Email:** El contenido de los correos electrónicos se genera utilizando las traducciones para asegurar una comunicación consistente.
 
 ---
 ***FIN DEL DOCUMENTO***
 
-Author: Alexis Gutierrez y Gemeni Assist ( UPdate : 12/5/2025)
+Author: Alexis Gutierrez y Gemini Code Assist (Update: 12/8/2025)

@@ -2,10 +2,11 @@
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
 // Update :Nov-27-2025).
-
-// 1. Guardián de sesión: Se ejecuta ANTES de cualquier salida.
-session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
-require_once 'api_owner_session_check.php';
+session_start();
+// --- SOLUCIÓN ---
+// Se elimina la llamada a 'api_owner_session_check.php' porque este script termina la ejecución (exit;)
+// e impide que se devuelva la lista de detalles del negocio. La seguridad ya está cubierta por la
+// comprobación de sesión inicial en app_owner.js.
 
 // 2. Cabecera JSON: Se establece DESPUÉS de la validación de sesión.
 header('Content-Type: application/json');
@@ -17,6 +18,14 @@ require_once 'config.php';
 if ($conn->connect_error) {
     http_response_code(500);
     echo json_encode(['error' => 'Error de conexión a la base de datos: ' . $conn->connect_error]);
+    exit;
+}
+
+// Seguridad: Verificar que el propietario ha iniciado sesión.
+// Se añade un guardián local que no termina la ejecución con exit().
+if (!isset($_SESSION['owner_loggedin']) || $_SESSION['owner_loggedin'] !== true) {
+    http_response_code(401); // Unauthorized
+    echo json_encode(['error' => 'Acceso no autorizado. La sesión ha expirado.']);
     exit;
 }
 

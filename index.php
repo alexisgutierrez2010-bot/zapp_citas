@@ -4,21 +4,11 @@
 // Update :Dec-05-2025). Retoque para añadir soporte multi-idioma (ES/EN).
 date_default_timezone_set('America/Chicago'); // Establecer la zona horaria a US Central Time
 
-// --- LÓGICA MULTI-IDIOMA ---
-// 1. Detectar el idioma solicitado, por defecto 'es' (español)
-$lang = 'es'; // Idioma por defecto
-if (isset($_GET['lang']) && in_array($_GET['lang'], ['es', 'en'])) {
-    $lang = $_GET['lang'];
-}
-
-// 2. Cargar solo los textos comunes, que son los que usa esta página
-$translations = require __DIR__ . '/common.php';
-
-// 3. Función helper local para obtener traducciones
-function __($key) {
-    global $lang, $translations; // Usar global para acceder a las variables
-    return $translations[$lang][$key] ?? $key; // La lógica interna no cambia
-}
+// --- LÓGICA MULTI-IDIOMA (CORREGIDA) ---
+// Iniciar sesión para que el idioma se pueda guardar entre páginas
+session_start();
+// Cargar el sistema de internacionalización completo
+require_once __DIR__ . '/languages.php';
 
 // --- LÓGICA PARA IMÁGENES DE FONDO DINÁMICAS ---
 $hero_images_dir = 'assets/images/hero/';
@@ -85,6 +75,12 @@ if (is_dir($hero_images_dir)) {
             font-weight: 300;
             text-shadow: 1px 1px 4px rgba(0,0,0,0.7);
         }
+        .hero-logo {
+            width: clamp(100px, 20vw, 180px); /* Tamaño adaptable: mínimo 100px, preferido 20% del ancho de la pantalla, máximo 180px */
+            height: auto;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.6));
+            margin-bottom: 1rem; /* Espacio entre el logo y el título */
+        }
         .action-card {
             background-color: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -141,6 +137,25 @@ if (is_dir($hero_images_dir)) {
             text-decoration: underline;
             color: #0d6efd;
         }
+        .help-fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #0d6efd;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        .help-fab:hover {
+            transform: scale(1.1);
+            color: white;
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/intlTelInput.min.js" defer></script>
 </head>
@@ -156,28 +171,29 @@ if (is_dir($hero_images_dir)) {
             <a href="?lang=en" class="<?php echo $lang === 'en' ? 'active' : ''; ?>">EN</a>
         </div>
         <div class="hero-text">
+            <img src="logo_zapp_citas.png" alt="ZApp Citas Logo" class="hero-logo">
             <h1><?php echo __('zapp_citas'); ?></h1>
-            <p class="lead mb-5">La solución integral para la gestión de tus citas y clientes.</p>
+            <p class="lead mb-5"><?php echo __('index_subtitle'); ?></p>
 
             <div class="row g-4">
                 <div class="col-md-6 col-lg-4 d-flex">
-                    <a href="sesion_iniciar.php" class="action-card w-100">
+                    <a href="sesion_iniciar.php?lang=<?php echo $lang; ?>" class="action-card w-100">
                         <div class="card-body">
-                            <h5>⚙️ ZApp Citas</h5>
-                            <p>Administración de la Aplicación</p>
+                            <h5><i class="bi bi-gear-wide-connected"></i> <?php echo __('zapp_citas'); ?></h5>
+                            <p><?php echo __('index_card_admin_desc'); ?></p>
                         </div>
                     </a>
                 </div>
                 <div class="col-md-6 col-lg-4 d-flex">
-                    <a href="spa_client.php" class="action-card w-100">
+                    <a href="spa_client.php?lang=<?php echo $lang; ?>" class="action-card w-100">
                         <div class="card-body">
-                            <h5>👤 App Cliente</h5>
-                            <p>Gestión de Citas por Cliente</p>
+                            <h5><i class="bi bi-person-circle"></i> <?php echo __('index_card_client_title'); ?></h5>
+                            <p><?php echo __('index_card_client_desc'); ?></p>
                         </div>
                     </a>
                 </div>
                 <div class="col-md-12 col-lg-4 d-flex">
-                    <a href="spa_owner.php" class="action-card w-100">
+                    <a href="spa_owner.php?lang=<?php echo $lang; ?>" class="action-card w-100">
                         <div class="card-body">
                             <div class="lh-1">
                                 <h5 class="card-title mb-1">App Propietario</h5>
@@ -189,6 +205,11 @@ if (is_dir($hero_images_dir)) {
             </div>
         </div>
     </div>
+
+    <!-- Botón Flotante de Ayuda -->
+    <a href="ayuda_index.php?lang=<?php echo $lang; ?>" target="_blank" class="help-fab" title="Ayuda">
+        <i class="bi bi-question-lg" style="font-size: 1.8rem;"></i>
+    </a>
 
     <?php 
     // No incluimos el footer directamente para evitar el margen superior (mt-5) que tiene.

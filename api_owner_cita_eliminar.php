@@ -33,18 +33,18 @@ if ($id_cita <= 0) {
     exit;
 }
 
-// 4. Ejecutar la eliminación segura
-$sql = "DELETE FROM j108_citas WHERE id_cita = ? AND id_negocio = ?";
+// 4. Ejecutar la cancelación (borrado lógico)
+$sql = "UPDATE j108_citas SET estado_cita = 'Cancelada' WHERE id_cita = ? AND id_negocio = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("ii", $id_cita, $id_negocio_session);
 
 if ($stmt->execute() && $stmt->affected_rows > 0) {
-    registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_CITA_DELETE', "Propietario eliminó la cita ID {$id_cita} desde la SPA.");
+    registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_CITA_CANCEL', "Propietario canceló la cita ID {$id_cita} desde la SPA.");
     // --- SOLUCIÓN: Se elimina la siguiente línea que causaba el error fatal. ---
     // La acción de eliminar no debe incluir ni ejecutar scripts de envío de correo.
-    echo json_encode(['success' => true, 'message' => 'Cita eliminada con éxito.']);
+    echo json_encode(['success' => true, 'message' => 'Cita cancelada con éxito.']);
 } else {
     http_response_code(404);
-    echo json_encode(['error' => 'No se pudo eliminar la cita. Es posible que no exista o no pertenezca a tu negocio.']);
+    echo json_encode(['error' => 'No se pudo cancelar la cita. Es posible que no exista o no pertenezca a tu negocio.']);
 }
 ?>

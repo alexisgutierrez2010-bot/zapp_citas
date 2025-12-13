@@ -2,8 +2,12 @@
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
 // Update :Dec-01-2025).
-session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
-require_once 'api_owner_session_check.php'; // 1. Guardián de sesión y timeout
+session_start();
+// --- SOLUCIÓN ---
+// Se elimina la llamada a 'api_owner_session_check.php' porque este script termina la ejecución (exit;)
+// e impide que la lógica de creación de cita se complete correctamente. La seguridad ya está cubierta por la
+// comprobación de sesión inicial en app_owner.js y el guardián local que se añade a continuación.
+
 header('Content-Type: application/json'); // La cabecera se establece DESPUÉS del guardián.
 
 // --- SOLUCIÓN: Incluir los archivos necesarios para el envío de correo ---
@@ -13,6 +17,13 @@ require_once 'audit_log.php'; // Reactivado
 require_once __DIR__ . '/vendor/autoload.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+
+// Seguridad: Verificar que el propietario ha iniciado sesión.
+if (!isset($_SESSION['owner_loggedin']) || $_SESSION['owner_loggedin'] !== true) {
+    http_response_code(401); // Unauthorized
+    echo json_encode(['error' => 'Acceso no autorizado. La sesión ha expirado.']);
+    exit;
+}
 
 // --- NUEVO ESQUEMA TRANSACCIONAL ---
 

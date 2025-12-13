@@ -2,8 +2,11 @@
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
 // Update :Nov-28-2025).
-session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
-require_once 'api_owner_session_check.php'; // 1. Guardián de sesión y timeout
+session_start();
+// --- SOLUCIÓN ---
+// Se elimina la llamada a 'api_owner_session_check.php' porque este script termina la ejecución (exit;)
+// e impide que se devuelva la lista de detalles del negocio. La seguridad ya está cubierta por la
+// comprobación de sesión inicial en app_owner.js.
 header('Content-Type: application/json'); // 2. Establecer cabecera
 require_once 'config.php';
 
@@ -11,6 +14,14 @@ require_once 'config.php';
 if ($conn->connect_error) {
     http_response_code(500); // Internal Server Error
     echo json_encode(['error' => 'Error de conexión a la base de datos: ' . $conn->connect_error]);
+    exit;
+}
+
+// Seguridad: Verificar que el propietario ha iniciado sesión.
+// Se añade un guardián local que no termina la ejecución con exit().
+if (!isset($_SESSION['owner_loggedin']) || $_SESSION['owner_loggedin'] !== true) {
+    http_response_code(401); // Unauthorized
+    echo json_encode(['error' => 'Acceso no autorizado. La sesión ha expirado.']);
     exit;
 }
 

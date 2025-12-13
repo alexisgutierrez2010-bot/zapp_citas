@@ -27,8 +27,8 @@ export async function renderServiciosView(context) {
                         <td>${servicio.duracion_valor} ${servicio.duracion_unidad}</td>
                         <td>${precioFormateado}</td>
                         <td>
-                            <button class="btn btn-sm btn-warning btn-edit-servicio" data-id-servicio='${JSON.stringify(servicio)}'>${T.edit}</button>
-                            <button class="btn btn-sm btn-danger btn-delete-servicio" data-id-servicio="${servicio.id_servicio}">${T.deactivate}</button>
+                            <button class="btn btn-sm btn-warning btn-edit-servicio" data-id-servicio='${JSON.stringify(servicio)}'>${T.edit || 'Edit'}</button>
+                            <button class="btn btn-sm btn-danger btn-delete-servicio" data-id-servicio="${servicio.id_servicio}">${T.deactivate || 'Deactivate'}</button>
                         </td>
                     </tr>
                 `;
@@ -36,17 +36,17 @@ export async function renderServiciosView(context) {
 
             serviciosHtml = `
                 <table class="table table-striped table-hover">
-                    <thead class="table-dark"><tr><th>#</th><th>${T.services_col_service}</th><th>${T.services_col_duration}</th><th>${T.services_col_price}</th><th>${T.actions}</th></tr></thead>
+                    <thead class="table-dark"><tr><th>#</th><th>${T.services_col_service || 'Service'}</th><th>${T.services_col_duration || 'Duration'}</th><th>${T.services_col_price || 'Price'}</th><th>${T.actions || 'Actions'}</th></tr></thead>
                     <tbody>${serviciosRows}</tbody>
                 </table>`;
         } else {
-            serviciosHtml = `<div class="alert alert-info">${T.services_no_services}</div>`;
+            serviciosHtml = `<div class="alert alert-info">${T.services_no_services || 'No services registered.'}</div>`;
         }
 
         dom.appContainer.innerHTML = `
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3>${T.services_title}</h3>
-                <button class="btn btn-primary" id="btn-crear-servicio">${T.services_register_new}</button>
+                <h3>${T.services_title || 'Service Management'}</h3>
+                <button class="btn btn-primary" id="btn-crear-servicio">${T.services_register_new || 'Register New Service'}</button>
             </div>
             ${serviciosHtml}
         `;
@@ -69,7 +69,7 @@ export async function renderServiciosView(context) {
 
 async function handleDeleteServicio(context, id_servicio) {
     const { T, API_URL, renderView } = context;
-    if (!confirm(T.services_confirm_deactivate)) return;
+    if (!confirm(T.services_confirm_deactivate || 'Are you sure you want to deactivate this service?')) return;
     try {
         const response = await fetch(`${API_URL}api_owner_servicio_eliminar.php`, {
             method: 'POST',
@@ -81,7 +81,7 @@ async function handleDeleteServicio(context, id_servicio) {
         alert(data.message);
         renderView('servicios');
     } catch (error) {
-        alert(`${T.operation_error}: ${error.message}`);
+        alert(`${T.operation_error || 'Operation Error'}: ${error.message}`);
     }
 }
 
@@ -100,12 +100,12 @@ function openServicioModal(context, servicio = null) {
                     <div class="modal-body">
                         <div id="modal-error-container"></div>
                         <form id="servicio-form">
-                            <div class="mb-3"><label for="nombre_servicio" class="form-label">${T.services_form_name}</label><input type="text" class="form-control" id="nombre_servicio" value="${servicio?.nombre_servicio || ''}" required></div>
-                            <div class="mb-3"><label class="form-label">${T.services_form_duration}</label><div class="input-group"><input type="number" class="form-control" id="duracion_valor" value="${servicio?.duracion_valor || 30}" required><select class="form-select" id="duracion_unidad">${unidadesOptions}</select></div></div>
-                            <div class="mb-3"><label for="precio" class="form-label">${T.services_form_price}</label><input type="number" step="0.01" class="form-control" id="precio" value="${servicio?.precio || ''}"></div>
+                            <div class="mb-3"><label for="nombre_servicio" class="form-label">${T.services_form_name || 'Service Name'}</label><input type="text" class="form-control" id="nombre_servicio" value="${servicio?.nombre_servicio || ''}" required></div>
+                            <div class="mb-3"><label class="form-label">${T.services_form_duration || 'Duration'}</label><div class="input-group"><input type="number" class="form-control" id="duracion_valor" value="${servicio?.duracion_valor || 30}" required><select class="form-select" id="duracion_unidad">${unidadesOptions}</select></div></div>
+                            <div class="mb-3"><label for="precio" class="form-label">${T.services_form_price || 'Price (optional)'}</label><input type="number" step="0.01" class="form-control" id="precio" value="${servicio?.precio || ''}"></div>
                         </form>
                     </div>
-                    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${T.cancel}</button><button type="button" class="btn btn-primary" id="save-servicio-btn">${T.save}</button></div>
+                    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${T.cancel || 'Cancel'}</button><button type="button" class="btn btn-primary" id="save-servicio-btn">${T.save || 'Save'}</button></div>
                 </div>
             </div>
         </div>`;

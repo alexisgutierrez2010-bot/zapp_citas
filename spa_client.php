@@ -29,15 +29,17 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="#" id="navbar-brand-title">
-                App Cliente
-                <span class="ms-2 fw-normal text-white-50" style="font-size: 0.8em;">Gestión de Citas por Cliente</span>
+            <a class="navbar-brand d-flex align-items-center" href="#" style="padding-top: 0; padding-bottom: 0;">
+                <img src="logo_zapp_citas.png" alt="Logo ZApp Citas" style="height: 1.5em; margin-right: 10px; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.5));">
+                <span id="navbar-brand-title" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
+                    <!-- El título y subtítulo se cargarán aquí por JavaScript -->
+                </span>
             </a>
             <div class="collapse navbar-collapse" id="navbarNav"><ul class="navbar-nav ms-auto" id="nav-menu"></ul></div>
         </div>
     </nav>
     <main id="app-container" class="container mt-4"></main>
     <?php include 'spa_client_footer.php'; ?>
-    <script src="app_client.js?v=<?php echo filemtime('app_client.js'); ?>"></script>
+    <script type="module" src="app_client.js?v=<?php echo filemtime('app_client.js'); ?>"></script>
 </body>
 </html>

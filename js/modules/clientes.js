@@ -25,15 +25,15 @@ export async function renderClientesView(context) {
                     <td>${cliente.numero_celular}</td>
                     <td>${cliente.correo_electronico}</td>
                     <td>
-                        <button class="btn btn-sm btn-warning btn-edit-cliente" data-id-cliente="${cliente.id_cliente}">${T.edit || 'Editar'}</button>
-                        <button class="btn btn-sm btn-danger btn-delete-cliente" data-id-cliente="${cliente.id_cliente}">${T.deactivate || 'Desactivar'}</button>
+                        <button class="btn btn-sm btn-warning btn-edit-cliente" data-id-cliente="${cliente.id_cliente}">${T.edit || 'Edit'}</button>
+                        <button class="btn btn-sm btn-danger btn-delete-cliente" data-id-cliente="${cliente.id_cliente}">${T.deactivate || 'Deactivate'}</button>
                     </td>
                 </tr>
             `).join('');
 
             clientesHtml = `
                 <table class="table table-striped table-hover">
-                    <thead class="table-dark"><tr><th>#</th><th>${T.clients_col_name}</th><th>${T.clients_col_phone}</th><th>${T.clients_col_email}</th><th>${T.actions}</th></tr></thead>
+                    <thead class="table-dark"><tr><th>#</th><th>${T.clients_col_name || 'Name'}</th><th>${T.clients_col_phone || 'Phone'}</th><th>${T.clients_col_email || 'Email'}</th><th>${T.actions || 'Actions'}</th></tr></thead>
                     <tbody>${clientesRows}</tbody>
                 </table>`;
         } else {
@@ -64,14 +64,14 @@ export async function renderClientesView(context) {
 
 async function handleDeleteCliente(context, id_cliente) {
     const { T, API_URL, renderView } = context;
-    if (!confirm(T.clients_confirm_deactivate)) {
+    if (!confirm(T.clients_confirm_deactivate || 'Are you sure you want to deactivate this client?')) {
         return;
     }
     try {
         const response = await fetch(`${API_URL}api_owner_cliente_eliminar.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_cliente: id_cliente })
+            body: JSON.stringify({ id_cliente: id_cliente, activo: 0 }) // Borrado lógico
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
@@ -79,7 +79,7 @@ async function handleDeleteCliente(context, id_cliente) {
         alert(data.message);
         renderView('clientes'); // Recargar la lista de clientes
     } catch (error) {
-        alert(`${T.operation_error}: ${error.message}`);
+        alert(`${T.operation_error || 'Operation Error'}: ${error.message}`);
     }
 }
 

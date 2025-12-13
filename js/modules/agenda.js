@@ -65,8 +65,8 @@ export async function renderAgendaView(context) {
                                     ${accionesEstadoHtml}
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item btn-enviar-email" href="#" data-id-cita="${cita.id_cita}">📧 ${T.send_email || 'Send Email'}</a></li>
-                                    <li><a class="dropdown-item btn-edit-cita" href="#" data-id-cita="${cita.id_cita}">✏️ ${T.edit || 'Edit'}</a></li>
-                                    <li><a class="dropdown-item text-danger btn-delete-cita" href="#" data-id-cita="${cita.id_cita}">🗑️ ${T.cancel || 'Cancel'}</a></li>
+                                    <li><a class="dropdown-item" href="#" data-view="editar-cita" data-id-cita="${cita.id_cita}">✏️ ${T.edit || 'Edit'}</a></li>
+                                    <li><a class="dropdown-item text-danger btn-cancel-cita" href="#" data-id-cita="${cita.id_cita}">🗑️ ${T.cancel || 'Cancel'}</a></li>
                                 </ul>
                             </div>
                         </td>
@@ -76,16 +76,16 @@ export async function renderAgendaView(context) {
 
             citasHtml = `
                 <table class="table table-striped table-hover">
-                    <thead class="table-dark"><tr><th>#</th><th>${T.spa_owner_table_schedule}</th><th>${T.spa_owner_table_client}</th><th>${T.spa_owner_table_service}</th><th>${T.spa_owner_table_status}</th><th>📧</th><th>📱</th><th>${T.spa_owner_table_actions}</th></tr></thead>
-                    <tbody>${citasRows}</tbody>
+                    <thead class="table-dark"><tr><th>${T.spa_owner_table_hash_symbol || '#'}</th><th>${T.spa_owner_table_schedule || 'Horario'}</th><th>${T.spa_owner_table_client || 'Cliente'}</th><th>${T.spa_owner_table_service || 'Servicio'}</th><th>${T.spa_owner_table_status || 'Estado'}</th><th>📧</th><th>📱</th><th>${T.spa_owner_table_actions || 'Acciones'}</th></tr></thead>
+                    <tbody>${citasRows}</tbody> 
                 </table>`;
         } else {
-            citasHtml = `<div class="alert alert-info">${T.spa_owner_no_appointments_for_date}</div>`;
+            citasHtml = `<div class="alert alert-info">${T.spa_owner_no_appointments_for_date || 'No hay citas para esta fecha.'}</div>`;
         }
 
-        const agendaTitle = (T.spa_owner_agenda_for_date || 'My Agenda ({date})').replace('{date}', state.currentDate.toLocaleDateString(state.currentLang === 'es' ? 'es-ES' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' }));
+        const agendaTitle = (T.spa_owner_agenda_for_date || 'Mi Agenda ({date})').replace('{date}', state.currentDate.toLocaleDateString(state.currentLang.startsWith('es') ? 'es-ES' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' }));
 
-        dom.appContainer.innerHTML = `
+        dom.appContainer.innerHTML = ` 
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h3>${agendaTitle}</h3>
                 <div class="btn-group">
@@ -96,24 +96,24 @@ export async function renderAgendaView(context) {
             </div>
             ${citasHtml}
             <div class="d-flex justify-content-end">
-                 <button class="btn btn-primary" id="btn-agendar-desde-lista">${T.spa_owner_btn_new_appointment}</button>
+                 <button class="btn btn-primary" id="btn-agendar-desde-lista">${T.spa_owner_btn_new_appointment || 'Nueva Cita'}</button>
             </div>
         `;
 
         // Añadir listeners
         document.getElementById('prev-day-btn').addEventListener('click', () => { state.currentDate.setDate(state.currentDate.getDate() - 1); context.renderView('agenda'); });
         document.getElementById('next-day-btn').addEventListener('click', () => { state.currentDate.setDate(state.currentDate.getDate() + 1); context.renderView('agenda'); });
-        document.getElementById('date-picker').addEventListener('change', (e) => {
+        document.getElementById('date-picker').addEventListener('change', (e) => { 
             const [year, month, day] = e.target.value.split('-').map(Number);
             state.currentDate = new Date(year, month - 1, day);
             context.renderView('agenda');
         });
 
         // Listeners para acciones que aún no están en módulos
-        document.getElementById('btn-agendar-desde-lista').addEventListener('click', () => context.renderView('crear-cita'));
-        document.querySelectorAll('.btn-edit-cita').forEach(btn => btn.addEventListener('click', (e) => context.renderView('editar-cita', { id_cita: e.target.dataset.idCita })));
-        document.querySelectorAll('.btn-delete-cita').forEach(btn => btn.addEventListener('click', (e) => handleDeleteCita(context, e.target.dataset.idCita)));
-        document.querySelectorAll('.btn-enviar-email').forEach(btn => btn.addEventListener('click', (e) => alert(T.feature_in_construction || 'Feature in construction.')));
+        document.getElementById('btn-agendar-desde-lista').addEventListener('click', () => context.renderView('crear-cita')); // OK
+        document.querySelectorAll('[data-view="editar-cita"]').forEach(btn => btn.addEventListener('click', (e) => context.renderView('editar-cita', { id_cita: e.currentTarget.dataset.idCita }))); // OK
+        document.querySelectorAll('.btn-cancel-cita').forEach(btn => btn.addEventListener('click', (e) => handleCancelCita(context, e.currentTarget.dataset.idCita)));
+        document.querySelectorAll('.btn-enviar-email').forEach(btn => btn.addEventListener('click', (e) => alert(T.feature_in_construction || 'Feature in construction.'))); // OK
         document.querySelectorAll('.btn-cambiar-estado').forEach(btn => btn.addEventListener('click', (e) => handleCambiarEstado(context, e.target.dataset.idCita, e.target.dataset.nuevoEstado)));
 
     } catch (error) {
@@ -122,8 +122,9 @@ export async function renderAgendaView(context) {
 }
 
 async function handleCambiarEstado(context, idCita, nuevoEstado) {
-    const { T, API_URL } = context; // CORRECCIÓN: No desestructurar renderView
-    if (!confirm(T.are_you_sure || 'Are you sure you want to change the status?')) {
+    const { T, API_URL } = context;
+    const confirmMessage = (T.spa_owner_confirm_change_status || 'Are you sure you want to change the status?').replace('{status}', nuevoEstado);
+    if (!confirm(confirmMessage)) {
         return;
     }
     try {
@@ -133,16 +134,16 @@ async function handleCambiarEstado(context, idCita, nuevoEstado) {
             body: JSON.stringify({ id_cita: idCita, estado_cita: nuevoEstado })
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Error desconocido');
-        context.renderView('agenda'); // CORRECCIÓN: Llamar a través de context
+        if (!response.ok) throw new Error(data.error || T.unknown_error || 'Unknown error');
+        context.renderView('agenda');
     } catch (error) {
         alert(`${T.operation_error}: ${error.message}`);
     }
 }
 
-async function handleDeleteCita(context, idCita) {
-    const { T, API_URL } = context; // CORRECCIÓN: No desestructurar renderView
-    if (!confirm(T.are_you_sure || 'Are you sure?')) {
+async function handleCancelCita(context, idCita) {
+    const { T, API_URL } = context;
+    if (!confirm(T.spa_owner_confirm_cancel_appointment || 'Are you sure you want to cancel this appointment?')) {
         return;
     }
     try {
@@ -152,8 +153,8 @@ async function handleDeleteCita(context, idCita) {
             body: JSON.stringify({ id_cita: idCita })
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Error desconocido al eliminar.');
-        context.renderView('agenda'); // CORRECCIÓN: Llamar a través de context
+        if (!response.ok) throw new Error(data.error || T.unknown_error || 'Unknown error when canceling.');
+        context.renderView('agenda');
     } catch (error) {
         alert(`${T.operation_error}: ${error.message}`);
     }

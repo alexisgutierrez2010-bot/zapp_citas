@@ -1,7 +1,22 @@
-// js/app_owner.js
+// c:/xampp/htdocs/zapp_citas/app_owner.js
+// Versión modularizada y refactorizada
+
+// =================================================================================
+// MÓDULO PRINCIPAL (CEREBRO) DE LA SPA DEL PROPIETARIO
+// =================================================================================
+// Este archivo orquesta toda la aplicación. Sus responsabilidades son:
+// 1. Importar todos los módulos (vistas y lógica).
+// 2. Inicializar el estado global de la aplicación.
+// 3. Cargar datos iniciales como las traducciones.
+// 4. Verificar la sesión del usuario para decidir si mostrar el login o la agenda.
+// 5. Manejar la navegación entre las diferentes vistas.
+// =================================================================================
+
+// --- 1. IMPORTACIÓN DE MÓDULOS ---
+// Se importan todas las funciones necesarias desde sus respectivos módulos.
+// Las rutas apuntan a la carpeta /js/modules/ donde reside toda la lógica específica.
+
 import { renderLoginView, handleLogout } from './js/modules/auth.js';
-import { updateNavbar, setActiveNavLink } from './js/modules/ui.js';
-// SOLUCIÓN: Importar la nueva función para renderizar la agenda.
 import { renderAgendaView } from './js/modules/agenda.js';
 import { renderCalendarioView } from './js/modules/calendario.js';
 import { renderDisponibilidadView } from './js/modules/disponibilidad.js';
@@ -10,122 +25,137 @@ import { renderServiciosView } from './js/modules/servicios.js';
 import { renderNegocioView } from './js/modules/negocio.js';
 import { renderPerfilView } from './js/modules/perfil.js';
 import { renderCrearCitaView, renderEditarCitaView } from './js/modules/citas.js';
+import { updateNavbar, setActiveNavLink } from './js/modules/ui.js';
 
-document.addEventListener('DOMContentLoaded', function() {
-    // 1. Definir el contexto de la aplicación
+// --- 2. INICIALIZACIÓN DE LA APLICACIÓN ---
+// El evento 'DOMContentLoaded' asegura que el script se ejecute solo cuando el HTML esté completamente cargado.
+document.addEventListener('DOMContentLoaded', async function() {
+
+    // --- A. CONTEXTO GLOBAL DE LA APLICACIÓN ---
+    // Se crea un objeto 'context' que se pasará a todas las funciones.
+    // Esto evita tener variables globales y mantiene el código organizado.
     const context = {
-        // Constantes
-        API_URL: '',
-
-        // Estado de la aplicación (variables que cambian)
+        // Objeto de estado: almacena datos que cambian durante la sesión.
         state: {
-            ownerActual: null,
-            currentDate: new Date(),
-            clockInterval: null,
-            T: {}, // Objeto para las traducciones
-            currentLang: 'es',
+            currentView: null,      // La vista que se está mostrando actualmente.
+            currentLang: new URLSearchParams(window.location.search).get('lang') || 'es', // Idioma actual.
+            ownerActual: null,      // Datos del propietario una vez que inicia sesión.
+            currentDate: new Date(),// Fecha seleccionada para vistas como agenda y disponibilidad.
+            clockInterval: null,    // Referencia al intervalo del reloj para poder limpiarlo.
         },
-
-        // Referencias a elementos del DOM
+        // Referencias al DOM: elementos HTML que se manipulan constantemente.
         dom: {
-            navbarBrand: document.getElementById('navbar-brand-title'),
             appContainer: document.getElementById('app-container'),
             navMenu: document.getElementById('nav-menu'),
+            navbarBrand: document.getElementById('navbar-brand-title'),
         },
+        // Traducciones: se llenará con los textos del idioma actual.
+        T: {},
+        // URL de la API: centraliza la ruta a los scripts de backend.
+        API_URL: '', // Vacío porque los scripts PHP están en la misma raíz.
+        // Función central de renderizado (se define más adelante).
+        renderView: null,
+    };
 
-        // Mapeo de vistas a funciones de renderizado
-        views: {
-            // SOLUCIÓN: Registrar la vista 'agenda' con su función correspondiente.
-            'agenda': renderAgendaView,
-            'calendario': renderCalendarioView,
-            'disponibilidad': renderDisponibilidadView,
-            'clientes': renderClientesView,
-            'servicios': renderServiciosView,
-            'negocio': renderNegocioView,
-            'perfil': renderPerfilView,
-            'crear-cita': renderCrearCitaView,
-            'editar-cita': renderEditarCitaView,
-            // ...etc.
-        },
+    // --- B. CARGA DE DATOS INICIALES (TRADUCCIONES) ---
+    // Antes de mostrar nada, se cargan las traducciones para el idioma detectado.
+    try {
+        const response = await fetch(`${context.API_URL}api_get_translations.php?lang=${context.state.currentLang}`);
+        if (!response.ok) {
+            throw new Error('Failed to load language file.');
+        }
+        context.T = await response.json();
+    } catch (error) {
+        // Si las traducciones fallan, se muestra un error crítico y se detiene la app.
+        console.error("Critical Error:", error);
+        context.dom.appContainer.innerHTML = `<div class="alert alert-danger">Error crítico: No se pudieron cargar los datos de idioma. La aplicación no puede continuar.</div>`;
+        return;
+    }
 
-        /**
-         * Función central para renderizar vistas.
-         * @param {string} viewName - El nombre de la vista a renderizar (ej. 'agenda').
-         * @param {object} [params={}] - Parámetros adicionales para pasar a la función de renderizado.
-         */
-        renderView(viewName, params = {}) {
-            // Detener procesos en segundo plano de la vista anterior (si los hay)
-            if (this.state.clockInterval) clearInterval(this.state.clockInterval);
+    // --- C. ROUTER: EL GESTOR DE VISTAS ---
+    // Se define un objeto que mapea un nombre de vista a la función que la renderiza.
+    const routes = {
+        'login': renderLoginView,
+        'agenda': renderAgendaView,
+        'calendario': renderCalendarioView,
+        'disponibilidad': renderDisponibilidadView,
+        'clientes': renderClientesView,
+        'servicios': renderServiciosView,
+        'negocio': renderNegocioView,
+        'perfil': renderPerfilView,
+        'crear-cita': renderCrearCitaView,
+        'editar-cita': renderEditarCitaView,
+    };
 
-            const renderFunction = this.views[viewName];
-            if (typeof renderFunction === 'function') {
-                setActiveNavLink(this.dom.navMenu, viewName); // setActiveNavLink no necesita params
-                renderFunction(this, params); // Pasamos el contexto y los parámetros
-            } else {
-                // Fallback para vistas aún no migradas
-                console.warn(`Vista "${viewName}" no implementada como módulo.`);
-                this.dom.appContainer.innerHTML = `<h2>Vista "${viewName}" en construcción.</h2>`;
-                // Mantener el link activo en la vista fallback
-                setActiveNavLink(this.dom.navMenu, viewName);
-            }
+    // --- D. FUNCIÓN CENTRAL DE RENDERIZADO ---
+    // Esta función es el corazón de la navegación de la SPA.
+    context.renderView = (viewName, params = {}) => {
+        console.log(`Rendering view: ${viewName}`, params);
+        const renderFn = routes[viewName];
+
+        if (typeof renderFn === 'function') {
+            context.state.currentView = viewName;
+            setActiveNavLink(context.dom.navMenu, viewName);
+            // Llama a la función de renderizado correspondiente, pasándole el contexto y los parámetros.
+            renderFn(context, params);
+        } else {
+            console.error(`Error: View "${viewName}" not found.`);
+            context.dom.appContainer.innerHTML = `<div class="alert alert-danger">Error: La página solicitada no existe.</div>`;
         }
     };
 
-    // 2. Configurar la navegación principal
-    function setupNavigation() {
-        context.dom.navMenu.addEventListener('click', (e) => {
-            const target = e.target;
+    // --- E. MANEJADOR DE EVENTOS DE NAVEGACIÓN ---
+    // Se añade un único listener al body que captura clics en elementos con 'data-view' o 'data-action'.
+    // Esto es más eficiente que añadir un listener a cada botón individualmente.
+    document.body.addEventListener('click', function(e) {
+        const target = e.target.closest('[data-view], [data-action]');
+        if (!target) return;
 
-            // Navegación por vistas
-            if (target.matches('[data-view]')) {
-                e.preventDefault();
-                const viewName = target.dataset.view;
-                context.renderView(viewName);
+        e.preventDefault(); // Prevenir la acción por defecto del enlace/botón.
+
+        const view = target.dataset.view;
+        const action = target.dataset.action;
+
+        if (view) {
+            // Si es un clic para cambiar de vista...
+            const params = { ...target.dataset }; // Copiar todos los data-attributes como parámetros.
+            context.renderView(view, params);
+        } else if (action) {
+            // Si es un clic para realizar una acción...
+            if (action === 'logout') {
+                handleLogout(context);
             }
+            // Aquí se pueden añadir más acciones globales si es necesario.
+        }
+    });
 
-            // Acciones especiales
-            if (target.matches('[data-action]')) {
-                e.preventDefault();
-                const actionName = target.dataset.action;
-                switch (actionName) {
-                    case 'logout':
-                        handleLogout(context);
-                        break;
-                    case 'cierre-citas':
-                        // handleCierreCitas(context); // Descomentar cuando se cree el módulo
-                        alert(context.T.feature_in_construction || 'Feature in construction.');
-                        break;
-                }
-            }
-        });
-    }
+    // --- F. PUNTO DE ARRANQUE DE LA LÓGICA ---
+    // Se verifica la sesión del servidor para decidir qué vista mostrar primero.
+    try {
+        const sessionResponse = await fetch(`${context.API_URL}api_owner_session_check.php`);
 
-    // 3. Función principal de inicialización
-    async function main() {
-        // Determinar idioma
-        const urlParams = new URLSearchParams(window.location.search);
-        context.state.currentLang = urlParams.get('lang') || 'es';
-
-        // Cargar traducciones
-        try {
-            const response = await fetch(`${context.API_URL}api_get_translations.php?lang=${context.state.currentLang}&module=owner`);
-            if (!response.ok) throw new Error('Failed to load translations');
-            context.state.T = await response.json();
-        } catch (error) {
-            console.error("Error loading translations:", error);
-            context.dom.appContainer.innerHTML = `<div class="alert alert-danger">Error fatal: No se pudieron cargar los textos de la aplicación.</div>`;
-            return;
+        if (!sessionResponse.ok) {
+            // Si la respuesta NO es OK (ej. 401 Unauthorized), significa que no hay sesión.
+            // Se muestra la vista de login.
+            context.renderView('login');
+            return; // Se detiene la ejecución aquí.
         }
 
-        // Asignar T al contexto para fácil acceso
-        context.T = context.state.T;
+        // Si la respuesta es OK (200), se procesa para obtener los datos del usuario.
+        const sessionData = await sessionResponse.json();
+        
+        // Se guarda la información del propietario en el estado global.
+        context.state.ownerActual = sessionData.owner;
+        
+        // Se actualiza la barra de navegación para mostrar el menú de usuario logueado.
+        updateNavbar(context);
+        
+        // Se muestra la vista principal de la agenda.
+        context.renderView('agenda');
 
-        // Configurar la navegación
-        setupNavigation();
-
-        // Iniciar la aplicación mostrando la vista de login
-        renderLoginView(context);
+    } catch (error) {
+        // Si hay cualquier otro error durante la comprobación (ej. red), se va al login por seguridad.
+        console.error("Error checking session, defaulting to login view.", error);
+        context.renderView('login');
     }
-
-    main();
 });

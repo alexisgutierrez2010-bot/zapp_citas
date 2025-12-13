@@ -30,30 +30,30 @@ export function renderLoginView(context) {
                 <div class="row justify-content-center">
                     <div class="col-md-5 col-lg-4">
                         <div class="card shadow">
-                            <div class="card-header text-center bg-primary text-white"><h3>${T.spa_owner_welcome || "Owner Access"}</h3></div>
+                            <div class="card-header text-center bg-primary text-white"><h3>${T.login_title || "Owner Access"}</h3></div>
                             <div class="card-body p-4">
                                 <div id="error-container"></div>
                                 <form id="owner-login-form">
                                     <div class="mb-3">
-                                        <label for="telefono" class="form-label">${T.spa_owner_business_phone || "Business Phone"}</label>
+                                        <label for="telefono" class="form-label">${T.businesses_form_phone || "Business Phone"}</label>
                                         <div class="input-group">
                                             <select class="form-select" id="country_code" name="country_code" style="max-width: 150px;" required>${paisesOptions}</select>
                                             <input type="tel" class="form-control" id="telefono" name="telefono" placeholder="${T.phone_placeholder || 'Ej: 4121234567'}" required>
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="password" class="form-label">${T.spa_owner_your_password || "Your Password"}</label>
+                                        <label for="password" class="form-label">${T.login_password || "Your Password"}</label>
                                         <input type="password" class="form-control" id="password" name="password" required>
                                     </div>
                                     <div class="d-grid mt-3">
-                                        <button type="submit" class="btn btn-primary btn-lg">${T.spa_owner_login_button || "Login"}</button>
+                                        <button type="submit" class="btn btn-primary btn-lg">${T.login_button || "Login"}</button>
                                     </div>
                                     <div class="text-center mt-3">
                                         <a href="#" id="forgot-password-link">${T.spa_owner_forgot_password || "Forgot your password?"}</a>
                                     </div>
                                     <hr>
                                     <div class="text-center mt-2">
-                                        <a href="index.php?lang=${state.currentLang}" class="text-muted"><small>${T.spa_owner_back_to_home || "Back to Home"}</small></a>
+                                        <a href="index.php?lang=${state.currentLang}" class="text-muted"><small>${T.login_back_to_home || "Back to Home"}</small></a>
                                     </div>
                                 </form>
                             </div>
@@ -65,12 +65,84 @@ export function renderLoginView(context) {
             document.getElementById('owner-login-form').addEventListener('submit', (e) => handleLogin(e, context));
             document.getElementById('forgot-password-link').addEventListener('click', (e) => {
                 e.preventDefault();
-                alert(T.feature_in_construction || 'Feature in construction.');
+                // MODIFICACIÓN: Llamar a la función de renderizado de la vista de recuperación
+                renderForgotPasswordView(context);
             });
         })
         .catch(error => {
             dom.appContainer.innerHTML = `<div class="alert alert-danger">${T.operation_error || 'Operation Error'}: ${error.message}</div>`;
         });
+}
+
+/**
+ * Renderiza la vista para recuperar la contraseña.
+ * @param {object} context - El objeto de contexto de la aplicación.
+ */
+function renderForgotPasswordView(context) {
+    const { dom, T, state } = context;
+
+    dom.appContainer.innerHTML = `
+        <div class="row justify-content-center">
+            <div class="col-md-5 col-lg-4">
+                <div class="card shadow">
+                    <div class="card-header text-center"><h3>${T.spa_owner_recover_password_title || "Recover Password"}</h3></div>
+                    <div class="card-body p-4">
+                        <div id="recovery-message-container"></div>
+                        <form id="recovery-form">
+                            <div class="mb-3">
+                                <label for="telefono-recovery" class="form-label">${T.businesses_form_phone || "Business Phone"}</label>
+                                <input type="tel" class="form-control" id="telefono-recovery" placeholder="${T.phone_placeholder_full || 'Ej: +58 4121234567'}" required>
+                                <div class="form-text">${T.spa_owner_recover_password_instructions || "We'll send instructions to the owner's email."}</div>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">${T.spa_owner_recover_password_button || "Send Instructions"}</button>
+                                <button type="button" id="back-to-login" class="btn btn-secondary">${T.spa_owner_back_to_home || "Back to Login"}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('recovery-form').addEventListener('submit', (e) => handlePasswordRecovery(e, context));
+    document.getElementById('back-to-login').addEventListener('click', (e) => {
+        e.preventDefault();
+        renderLoginView(context);
+    });
+}
+
+/**
+ * Maneja el envío del formulario de recuperación de contraseña.
+ * @param {Event} e - El evento de submit.
+ * @param {object} context - El objeto de contexto de la aplicación.
+ */
+async function handlePasswordRecovery(e, context) {
+    e.preventDefault();
+    const { T, API_URL, state } = context;
+    const messageContainer = document.getElementById('recovery-message-container');
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    const telefono = document.getElementById('telefono-recovery').value;
+
+    messageContainer.innerHTML = '';
+    submitButton.disabled = true;
+
+    try {
+        const response = await fetch(`${API_URL}api_owner_recuperar_clave.php?lang=${state.currentLang}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telefono: telefono })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Unknown error');
+        
+        messageContainer.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+
+    } catch (error) {
+        messageContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+    } finally {
+        submitButton.disabled = false;
+    }
 }
 
 /**

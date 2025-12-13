@@ -77,7 +77,34 @@ Una vez subidos los archivos, abre tu dominio en el navegador y realiza pruebas 
 
 <pre>
 ----------------------------------------
-6. NOTAS DE ARQUITECTURA: ESTRATEGIAS DE INTERNACIONALIZACI&Oacute;N (i18n)
+6. ESTRUCTURA DE ARCHIVOS (SPA DEL PROPIETARIO)
+----------------------------------------
+
+La aplicaci&oacute;n del propietario (`spa_owner.php`) sigue una arquitectura modular moderna para facilitar su mantenimiento y escalabilidad.
+
+**Archivo Principal (El "Cerebro"):**
+- `app_owner.js`: Orquesta toda la aplicaci&oacute;n. Carga las traducciones, verifica la sesi&oacute;n, importa todos los m&oacute;dulos y gestiona la navegaci&oacute;n entre vistas.
+
+**M&oacute;dulos de Vistas y L&oacute;gica (`/js/modules/`):**
+- `auth.js`: Gestiona el inicio de sesi&oacute;n, cierre de sesi&oacute;n y recuperaci&oacute;n de contrase&ntilde;a.
+- `agenda.js`: Renderiza la vista principal de la agenda diaria.
+- `calendario.js`: Renderiza la vista del calendario mensual/semanal (FullCalendar).
+- `disponibilidad.js`: Muestra los slots de tiempo libres y ocupados para un d&iacute;a.
+- `clientes.js`: Gestiona la lista y los formularios de creaci&oacute;n/edici&oacute;n de clientes.
+- `servicios.js`: Gestiona la lista y los formularios de creaci&oacute;n/edici&oacute;n de servicios.
+- `negocio.js`: Gestiona el formulario de configuraci&oacute;n del negocio (datos, direcci&oacute;n, horarios).
+- `perfil.js`: Gestiona el formulario del perfil del propietario (cambio de contrase&ntilde;a, etc.).
+- `citas.js`: Contiene los formularios para crear y editar citas.
+- `ui.js`: Controla elementos de la interfaz de usuario como la barra de navegaci&oacute;n y el reloj.
+
+**APIs de Backend (`/api_*.php`):**
+La SPA se comunica con el servidor a trav&eacute;s de una serie de archivos PHP que act&uacute;an como una API REST. Cada uno tiene una funci&oacute;n espec&iacute;fica (ej. `api_owner_citas.php`, `api_owner_clientes.php`, etc.) y devuelve datos en formato JSON.
+
+</pre>
+
+<pre>
+----------------------------------------
+7. NOTAS DE ARQUITECTURA: ESTRATEGIAS DE INTERNACIONALIZACI&Oacute;N (i18n)
 ----------------------------------------
 
 La aplicaci&oacute;n utiliza dos estrategias diferentes para manejar m&uacute;ltiples idiomas (ES/EN), dependiendo del tipo de interfaz.
@@ -89,15 +116,14 @@ La aplicaci&oacute;n utiliza dos estrategias diferentes para manejar m&uacute;lt
 - **Cambio de Idioma:** Requiere una **recarga completa de la p&aacute;gina** para que el servidor pueda generar un nuevo HTML.
 
 **Estrategia 2: Single-Page Application (SPA) (Ej: spa_owner.php, spa_client.php)**
-
-- **C&oacute;mo funciona:** El servidor env&iacute;a una "c&aacute;scara" de HTML casi vac&iacute;a, y el c&oacute;digo JavaScript (`app_owner.js`, `app_client.js`) toma el control en el navegador.
+- **C&oacute;mo funciona:** El servidor env&iacute;a una p&aacute;gina HTML m&iacute;nima (`spa_owner.php`) que act&uacute;a como un "contenedor". El c&oacute;digo JavaScript (`app_owner.js`) toma el control total de la interfaz dentro del navegador.
 - **Traducci&oacute;n:**
   1. JavaScript detecta el idioma en la URL (`?lang=en`).
-  2. Llama a la API `api_get_translations.php` para solicitar el diccionario de traducciones en formato JSON.
-  3. JavaScript guarda estas traducciones en una variable (ej. `context.T`).
-  4. A partir de ah&iacute;, JavaScript construye y actualiza todas las vistas (login, agenda, etc.) directamente en el navegador, usando los textos de esa variable.
-- **Cambio de Idioma:** Al igual que en la estrategia tradicional, requiere una **recarga completa de la p&aacute;gina** para que la SPA pueda solicitar el nuevo diccionario de idioma a la API.
+  2. Realiza una petici&oacute;n a la API `api_get_translations.php` para obtener el "diccionario" de traducciones en formato JSON.
+  3. JavaScript almacena este diccionario en memoria (en el objeto `context.T`).
+  4. A partir de ese momento, JavaScript construye y actualiza din&aacute;micamente todas las vistas (login, agenda, clientes, etc.) directamente en el navegador, utilizando los textos del diccionario cargado.
+- **Cambio de Idioma:** Requiere una recarga de la p&aacute;gina para que la SPA solicite el nuevo diccionario de idioma a la API.
 
 **&iquest;Por qu&eacute; la diferencia?**
-La estrategia de la SPA es m&aacute;s moderna y eficiente para aplicaciones interactivas. Una vez cargada, permite una navegaci&oacute;n instant&aacute;nea entre vistas (como "Mi Agenda" y "Clientes") sin recargar la p&aacute;gina, mejorando significativamente la experiencia del usuario. La recarga solo es necesaria para cambios globales como el idioma.
+La arquitectura SPA es m&aacute;s r&aacute;pida y fluida para el usuario. Una vez cargada, la navegaci&oacute;n entre vistas (ej. de "Mi Agenda" a "Mis Clientes") es instant&aacute;nea porque no necesita pedir una p&aacute;gina nueva al servidor, solo actualiza una parte de la pantalla. Esto crea una experiencia de usuario similar a la de una aplicaci&oacute;n de escritorio o m&oacute;vil.
 </pre>

@@ -6,7 +6,10 @@
 ?>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container-fluid">
-    <a class="navbar-brand" href="dashboard.php?lang=<?php echo $lang; ?>"><?php echo __('zapp_citas'); ?></a>
+    <a class="navbar-brand d-flex align-items-center" href="dashboard.php?lang=<?php echo $lang; ?>" style="padding-top: 0; padding-bottom: 0;">
+        <img src="logo_zapp_citas.png" alt="Logo ZApp Citas" style="height: 1.5em; margin-right: 10px; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.5));">
+        <span style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"><?php echo __('zapp_citas'); ?></span>
+    </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -68,6 +71,9 @@
                     <li><a class="dropdown-item <?php echo ($lang === 'es') ? 'active' : ''; ?>" href="<?php echo $es_link; ?>">Español</a></li>
                     <li><a class="dropdown-item <?php echo ($lang === 'en') ? 'active' : ''; ?>" href="<?php echo $en_link; ?>">English</a></li>
                 </ul>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="ayuda_zapp_citas.php?lang=<?php echo $lang; ?>" target="_blank">❓ <?php echo __('help'); ?></a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="perfil_ver.php?lang=<?php echo $lang; ?>">👤 <?php echo htmlspecialchars($_SESSION['nombre_usuario']); ?> (<?php echo __('my_profile'); ?>)</a>

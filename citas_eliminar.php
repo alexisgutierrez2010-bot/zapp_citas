@@ -29,18 +29,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // ob_end_clean(); // Descartamos la salida (la redirección de enviar_email.php)
 
     // 2. Preparar la consulta SQL de eliminación
-    $sql = "DELETE FROM j108_citas WHERE id_cita = ?";
+    $sql = "UPDATE j108_citas SET estado_cita = 'Cancelada' WHERE id_cita = ?";
 
     if ($stmt = $conn->prepare($sql)) {
         $stmt->bind_param("i", $id_cita);
 
         if ($stmt->execute()) {
-            $descripcion_audit = "Se eliminó la cita (ID: {$id_cita}).";
-            registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'DELETE_APPOINTMENT', $descripcion_audit);
+            $descripcion_audit = "Se canceló la cita (ID: {$id_cita}) desde el panel de administración.";
+            registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'CANCEL_APPOINTMENT', $descripcion_audit);
 
             header("Location: citas_lista.php?status=success_delete");
         } else {
-            header("Location: citas_lista.php?status=error&message=" . urlencode($stmt->error));
+            header("Location: citas_lista.php?status=error&message=" . urlencode("Error al cancelar la cita: " . $stmt->error));
         }
         $stmt->close();
     } else {
