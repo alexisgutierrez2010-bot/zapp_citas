@@ -1,53 +1,39 @@
 # Tareas Pendientes y Recomendaciones - ZApp Citas
 
-**Fecha de Actualización:** 01 de Diciembre de 2025
+**Fecha de Actualización:** 06 de Diciembre de 2025
 
 Este documento resume las tareas de optimización y corrección para la aplicación.
 
 ---
 
-## 1. [COMPLETADO] Estandarizar Nombres de Archivos (Case-Sensitivity)
+## 1. [COMPLETADO] Estandarización de Código y Base de Datos
 
-*   **Estado:** Se corrigieron todas las inclusiones de `Auth_check.php` a `auth_check.php` para asegurar la compatibilidad con servidores Linux.
-
----
-
-## 2. [PARCIALMENTE COMPLETADO] Implementar Cierre Manual de Citas Vencidas
-
-*   **Problema Original:** La actualización de citas a 'Vencida' se ejecutaba en cada carga de página, siendo ineficiente.
-
-*   **Solución Adoptada:** Crear una funcionalidad de cierre manual para que el propietario la ejecute cuando lo necesite.
-
-*   **Estado:**
-    -   **[COMPLETADO]** Se creó la página `citas_cerrar_vencidas.php` para el panel de administración `zapp_citas`.
-    -   **[COMPLETADO]** Se creó el endpoint `api_owner_citas_cerrar_vencidas.php` para la `spa_owner`.
-    -   **[COMPLETADO]** Se corrigió y finalizó la integración del botón en la interfaz de `spa_owner.js`.
+*   **Nombres de Archivos:** Se corrigieron todas las inclusiones de `Auth_check.php` a `auth_check.php` para compatibilidad con Linux.
+*   **Columnas de BD:** Se estandarizaron las columnas `IN_SMS` e `IN_EMAIL` a minúsculas (`in_sms`, `in_email`) en las tablas `j106_clientes` y `j108_citas` y se refactorizó todo el código PHP y JS afectado.
+*   **Nuevas Funcionalidades:** Se añadió la columna `in_whatsapp` a la tabla de clientes y se integró en los formularios del panel de administración.
 
 ---
 
-## 3. [PENDIENTE - ALTA PRIORIDAD] Mejorar la lógica de disponibilidad de horarios
+## 2. [COMPLETADO] Mejoras de Interfaz y Experiencia de Usuario (UI/UX)
 
-*   **Problema:** El script `api_owner_horario_disponible.php` genera slots de tiempo a intervalos fijos y luego verifica si están ocupados. Es ineficiente si una cita larga cubre múltiples intervalos.
-*   **Solución:** Refactorizar el bucle para que, al encontrar una cita, "salte" directamente al final de esa cita para continuar generando los siguientes slots disponibles.
-
----
-
-## 4. [COMPLETADO] Implementar borrado lógico en `clientes_eliminar.php`
-
-*   **Problema Original:** Se usaba `DELETE FROM`, lo cual era destructivo.
-*   **Solución:** Se cambió la consulta a `UPDATE j106_clientes SET activo = 0 WHERE id_cliente = ?`. Esto es más seguro y preserva el historial.
-*   **Estado:** Implementado en `clientes_eliminar.php` y la UI de `clientes_lista.php` fue actualizada para reflejar el cambio (botón "Desactivar").
+*   **Internacionalización (i18n):** Se implementó un sistema completo de traducción (Español/Inglés) para el panel de administración (`zapp_citas`) y la página de inicio (`index.php`).
+*   **Consistencia Visual:** Se unificó el estilo de los títulos en todas las aplicaciones (`zapp_citas`, `spa_owner`, `spa_client`, `index.php`).
+*   **Dinamismo:** Se añadió un carrusel de imágenes de fondo en `index.php` y un visor de fotos de perfil en `clientes_lista.php`.
 
 ---
 
-## 5. [PENDIENTE - BAJA PRIORIDAD] Estandarizar Borrado Lógico (Refactorización)
+## 3. [PENDIENTE - ALTA PRIORIDAD] Estandarizar Borrado Lógico y Funcionalidad en SPAs
 
-*   **Problema:** La lógica de "eliminar" es inconsistente en la aplicación. Algunas entidades se desactivan (borrado lógico), pero otras, como los **Usuarios**, se eliminan permanentemente (`DELETE`), lo cual es un riesgo de seguridad de datos. Además, la interfaz de usuario (botones y textos) no es consistente.
-*   **Solución Propuesta:**
-    -   **`usuarios_eliminar.php`:** Modificar para que use `UPDATE j100_usuarios SET activo = 0` en lugar de `DELETE`.
-    -   **UI del Panel de Admin:** Cambiar todos los botones "Eliminar" por "Desactivar" en `servicios_lista.php` y `usuarios_lista.php` para que coincida con la acción real.
-    -   **UI de SPA Owner:** Cambiar los botones "Eliminar" por "Desactivar" en las vistas de Clientes y Servicios.
-    -   **Filtrado de Datos:** Asegurarse de que los elementos inactivos (clientes, servicios, negocios) no aparezcan en los menús desplegables para agendar nuevas citas.
+*   **Problema:** La lógica de "eliminar" es inconsistente. Algunas entidades se desactivan (borrado lógico, como en Clientes), pero otras, como **Usuarios, Servicios y Citas**, se eliminan físicamente (`DELETE`), lo cual es un riesgo de seguridad de datos. Además, las SPAs no son multi-idioma.
+*   **Estrategia Unificada:**
+    1.  **Backend:** Implementar el borrado lógico en `usuarios_eliminar.php`, `servicios_eliminar.php` y `citas_eliminar.php` usando `UPDATE ... SET activo = 0` (o `estado_cita = 'Cancelada'` para las citas).
+    2.  **Frontend (zapp_citas):** Cambiar el texto de los botones de "Eliminar" a "Desactivar" o "Cancelar" en las listas correspondientes para reflejar la acción real.
+    3.  **Internacionalización de SPAs:**
+        *   Crear un nuevo endpoint `api_get_translations.php` que devuelva las traducciones del archivo `languages.php` en formato JSON.
+        *   Modificar `app_owner.js` y `app_client.js` para que carguen estas traducciones al iniciar.
+        *   Reemplazar todo el texto estático en los archivos JS por las claves de traducción (ej: `T.loading`, `T.confirm_delete`).
+    4.  **Borrado Lógico en SPAs:** Actualizar la UI y las llamadas a las APIs en `app_owner.js` y `app_client.js` para que los botones de "Eliminar" ahora realicen la acción de desactivación/cancelación, mostrando el texto correcto (traducido).
+    5.  **Filtrado de Datos:** Asegurarse de que los elementos inactivos (clientes, servicios) no aparezcan en los menús desplegables al agendar nuevas citas en las SPAs.
 
 ---
 

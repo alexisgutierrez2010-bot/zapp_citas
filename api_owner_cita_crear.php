@@ -77,19 +77,19 @@ try {
     // --- INICIO: OBTENER PREFERENCIAS DEL CLIENTE ---
     // SOLUCIÓN: Obtener AMBAS preferencias (SMS y Email) del cliente.
     $in_email_pref = 0;
-    $in_sms_pref = 0;
-    $stmt_pref = $conn->prepare("SELECT IN_EMAIL, IN_SMS FROM j106_clientes WHERE id_cliente = ?");
+    $in_sms_pref = 0; // Corregido de IN_SMS a in_sms
+    $stmt_pref = $conn->prepare("SELECT in_email, in_sms FROM j106_clientes WHERE id_cliente = ?");
     $stmt_pref->bind_param("i", $id_cliente);
     $stmt_pref->execute();
     $result_pref = $stmt_pref->get_result()->fetch_assoc();
     if ($result_pref) {
-        $in_email_pref = (int)$result_pref['IN_EMAIL'];
-        $in_sms_pref = (int)$result_pref['IN_SMS'];
+        $in_email_pref = (int)$result_pref['in_email'];
+        $in_sms_pref = (int)$result_pref['in_sms'];
     }
     $stmt_pref->close();
     // --- FIN: OBTENER PREFERENCIAS DEL CLIENTE ---
 
-    $sql_cita = "INSERT IGNORE INTO j108_citas (id_negocio, id_cliente, id_servicio, fecha_hora_inicio, fecha_hora_fin, estado_cita, descripcion_trabajo, tipo_cita, IN_EMAIL, IN_SMS) VALUES (?, ?, ?, ?, ?, 'Pendiente', ?, ?, ?, ?)";
+    $sql_cita = "INSERT IGNORE INTO j108_citas (id_negocio, id_cliente, id_servicio, fecha_hora_inicio, fecha_hora_fin, estado_cita, descripcion_trabajo, tipo_cita, in_email, in_sms) VALUES (?, ?, ?, ?, ?, 'Pendiente', ?, ?, ?, ?)";
     $stmt_cita = $conn->prepare($sql_cita);
     $stmt_cita->bind_param("iiissssii", $id_negocio_session, $id_cliente, $id_servicio, $fecha_inicio_db, $fecha_fin_db, $descripcion_trabajo, $tipo_cita, $in_email_pref, $in_sms_pref);
     

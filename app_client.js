@@ -51,10 +51,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function cargarDatosNegocio() {
         try {
-            // Al inicio, mostramos un título genérico.
-            const genericTitle = "Gestión de Citas por Clientes";
-            document.title = genericTitle;
-            navbarBrand.textContent = genericTitle;
+            const genericTitle = "App Cliente";
+            const genericSubtitle = "Gestión de Citas por Cliente";
+            document.title = `${genericTitle} - ${genericSubtitle}`;
+            navbarBrand.innerHTML = `
+                ${genericTitle}
+                <span class="ms-2 fw-normal text-white-50" style="font-size: 0.8em;">${genericSubtitle}</span>
+            `;
             updateNavbar();
         } catch (error) {
             navbarBrand.textContent = 'Error';

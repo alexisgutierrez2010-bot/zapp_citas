@@ -1,19 +1,13 @@
 <?php
-// Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
+// Elaborado por GEMINI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025).
-session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
-require_once 'api_owner_session_check.php'; // 1. Guardián de sesión y timeout
-header('Content-Type: application/json'); // 2. Establecer cabecera
-require_once 'config.php';
-require_once 'audit_log.php'; // Reactivado
+// Update :Dec-06-2025).
 
-// 3. Verificación de la conexión a la base de datos
-if ($conn->connect_error) {
-    http_response_code(500); // Internal Server Error
-    echo json_encode(['error' => 'Error de conexión a la base de datos: ' . $conn->connect_error]);
-    exit;
-}
+session_start();
+require_once 'api_owner_session_check.php';
+header('Content-Type: application/json');
+require_once 'config.php';
+require_once 'audit_log.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -24,51 +18,47 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $id_negocio_session = $_SESSION['owner_id_negocio'];
 $input = json_decode(file_get_contents('php://input'), true);
 
-$id_cliente = $input['id_cliente'] ?? 0;
-$nombre_completo = trim($input['nombre_completo'] ?? '');
-$numero_celular = trim($input['numero_celular'] ?? ''); // Ya viene combinado del frontend
-$correo_electronico = trim($input['correo_electronico'] ?? '');
+// Recoger y limpiar datos
+$id_cliente = (int)($input['id_cliente'] ?? 0);
+$nombre = trim($input['nombre_completo'] ?? '');
+$celular = trim($input['numero_celular'] ?? '');
+$email = trim($input['correo_electronico'] ?? '');
 $direccion1 = trim($input['direccion1'] ?? '');
 $direccion2 = trim($input['direccion2'] ?? '');
 $ciudad = trim($input['ciudad'] ?? '');
 $id_pais = (int)($input['id_pais'] ?? 0);
 $id_estado = (int)($input['id_estado'] ?? 0);
 $zip_code = trim($input['zip_code'] ?? '');
-$notas_adicionales = trim($input['notas_adicionales'] ?? '');
+$notas = trim($input['notas_adicionales'] ?? '');
+$in_sms = (int)($input['in_sms'] ?? 0);
+$in_email = (int)($input['in_email'] ?? 0);
+$in_whatsapp = (int)($input['in_whatsapp'] ?? 0);
+$activo = (int)($input['activo'] ?? 0);
 
-if ($id_cliente <= 0 || empty($nombre_completo) || empty($correo_electronico) || empty($numero_celular)) {
+if ($id_cliente <= 0 || empty($nombre) || empty($email) || empty($celular)) {
     http_response_code(400);
-    echo json_encode(['error' => 'Datos incompletos para actualizar el cliente.']);
+    echo json_encode(['error' => 'ID, Nombre, email y celular son obligatorios.']);
     exit;
 }
 
-// Validar email
-if (!filter_var($correo_electronico, FILTER_VALIDATE_EMAIL)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'El formato del correo electrónico no es válido.']);
-    exit;
-}
-
-// Verificar duplicados de email (excluyendo al cliente actual)
-$sql_check_email = "SELECT id_cliente FROM j106_clientes WHERE correo_electronico = ? AND id_cliente != ? AND id_negocio = ?";
-$stmt_check_email = $conn->prepare($sql_check_email);
-$stmt_check_email->bind_param("sii", $correo_electronico, $id_cliente, $id_negocio_session);
-$stmt_check_email->execute();
-if ($stmt_check_email->get_result()->num_rows > 0) {
+// Verificar duplicados en otros clientes
+$stmt_check = $conn->prepare("SELECT id_cliente FROM j106_clientes WHERE (correo_electronico = ? OR numero_celular = ?) AND id_negocio = ? AND id_cliente != ?");
+$stmt_check->bind_param("ssii", $email, $celular, $id_negocio_session, $id_cliente);
+$stmt_check->execute();
+if ($stmt_check->get_result()->num_rows > 0) {
     http_response_code(409); // Conflict
-    echo json_encode(['error' => 'El correo electrónico ya está en uso por otro cliente de este negocio.']);
+    echo json_encode(['error' => 'El correo o celular ya está en uso por otro cliente.']);
     exit;
 }
 
-$sql = "UPDATE j106_clientes SET nombre_completo = ?, numero_celular = ?, correo_electronico = ?, direccion1 = ?, direccion2 = ?, ciudad = ?, id_pais = ?, id_estado = ?, zip_code = ?, notas_adicionales = ? WHERE id_cliente = ? AND id_negocio = ?";
+$sql = "UPDATE j106_clientes SET nombre_completo=?, numero_celular=?, correo_electronico=?, direccion1=?, direccion2=?, ciudad=?, id_pais=?, id_estado=?, zip_code=?, notas_adicionales=?, in_sms=?, in_email=?, in_whatsapp=?, activo=? WHERE id_cliente=? AND id_negocio=?";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("ssssssiissii", $nombre_completo, $numero_celular, $correo_electronico, $direccion1, $direccion2, $ciudad, $id_pais, $id_estado, $zip_code, $notas_adicionales, $id_cliente, $id_negocio_session);
+$stmt->bind_param("ssssssiissiiiiii", $nombre, $celular, $email, $direccion1, $direccion2, $ciudad, $id_pais, $id_estado, $zip_code, $notas, $in_sms, $in_email, $in_whatsapp, $activo, $id_cliente, $id_negocio_session);
 
-if ($stmt->execute() && $stmt->affected_rows > 0) {
-    registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_CLIENT_UPDATE', "Propietario actualizó al cliente '{$nombre_completo}' (ID: {$id_cliente}) desde la SPA.");
+if ($stmt->execute()) {
     echo json_encode(['success' => true, 'message' => 'Cliente actualizado con éxito.']);
 } else {
     http_response_code(500);
-    echo json_encode(['error' => 'No se pudo actualizar el cliente o no se realizaron cambios.']);
+    echo json_encode(['error' => 'Error al actualizar el cliente: ' . $stmt->error]);
 }
 ?>

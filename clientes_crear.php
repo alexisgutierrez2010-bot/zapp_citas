@@ -24,6 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $notas = trim($_POST['notas_adicionales']);
     $in_sms = isset($_POST['in_sms']) ? 1 : 0;
     $in_email = isset($_POST['in_email']) ? 1 : 0;
+    $in_whatsapp = isset($_POST['in_whatsapp']) ? 1 : 0;
     $celular = ''; // Inicializar
 
     // --- NUEVA VALIDACIÓN ---
@@ -53,14 +54,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt_check->close();
     }
 
+    // --- MANEJO DE FOTO DE PERFIL ---
+    $foto_data = null;
+    $foto_tipo = null;
+    if (isset($_FILES['foto_perfil']) && $_FILES['foto_perfil']['error'] == UPLOAD_ERR_OK) {
+        // Validar que sea una imagen
+        $check = getimagesize($_FILES['foto_perfil']['tmp_name']);
+        if ($check !== false) {
+            $foto_data = file_get_contents($_FILES['foto_perfil']['tmp_name']);
+            $foto_tipo = $_FILES['foto_perfil']['type'];
+        }
+    }
+    // --- FIN MANEJO DE FOTO ---
+
     // 4. Preparar la consulta SQL para evitar inyecciones SQL (muy importante)
-    $sql = "INSERT INTO j106_clientes (nombre_completo, numero_celular, correo_electronico, direccion1, direccion2, ciudad, id_pais, id_estado, zip_code, notas_adicionales, id_negocio, IN_SMS, IN_EMAIL) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO j106_clientes (nombre_completo, numero_celular, correo_electronico, direccion1, direccion2, ciudad, id_pais, id_estado, zip_code, notas_adicionales, id_negocio, in_sms, in_email, in_whatsapp, foto_perfil_data, foto_perfil_tipo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     // Preparar la sentencia
     if ($stmt = $conn->prepare($sql)) {
         // 5. Vincular los parámetros
-        // "ssssssiissiii"
-        $stmt->bind_param("ssssssiissiii", $nombre, $celular, $email, $direccion1, $direccion2, $ciudad, $id_pais, $id_estado, $zip_code, $notas, $id_negocio_session, $in_sms, $in_email);
+        $stmt->bind_param("ssssssiissiiiiss", $nombre, $celular, $email, $direccion1, $direccion2, $ciudad, $id_pais, $id_estado, $zip_code, $notas, $id_negocio_session, $in_sms, $in_email, $in_whatsapp, $foto_data, $foto_tipo);
 
         // 6. Ejecutar la sentencia
         if ($stmt->execute()) {

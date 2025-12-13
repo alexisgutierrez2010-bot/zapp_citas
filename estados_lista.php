@@ -32,7 +32,7 @@ $estados_result = $conn->query("SELECT * FROM j111_estados WHERE id_pais = $id_p
     <title><?php echo str_replace('{country}', htmlspecialchars($pais['nombre_pais']), __('locations_states_title')); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
+<body style="background-color: <?php echo $daily_bg_color; ?>;">
     <?php include 'navbar.php'; ?>
 
     <div class="container mt-4">

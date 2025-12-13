@@ -19,7 +19,7 @@ $paises_result = $conn->query("SELECT * FROM j110_paises ORDER BY nombre_pais AS
     <title><?php echo __('locations_countries_title'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
+<body style="background-color: <?php echo $daily_bg_color; ?>;">
     <?php include 'navbar.php'; ?>
 
     <div class="container mt-4">
@@ -121,7 +121,6 @@ $paises_result = $conn->query("SELECT * FROM j110_paises ORDER BY nombre_pais AS
             </div>
         </div>
     </div>
-    <!-- El footer ya se incluye, no se necesita duplicar -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <?php include 'footer.php'; ?>
 </body>
 </html>

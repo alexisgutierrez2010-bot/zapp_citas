@@ -1,7 +1,7 @@
 <?php
-// Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
+// Elaborado por GEMINI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-28-2025).
+// Update :Dec-06-2025).
 session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
 require_once 'api_owner_session_check.php'; // 1. Guardián de sesión y timeout
 header('Content-Type: application/json'); // 2. Establecer cabecera
@@ -25,7 +25,9 @@ if ($id_cliente <= 0) {
 
 $sql = "SELECT 
             id_cliente, nombre_completo, numero_celular, correo_electronico,
-            direccion1, direccion2, ciudad, id_pais, id_estado, zip_code, notas_adicionales
+            direccion1, direccion2, ciudad, zip_code, notas_adicionales,
+            id_pais, id_estado, activo,
+            in_sms, in_email, in_whatsapp
         FROM j106_clientes
         WHERE id_cliente = ? AND id_negocio = ?";
 

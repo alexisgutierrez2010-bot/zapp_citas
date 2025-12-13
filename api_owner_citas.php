@@ -26,7 +26,7 @@ $sql_citas = "SELECT
                 c.fecha_hora_inicio, 
                 c.fecha_hora_fin, 
                 c.estado_cita, 
-                c.IN_EMAIL, c.IN_SMS,
+                c.in_email, c.in_sms,
                 cl.nombre_completo AS nombre_cliente,
                 -- CORRECCIÓN: Usar LEFT JOIN y la función IF para incluir Reuniones.
                 IF(c.tipo_cita = 'Reunion', c.descripcion_trabajo, s.nombre_servicio) AS nombre_servicio

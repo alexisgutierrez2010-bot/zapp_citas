@@ -77,7 +77,7 @@ if ($cita_details['tipo_cita'] === 'Reunion') {
 }
 
 // ¡VALIDACIÓN CLAVE! Verificar si el cliente desea recibir correos.
-if (!$cita_details['IN_EMAIL']) {
+if (!$cita_details['in_email']) {
     if (!is_api_request()) header("Location: citas_lista.php?status=success&message=" . urlencode("Acción completada, pero el cliente ha desactivado las notificaciones por correo."));
     return; // Salir silenciosamente en una API
 }

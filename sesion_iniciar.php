@@ -33,9 +33,49 @@ if (isset($_GET['error_key'])) {
     <meta charset="UTF-8">
     <title><?php echo __('login_title'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #f4f7f6;
+        }
+        .main-container {
+            flex: 1;
+        }
+    </style>
 </head>
 <body>
-    <div class="container vh-100 d-flex justify-content-center align-items-center">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <?php echo __('zapp_citas'); ?>
+                <span class="ms-2 fw-normal text-white-50" style="font-size: 0.8em;"><?php echo __('login_app_admin'); ?></span>
+            </a>
+            <ul class="navbar-nav ms-auto">
+                <?php
+                    // Lógica para construir los enlaces del selector de idioma
+                    $queryParams = $_GET;
+                    $currentPage = basename($_SERVER['PHP_SELF']);
+
+                    $queryParams['lang'] = 'es';
+                    $es_link = $currentPage . '?' . http_build_query($queryParams);
+
+                    $queryParams['lang'] = 'en';
+                    $en_link = $currentPage . '?' . http_build_query($queryParams);
+                ?>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">🌐</a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
+                        <li><a class="dropdown-item <?php echo ($lang === 'es') ? 'active' : ''; ?>" href="<?php echo $es_link; ?>">Español</a></li>
+                        <li><a class="dropdown-item <?php echo ($lang === 'en') ? 'active' : ''; ?>" href="<?php echo $en_link; ?>">English</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container main-container d-flex justify-content-center align-items-center">
         <div class="card" style="width: 22rem;">
             <div class="card-header text-center">
                 <h3><?php echo __('login_title'); ?></h3>
@@ -69,13 +109,6 @@ if (isset($_GET['error_key'])) {
                     -->
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary"><?php echo __('login_button'); ?></button>
-                    </div>
-                    <div class="text-center mt-3">
-                        <small>
-                            <a href="?lang=es" class="text-decoration-none <?php echo $lang === 'es' ? 'fw-bold' : ''; ?>">Español</a>
-                            |
-                            <a href="?lang=en" class="text-decoration-none <?php echo $lang === 'en' ? 'fw-bold' : ''; ?>">English</a>
-                        </small>
                     </div>
                     <hr>
                     <div class="text-center mt-3">

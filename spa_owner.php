@@ -7,7 +7,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Citas del Negocio</title>
+    <title>App Propietario - Gestión de Citas del Negocio</title>
     <!-- FullCalendar CSS -->
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
     <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css' rel='stylesheet'>
@@ -39,7 +39,10 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="#" id="navbar-brand-title">Gestión de Citas del Negocio</a>
+            <a class="navbar-brand" href="#" id="navbar-brand-title">
+                App Propietario
+                <span class="ms-2 fw-normal text-white-50" style="font-size: 0.8em;">Gestión de Citas del Negocio</span>
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -53,7 +56,10 @@
         <div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div></div>
     </main>
 
-    <?php include 'spa_owner_footer.php'; ?>
-    <script src="app_owner.js?v=<?php echo filemtime('app_owner.js'); ?>"></script>
+    <?php 
+        $lang_param = isset($_GET['lang']) ? $_GET['lang'] : 'es';
+        include 'spa_owner_footer.php'; 
+    ?>
+    <script type="module" src="app_owner.js?v=<?php echo filemtime('app_owner.js'); ?>"></script>
 </body>
 </html>

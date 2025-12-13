@@ -6,40 +6,40 @@ date_default_timezone_set('America/Chicago'); // Establecer la zona horaria a US
 
 // --- LÓGICA MULTI-IDIOMA ---
 // 1. Detectar el idioma solicitado, por defecto 'es' (español)
-$lang = isset($_GET['lang']) && in_array($_GET['lang'], ['en', 'es']) ? $_GET['lang'] : 'es';
+$lang = 'es'; // Idioma por defecto
+if (isset($_GET['lang']) && in_array($_GET['lang'], ['es', 'en'])) {
+    $lang = $_GET['lang'];
+}
 
-// 2. Array con todas las traducciones
-$translations = [
-    'es' => [
-        'title' => 'Bienvenido a ZApp Citas',
-        'main_heading' => 'ZApp Citas',
-        'tagline' => 'La solución integral para la gestión de tus citas y clientes.',
-        'admin_card_title' => '⚙️ ZApp Citas',
-        'admin_card_text' => 'Administración de la Aplicación',
-        'client_card_title' => '👤 App Cliente',
-        'client_card_text' => 'Gestión de Citas por Cliente',
-        'owner_card_title' => '📅 APP Propietario',
-        'owner_card_text' => 'Gestión de Citas del Negocio',
-    ],
-    'en' => [
-        'title' => 'Welcome to ZApp Citas',
-        'main_heading' => 'ZApp Citas',
-        'tagline' => 'The comprehensive solution for managing your appointments and clients.',
-        'admin_card_title' => '⚙️ ZApp Citas',
-        'admin_card_text' => 'Application Administration',
-        'client_card_title' => '👤 Client App',
-        'client_card_text' => 'Client Appointment Management',
-        'owner_card_title' => '📅 Owner APP',
-        'owner_card_text' => 'Business Appointment Management',
-    ]
-];
+// 2. Cargar solo los textos comunes, que son los que usa esta página
+$translations = require __DIR__ . '/common.php';
+
+// 3. Función helper local para obtener traducciones
+function __($key) {
+    global $lang, $translations; // Usar global para acceder a las variables
+    return $translations[$lang][$key] ?? $key; // La lógica interna no cambia
+}
+
+// --- LÓGICA PARA IMÁGENES DE FONDO DINÁMICAS ---
+$hero_images_dir = 'assets/images/hero/';
+$hero_images = [];
+if (is_dir($hero_images_dir)) {
+    $files = scandir($hero_images_dir);
+    foreach ($files as $file) {
+        $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        if (in_array($extension, ['jpg', 'jpeg', 'png', 'webp'])) {
+            $hero_images[] = $hero_images_dir . $file;
+        }
+    }
+}
+// --- FIN LÓGICA ---
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $translations[$lang]['title']; ?></title>
+    <title><?php echo __('welcome'); ?> a <?php echo __('zapp_citas'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css"/>
@@ -54,10 +54,15 @@ $translations = [
             flex-direction: column;
         }
         .hero-section {
-            /* Usamos un gradiente CSS que no depende de internet y carga al instante */
-            background: #0f2027;  /* fallback for old browsers */
-            background: -webkit-linear-gradient(to right, #2c5364, #203a43, #0f2027);  /* Chrome 10-25, Safari 5.1-6 */
-            background: linear-gradient(to right, #2c5364, #203a43, #0f2027); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+            /* SOLUCIÓN: Usar 'contain' para que la imagen completa sea visible, y 'cover' como fallback */
+            background-size: contain, cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            /* SOLUCIÓN: Añadir un gradiente radial (viñeta) para centrar la atención y mejorar la legibilidad */
+            background-image: radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.8) 100%), linear-gradient(to right, #2c5364, #203a43, #0f2027);
+            
+            /* Transición suave para el cambio de imagen de fondo */
+            transition: background-image 1.5s ease-in-out;
             flex: 1 0 auto; /* Hace que esta sección ocupe el espacio disponible */
             display: flex;
             flex-direction: column;
@@ -67,15 +72,16 @@ $translations = [
             padding: 20px;
         }
         .hero-text {
-            max-width: 900px;
+            max-width: 95%; /* Usar porcentaje para que siempre haya un pequeño margen */
+            width: 900px; /* Mantener el ancho máximo para pantallas grandes */
         }
         .hero-text h1 {
-            font-size: clamp(2.5rem, 10vw, 4.5rem); /* CORRECCIÓN: Tamaño de fuente adaptable, mínimo más pequeño */
+            font-size: clamp(2.2rem, 8vw, 4.5rem); /* AJUSTE: Reducimos el tamaño mínimo y el preferido para pantallas pequeñas */
             font-weight: 700;
             text-shadow: 2px 2px 8px rgba(0,0,0,0.7);
         }
         .hero-text p.lead {
-            font-size: clamp(1.1rem, 4vw, 1.5rem);
+            font-size: clamp(1rem, 4vw, 1.4rem); /* AJUSTE: Reducimos ligeramente el tamaño para mejor proporción */
             font-weight: 300;
             text-shadow: 1px 1px 4px rgba(0,0,0,0.7);
         }
@@ -150,31 +156,33 @@ $translations = [
             <a href="?lang=en" class="<?php echo $lang === 'en' ? 'active' : ''; ?>">EN</a>
         </div>
         <div class="hero-text">
-            <h1><?php echo $translations[$lang]['main_heading']; ?></h1>
-            <p class="lead mb-5"><?php echo $translations[$lang]['tagline']; ?></p>
+            <h1><?php echo __('zapp_citas'); ?></h1>
+            <p class="lead mb-5">La solución integral para la gestión de tus citas y clientes.</p>
 
             <div class="row g-4">
                 <div class="col-md-6 col-lg-4 d-flex">
                     <a href="sesion_iniciar.php" class="action-card w-100">
                         <div class="card-body">
-                            <h5><?php echo $translations[$lang]['admin_card_title']; ?></h5>
-                            <p><?php echo $translations[$lang]['admin_card_text']; ?></p>
+                            <h5>⚙️ ZApp Citas</h5>
+                            <p>Administración de la Aplicación</p>
                         </div>
                     </a>
                 </div>
                 <div class="col-md-6 col-lg-4 d-flex">
                     <a href="spa_client.php" class="action-card w-100">
                         <div class="card-body">
-                            <h5><?php echo $translations[$lang]['client_card_title']; ?></h5>
-                            <p><?php echo $translations[$lang]['client_card_text']; ?></p>
+                            <h5>👤 App Cliente</h5>
+                            <p>Gestión de Citas por Cliente</p>
                         </div>
                     </a>
                 </div>
                 <div class="col-md-12 col-lg-4 d-flex">
                     <a href="spa_owner.php" class="action-card w-100">
                         <div class="card-body">
-                            <h5><?php echo $translations[$lang]['owner_card_title']; ?></h5>
-                            <p><?php echo $translations[$lang]['owner_card_text']; ?></p>
+                            <div class="lh-1">
+                                <h5 class="card-title mb-1">App Propietario</h5>
+                                <p class="card-text text-white-50 small mb-0">Gestión de Citas del Negocio</p>
+                            </div>
                         </div>
                     </a>
                 </div>
@@ -187,5 +195,39 @@ $translations = [
     // En su lugar, lo requerimos y lo mostramos sin ese margen.
     include 'footer.php'; 
     ?>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Actualizar el reloj cada segundo
+        const timeElement = document.getElementById('current-time');
+        if (timeElement) {
+            setInterval(() => {
+                timeElement.textContent = new Date().toLocaleTimeString('<?php echo $lang === 'es' ? 'es-ES' : 'en-US'; ?>', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+            }, 1000);
+        }
+
+        // Carrusel de imágenes de fondo
+        const heroSection = document.querySelector('.hero-section');
+        const images = <?php echo json_encode($hero_images); ?>;
+        let currentImageIndex = -1; // Empezar en -1 para que la primera llamada sea el índice 0
+
+        if (images.length > 0) {
+            const changeBackgroundImage = () => {
+                currentImageIndex = (currentImageIndex + 1) % images.length;
+                // Combinamos la viñeta con la nueva imagen
+                heroSection.style.backgroundImage = `
+                    radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.8) 100%), 
+                    url('${images[currentImageIndex]}')
+                `;
+            };
+
+            // SOLUCIÓN: Cambiar la primera imagen después de 1 segundo, luego cada 7 segundos.
+            setTimeout(() => {
+                changeBackgroundImage(); // Primera llamada
+                setInterval(changeBackgroundImage, 7000); // Llamadas subsecuentes
+            }, 1000); // Espera de 1 segundo para la primera imagen
+        }
+    });
+    </script>
 </body>
 </html>

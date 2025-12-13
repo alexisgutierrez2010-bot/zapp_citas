@@ -29,7 +29,7 @@ $nombre_negocio_actual = $result_negocio['nombre_negocio'] ?? $nombre_negocio_ac
     <!-- Usaremos Bootstrap para un diseño limpio y rápido -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
+<body style="background-color: <?php echo $daily_bg_color; ?>;">
     <?php include 'navbar.php'; // Incluimos el menú de navegación ?>
 
     <div class="container mt-4">
@@ -61,7 +61,7 @@ $nombre_negocio_actual = $result_negocio['nombre_negocio'] ?? $nombre_negocio_ac
                         }
                         ?>
 
-                        <form action="clientes_crear.php" method="POST">
+                        <form action="clientes_crear.php" method="POST" enctype="multipart/form-data">
                             <div class="mb-3">
                                 <label for="nombre" class="form-label"><?php echo __('clients_form_name'); ?></label>
                                 <input type="text" class="form-control" id="nombre" name="nombre_completo" required>
@@ -134,6 +134,10 @@ $nombre_negocio_actual = $result_negocio['nombre_negocio'] ?? $nombre_negocio_ac
                                     <label class="form-check-label" for="in_email_crear"><?php echo __('clients_form_email_notifications'); ?></label>
                                 </div>
                             </div>
+                            <div class="mb-3">
+                                <label for="foto_perfil" class="form-label">Foto de Perfil (Opcional)</label>
+                                <input class="form-control" type="file" id="foto_perfil" name="foto_perfil" accept="image/jpeg, image/png">
+                            </div>
                             <div class="d-grid gap-2 d-sm-flex">
                                 <button type="submit" class="btn btn-primary flex-grow-1"><?php echo __('clients_form_save'); ?></button>
                                 <button type="reset" class="btn btn-secondary flex-grow-1"><?php echo __('clients_form_clear'); ?></button>
@@ -150,36 +154,37 @@ $nombre_negocio_actual = $result_negocio['nombre_negocio'] ?? $nombre_negocio_ac
                     <table class="table table-striped table-hover">
                         <thead class="table-dark">
                             <tr>
-                                <th>#</th>
+                                <th style="width: 50px;">Foto</th>
                                 <th><?php echo __('clients_col_name'); ?></th>
                                 <th><?php echo __('clients_col_phone'); ?></th>
                                 <th><?php echo __('clients_col_email'); ?></th>
-                                <th>SMS</th>
-                                <th>Email</th>
                                 <th><?php echo __('clients_col_status'); ?></th>
                                 <th><?php echo __('actions'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php
-                            $sql = "SELECT id_cliente, nombre_completo, numero_celular, correo_electronico, activo, IN_SMS, IN_EMAIL FROM j106_clientes WHERE id_negocio = ? ORDER BY activo DESC, nombre_completo ASC";
+                            $sql = "SELECT id_cliente, nombre_completo, numero_celular, correo_electronico, activo, foto_perfil_tipo FROM j106_clientes WHERE id_negocio = ? ORDER BY activo DESC, nombre_completo ASC";
                             $stmt = $conn->prepare($sql);
                             $stmt->bind_param("i", $id_negocio_session);
                             $stmt->execute();
                             $result = $stmt->get_result();
 
-                            $i = 1;
                             if ($result->num_rows > 0) {
                                 while($row = $result->fetch_assoc()) {
+                                    $foto_html = '<img src="assets/images/default_avatar.png" class="rounded-circle me-2" width="40" height="40" alt="Avatar">';
+                                    if (!empty($row['foto_perfil_tipo'])) {
+                                        $image_url = 'api_get_client_image.php?id=' . $row['id_cliente'];
+                                        $foto_html = '<a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" data-image-url="' . $image_url . '" data-client-name="' . htmlspecialchars($row["nombre_completo"]) . '">
+                                                        <img src="' . $image_url . '" class="rounded-circle me-2" width="40" height="40" alt="Foto de ' . htmlspecialchars($row["nombre_completo"]) . '">
+                                                     </a>';
+                                    }
+
                                     echo "<tr>";
-                                    echo "<td>" . $i++ . "</td>";
+                                    echo "<td>" . $foto_html . "</td>";
                                     echo "<td>" . htmlspecialchars($row["nombre_completo"]) . "</td>";
                                     echo "<td>" . htmlspecialchars($row["numero_celular"]) . "</td>";
                                     echo "<td>" . htmlspecialchars($row["correo_electronico"]) . "</td>";
-                                    $sms_status = $row['IN_SMS'] ? '<span class="badge bg-success">On</span>' : '<span class="badge bg-secondary">Off</span>';
-                                    $email_status = $row['IN_EMAIL'] ? '<span class="badge bg-success">On</span>' : '<span class="badge bg-secondary">Off</span>';
-                                    echo "<td>" . $sms_status . "</td>";
-                                    echo "<td>" . $email_status . "</td>";
                                     $estado_cliente = $row['activo'] ? '<span class="badge bg-success">' . __('active') . '</span>' : '<span class="badge bg-danger">' . __('inactive') . '</span>';
                                     echo "<td>" . $estado_cliente . "</td>";
                                     echo '<td>
@@ -194,7 +199,7 @@ $nombre_negocio_actual = $result_negocio['nombre_negocio'] ?? $nombre_negocio_ac
                                     echo "</tr>";
                                 }
                             } else {
-                                echo "<tr><td colspan='8' class='text-center'>" . __('clients_no_clients') . "</td></tr>";
+                                echo "<tr><td colspan='6' class='text-center'>" . __('clients_no_clients') . "</td></tr>";
                             }
                             ?>
                         </tbody>
@@ -203,6 +208,22 @@ $nombre_negocio_actual = $result_negocio['nombre_negocio'] ?? $nombre_negocio_ac
             </div>
         </div>
     </div>
+
+    <!-- Modal para ver la imagen -->
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="imageModalLabel">Foto de Perfil</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img src="" id="modalImage" class="img-fluid rounded" alt="Foto de perfil">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const paisSelect = document.getElementById('id_pais');
@@ -243,6 +264,19 @@ $nombre_negocio_actual = $result_negocio['nombre_negocio'] ?? $nombre_negocio_ac
         if (paisSelect.value) {
             cargarEstados(paisSelect.value);
         }
+
+        // Script para el modal de la imagen
+        var imageModal = document.getElementById('imageModal');
+        imageModal.addEventListener('show.bs.modal', function (event) {
+            // Botón que activó el modal
+            var button = event.relatedTarget;
+            // Extraer información de los atributos data-*
+            var imageUrl = button.getAttribute('data-image-url');
+            var clientName = button.getAttribute('data-client-name');
+            
+            document.getElementById('modalImage').src = imageUrl;
+            document.getElementById('imageModalLabel').textContent = 'Foto de ' + clientName;
+        });
     });
     </script>
     <?php include 'footer.php'; ?>

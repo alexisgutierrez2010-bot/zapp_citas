@@ -16,8 +16,8 @@ if ($id_cliente <= 0) {
 // 2. Obtener los datos actuales del cliente
 $cliente = []; // Inicializar la variable para evitar errores
 $sql = "SELECT 
-            c.id_cliente, c.nombre_completo, c.numero_celular, c.correo_electronico,
-            c.direccion1, c.direccion2, c.ciudad, c.zip_code, c.notas_adicionales, c.IN_SMS, c.IN_EMAIL, c.activo,
+            c.id_cliente, c.nombre_completo, c.numero_celular, c.correo_electronico, c.foto_perfil_tipo,
+            c.direccion1, c.direccion2, c.ciudad, c.zip_code, c.notas_adicionales, c.in_sms, c.in_email, c.in_whatsapp, c.activo,
             c.id_pais, c.id_estado
         FROM j106_clientes c
         WHERE c.id_cliente = ? AND c.id_negocio = ?";
@@ -68,7 +68,7 @@ if (!empty($cliente['numero_celular'])) {
     <title><?php echo __('clients_edit_title'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
+<body style="background-color: <?php echo $daily_bg_color; ?>;">
     <?php include 'navbar.php'; ?>
 
     <div class="container mt-5">
@@ -89,7 +89,7 @@ if (!empty($cliente['numero_celular'])) {
                             echo '<div class="alert alert-danger">' . $errorMessage . '</div>';
                         }
                         ?>
-                        <form action="clientes_actualizar.php" method="POST">
+                        <form action="clientes_actualizar.php" method="POST" enctype="multipart/form-data">
                             <!-- Campo oculto para enviar el ID del cliente -->
                             <input type="hidden" name="id_cliente" value="<?php echo $cliente['id_cliente']; ?>">
 
@@ -158,12 +158,16 @@ if (!empty($cliente['numero_celular'])) {
                             <div class="mb-3">
                                 <label class="form-label"><?php echo __('clients_form_communication'); ?></label>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="in_sms" value="1" id="in_sms_editar" <?php echo ($cliente['IN_SMS'] ?? 0) ? 'checked' : ''; ?>>
+                                    <input class="form-check-input" type="checkbox" name="in_sms" value="1" id="in_sms_editar" <?php echo ($cliente['in_sms'] ?? 0) ? 'checked' : ''; ?>>
                                     <label class="form-check-label" for="in_sms_editar"><?php echo __('clients_form_sms_notifications'); ?></label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="in_email" value="1" id="in_email_editar" <?php echo ($cliente['IN_EMAIL'] ?? 0) ? 'checked' : ''; ?>>
+                                    <input class="form-check-input" type="checkbox" name="in_email" value="1" id="in_email_editar" <?php echo ($cliente['in_email'] ?? 0) ? 'checked' : ''; ?>>
                                     <label class="form-check-label" for="in_email_editar"><?php echo __('clients_form_email_notifications'); ?></label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="in_whatsapp" value="1" id="in_whatsapp_editar" <?php echo ($cliente['in_whatsapp'] ?? 0) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="in_whatsapp_editar">Recibir notificaciones por WhatsApp</label>
                                 </div>
                             </div>
                             <hr>
@@ -172,6 +176,17 @@ if (!empty($cliente['numero_celular'])) {
                                     <input class="form-check-input" type="checkbox" id="activo" name="activo" value="1" <?php echo ($cliente['activo'] ?? 0) ? 'checked' : ''; ?>>
                                     <label class="form-check-label" for="activo"><?php echo __('clients_form_active'); ?></label>
                                 </div>
+                            </div>
+                            <hr>
+                            <div class="mb-3">
+                                <label for="foto_perfil" class="form-label">Cambiar Foto de Perfil (Opcional)</label>
+                                <input class="form-control" type="file" id="foto_perfil" name="foto_perfil" accept="image/jpeg, image/png">
+                                <?php if (!empty($cliente['foto_perfil_tipo'])): ?>
+                                    <div class="mt-2">
+                                        <small>Foto Actual:</small><br>
+                                        <img src="api_get_client_image.php?id=<?php echo $cliente['id_cliente']; ?>" alt="Foto actual" class="img-thumbnail" style="max-height: 100px;">
+                                    </div>
+                                <?php endif; ?>
                             </div>
                             <button type="submit" class="btn btn-success w-100"><?php echo __('clients_form_update'); ?></button>
                         </form>

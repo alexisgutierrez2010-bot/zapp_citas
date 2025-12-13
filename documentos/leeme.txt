@@ -74,3 +74,30 @@ Una vez subidos los archivos, abre tu dominio en el navegador y realiza pruebas 
 - Navega por todas las secciones (Agenda Diaria, Clientes, Mi Negocio, etc.).
 - Realiza una acci&oacute;n que interact&uacute;e con la base de datos (ej. editar un cliente) para confirmar que la conexi&oacute;n es correcta.
 </pre>
+
+<pre>
+----------------------------------------
+6. NOTAS DE ARQUITECTURA: ESTRATEGIAS DE INTERNACIONALIZACI&Oacute;N (i18n)
+----------------------------------------
+
+La aplicaci&oacute;n utiliza dos estrategias diferentes para manejar m&uacute;ltiples idiomas (ES/EN), dependiendo del tipo de interfaz.
+
+**Estrategia 1: Aplicaci&oacute;n Tradicional (Ej: index.php, zapp_citas)**
+
+- **C&oacute;mo funciona:** Cuando se solicita una p&aacute;gina (ej. `index.php?lang=en`), el servidor PHP se ejecuta, carga el archivo de idioma correspondiente desde el disco (`/languages.php`) y construye la p&aacute;gina HTML completa con los textos ya traducidos antes de enviarla al navegador.
+- **Traducci&oacute;n:** Ocurre en el **servidor (backend)**.
+- **Cambio de Idioma:** Requiere una **recarga completa de la p&aacute;gina** para que el servidor pueda generar un nuevo HTML.
+
+**Estrategia 2: Single-Page Application (SPA) (Ej: spa_owner.php, spa_client.php)**
+
+- **C&oacute;mo funciona:** El servidor env&iacute;a una "c&aacute;scara" de HTML casi vac&iacute;a, y el c&oacute;digo JavaScript (`app_owner.js`, `app_client.js`) toma el control en el navegador.
+- **Traducci&oacute;n:**
+  1. JavaScript detecta el idioma en la URL (`?lang=en`).
+  2. Llama a la API `api_get_translations.php` para solicitar el diccionario de traducciones en formato JSON.
+  3. JavaScript guarda estas traducciones en una variable (ej. `context.T`).
+  4. A partir de ah&iacute;, JavaScript construye y actualiza todas las vistas (login, agenda, etc.) directamente en el navegador, usando los textos de esa variable.
+- **Cambio de Idioma:** Al igual que en la estrategia tradicional, requiere una **recarga completa de la p&aacute;gina** para que la SPA pueda solicitar el nuevo diccionario de idioma a la API.
+
+**&iquest;Por qu&eacute; la diferencia?**
+La estrategia de la SPA es m&aacute;s moderna y eficiente para aplicaciones interactivas. Una vez cargada, permite una navegaci&oacute;n instant&aacute;nea entre vistas (como "Mi Agenda" y "Clientes") sin recargar la p&aacute;gina, mejorando significativamente la experiencia del usuario. La recarga solo es necesaria para cambios globales como el idioma.
+</pre>

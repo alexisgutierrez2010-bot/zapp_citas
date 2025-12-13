@@ -24,7 +24,7 @@ if ($id_cita <= 0) {
 }
 
 $sql = "SELECT 
-            c.id_cita, c.fecha_hora_inicio, c.fecha_hora_fin, c.estado_cita, c.descripcion_trabajo, c.tipo_cita, c.IN_EMAIL, c.IN_SMS,
+            c.id_cita, c.fecha_hora_inicio, c.fecha_hora_fin, c.estado_cita, c.descripcion_trabajo, c.tipo_cita, c.in_email, c.in_sms,
             cl.nombre_completo AS nombre_cliente, cl.numero_celular AS telefono_cliente,
             s.nombre_servicio, s.precio
         FROM j108_citas c

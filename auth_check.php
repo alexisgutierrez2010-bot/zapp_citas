@@ -8,7 +8,7 @@
 require_once 'vendor/autoload.php';
 
 // --- INICIO: Cargar sistema de internacionalización (i18n) ---
-require_once __DIR__ . '/languages.php';
+require_once __DIR__ . '/languages.php'; // Esta ruta ya es correcta, pero la confirmo.
 // --- FIN: Cargar sistema de internacionalización (i18n) ---
 
 session_start();
@@ -59,5 +59,19 @@ $timezone_negocio = $result_tz['timezone'] ?? 'America/Chicago'; // Usar un fall
 $stmt_tz->close();
 
 date_default_timezone_set($timezone_negocio);
+
+// --- LÓGICA DE COLOR DE FONDO POR DÍA ---
+$day_of_week = date('w'); // 0 for Sunday, 6 for Saturday
+$background_colors = [
+    '#f5f5ff', // Domingo (Lavender)
+    '#f0fff0', // Lunes (Honeydew)
+    '#f0f8ff', // Martes (AliceBlue)
+    '#fffff0', // Miércoles (Ivory)
+    '#fffaf0', // Jueves (FloralWhite)
+    '#fff0f5', // Viernes (LavenderBlush)
+    '#f0ffff'  // Sábado (Azure)
+];
+$daily_bg_color = $background_colors[$day_of_week];
+// --- FIN DE LA LÓGICA DE COLOR ---
 
 ?>

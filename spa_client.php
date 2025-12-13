@@ -29,7 +29,10 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="#" id="navbar-brand-title">Gestión de Citas por Clientes</a>
+            <a class="navbar-brand" href="#" id="navbar-brand-title">
+                App Cliente
+                <span class="ms-2 fw-normal text-white-50" style="font-size: 0.8em;">Gestión de Citas por Cliente</span>
+            </a>
             <div class="collapse navbar-collapse" id="navbarNav"><ul class="navbar-nav ms-auto" id="nav-menu"></ul></div>
         </div>
     </nav>

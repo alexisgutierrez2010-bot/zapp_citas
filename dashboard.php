@@ -25,34 +25,23 @@ $email_negocio = $config['email'] ?? '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo __('welcome'); ?> a <?php echo htmlspecialchars($nombre_negocio); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
         body, html {
             height: 100%;
             margin: 0;
-            color: white;
         }
-        .hero-section {
-            background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('get_image.php');
-            height: 100%;
+        body {
+            background-image: linear-gradient(to right, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.4)), url('get_image.php');
             background-position: center;
             background-repeat: no-repeat;
             background-size: cover;
-            position: relative;
+            color: white;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
+            flex-direction: column;
         }
-        .hero-text {
-            max-width: 800px;
-        }
-        .hero-text h1 {
-            /* Usamos clamp para un tamaño de fuente fluido */
-            font-size: clamp(2.2rem, 10vw, 4rem); /* CORRECCIÓN: Tamaño de fuente adaptable */
-            font-weight: bold;
-        }
-        .hero-text p {
-            font-size: clamp(1rem, 4vw, 1.5rem); /* CORRECCIÓN: Tamaño de fuente adaptable */
+        .main-content {
+            flex: 1;
         }
         .action-card {
             background-color: rgba(255, 255, 255, 0.1);
@@ -63,69 +52,40 @@ $email_negocio = $config['email'] ?? '';
             transform: translateY(-10px);
             background-color: rgba(255, 255, 255, 0.2);
         }
-        .action-card a {
-            text-decoration: none;
-            color: white;
-        }
-        .action-card .card-body {
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
         .time-display {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            text-align: right;
-            text-shadow: 1px 1px 4px rgba(0,0,0,0.7);
-        }
-        .time-display .date {
-            font-size: clamp(0.8rem, 2.5vw, 1.1rem); /* CORRECCIÓN: Tamaño de fuente adaptable */
-        }
-        .time-display .time {
-            font-size: clamp(1.5rem, 5vw, 2rem); /* CORRECCIÓN: Tamaño de fuente adaptable */
-            font-weight: 500;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
         }
     </style>
 </head>
 <body>
     <?php include 'navbar.php'; ?>
 
-    <div class="hero-section">
-        <div class="time-display">
-            <div class="date"><?php echo date('l, j F Y'); ?></div>
-            <div class="time" id="dashboard-time"><?php echo date('h:i:s A'); ?></div>
+    <div class="container main-content d-flex flex-column justify-content-center">
+        <div class="text-center">
+            <div class="time-display mb-4">
+                <div class="date fs-4"><?php echo date('l, j F Y'); ?></div>
+                <div class="time display-4" id="dashboard-time"><?php echo date('h:i:s A'); ?></div>
+            </div>
+
+            <h1 class="display-3 fw-bold"><?php echo __('dashboard_welcome_to'); ?> <?php echo htmlspecialchars($nombre_negocio); ?></h1>
+            <p class="lead"><?php echo __('dashboard_subtitle'); ?></p>
         </div>
-        <div class="hero-text">
-            <h1><?php echo __('dashboard_welcome_to'); ?> <?php echo htmlspecialchars($nombre_negocio); ?></h1>
-            <?php if (!empty($telefono_negocio) || !empty($email_negocio)): ?>
-                <p class="lead mt-3">
-                    <?php if (!empty($telefono_negocio)): ?>
-                        <span class="me-3">📞 <?php echo htmlspecialchars($telefono_negocio); ?></span>
-                    <?php endif; ?>
-                    <?php if (!empty($email_negocio)): ?>
-                        <span>📧 <?php echo htmlspecialchars($email_negocio); ?></span>
-                    <?php endif; ?>
-                </p>
-            <?php endif; ?>
 
-            <p><?php echo __('dashboard_subtitle'); ?></p>
-
-            <div class="row mt-5 g-4">
-                <div class="col-md-4">
-                    <div class="card action-card">
-                        <a href="citas_lista.php?lang=<?php echo $lang; ?>" class="card-body"><?php echo __('dashboard_card_schedule'); ?></a>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card action-card">
-                        <a href="calendario_ver.php?lang=<?php echo $lang; ?>" class="card-body"><?php echo __('dashboard_card_calendar'); ?></a>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card action-card">
-                        <a href="clientes_lista.php?lang=<?php echo $lang; ?>" class="card-body"><?php echo __('dashboard_card_clients'); ?></a>
-                    </div>
-                </div>
+        <div class="row mt-5 g-4 justify-content-center">
+            <div class="col-md-4">
+                <a href="citas_lista.php?lang=<?php echo $lang; ?>" class="text-decoration-none">
+                    <div class="card action-card text-center text-white h-100"><div class="card-body"><i class="bi bi-calendar-plus fs-1"></i><h4 class="card-title mt-2"><?php echo __('dashboard_card_schedule'); ?></h4></div></div>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="calendario_ver.php?lang=<?php echo $lang; ?>" class="text-decoration-none">
+                    <div class="card action-card text-center text-white h-100"><div class="card-body"><i class="bi bi-calendar-week fs-1"></i><h4 class="card-title mt-2"><?php echo __('dashboard_card_calendar'); ?></h4></div></div>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="clientes_lista.php?lang=<?php echo $lang; ?>" class="text-decoration-none">
+                    <div class="card action-card text-center text-white h-100"><div class="card-body"><i class="bi bi-people-fill fs-1"></i><h4 class="card-title mt-2"><?php echo __('dashboard_card_clients'); ?></h4></div></div>
+                </a>
             </div>
         </div>
     </div>
@@ -139,5 +99,6 @@ $email_negocio = $config['email'] ?? '';
         }
         setInterval(updateDashboardTime, 1000);
     </script>
+    <?php include 'footer.php'; ?>
 </body>
 </html>

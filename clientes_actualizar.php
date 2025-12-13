@@ -23,6 +23,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $notas = trim($_POST['notas_adicionales']);
     $in_sms = isset($_POST['in_sms']) ? 1 : 0;
     $in_email = isset($_POST['in_email']) ? 1 : 0;
+    $in_whatsapp = isset($_POST['in_whatsapp']) ? 1 : 0;
     $activo = isset($_POST['activo']) ? 1 : 0; // Nuevo campo
     $celular = ''; // Inicializar
 
@@ -57,25 +58,53 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt_check->close();
     }
 
-    // 3. Preparar la consulta SQL de actualización
-    $sql = "UPDATE j106_clientes SET nombre_completo = ?, numero_celular = ?, correo_electronico = ?, direccion1 = ?, direccion2 = ?, ciudad = ?, id_pais = ?, id_estado = ?, zip_code = ?, notas_adicionales = ?, IN_SMS = ?, IN_EMAIL = ?, activo = ? WHERE id_cliente = ?";
+    // Iniciar transacción para asegurar la integridad de los datos
+    $conn->begin_transaction();
 
-    if ($stmt = $conn->prepare($sql)) {
-        // Vincular los parámetros
-        $stmt->bind_param("ssssssiissiiii", $nombre, $celular, $email, $direccion1, $direccion2, $ciudad, $id_pais, $id_estado, $zip_code, $notas, $in_sms, $in_email, $activo, $id_cliente);
-
-        // Ejecutar la sentencia
-        if ($stmt->execute()) {
-            $descripcion_audit = "Se actualizó el cliente '{$nombre}' (ID: {$id_cliente}).";
-            registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'UPDATE_CLIENT', $descripcion_audit);
-
-            // Si todo va bien, redirigir a index.php con un mensaje de éxito
-            header("Location: clientes_lista.php?status=success_update");
-        } else {
-            header("Location: clientes_editar.php?id=" . $id_cliente . "&status=error&message_key=operation_error");
+    try {
+        // 3. Preparar la consulta SQL de actualización para los datos de texto
+        $sql = "UPDATE j106_clientes SET 
+                    nombre_completo = ?, numero_celular = ?, correo_electronico = ?, 
+                    direccion1 = ?, direccion2 = ?, ciudad = ?, id_pais = ?, id_estado = ?, 
+                    zip_code = ?, notas_adicionales = ?, in_sms = ?, in_email = ?, in_whatsapp = ?, activo = ?
+                WHERE id_cliente = ?";
+        
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ssssssiissiiiii", $nombre, $celular, $email, $direccion1, $direccion2, $ciudad, $id_pais, $id_estado, $zip_code, $notas, $in_sms, $in_email, $in_whatsapp, $activo, $id_cliente);
+        
+        if (!$stmt->execute()) {
+            throw new Exception("Error al actualizar los datos del cliente.");
         }
         $stmt->close();
-    } else {
+
+        // 4. MANEJO DE FOTO DE PERFIL (si se subió una nueva)
+        if (isset($_FILES['foto_perfil']) && $_FILES['foto_perfil']['error'] == UPLOAD_ERR_OK) {
+            $check = getimagesize($_FILES['foto_perfil']['tmp_name']);
+            if ($check !== false) {
+                $foto_data = file_get_contents($_FILES['foto_perfil']['tmp_name']);
+                $foto_tipo = $_FILES['foto_perfil']['type'];
+                $sql_img = "UPDATE j106_clientes SET foto_perfil_data = ?, foto_perfil_tipo = ? WHERE id_cliente = ?";
+                $stmt_img = $conn->prepare($sql_img);
+                $null = NULL; // Necesario para send_long_data
+                $stmt_img->bind_param("bsi", $null, $foto_tipo, $id_cliente);
+                $stmt_img->send_long_data(0, $foto_data);
+                if (!$stmt_img->execute()) {
+                    throw new Exception("Error al actualizar la foto de perfil.");
+                }
+                $stmt_img->close();
+            }
+        }
+
+        // 5. Si todo fue bien, confirmar la transacción y registrar auditoría
+        $conn->commit();
+        $descripcion_audit = "Se actualizó el cliente '{$nombre}' (ID: {$id_cliente}).";
+        registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'UPDATE_CLIENT', $descripcion_audit);
+        
+        // 6. Redirigir con mensaje de éxito
+        header("Location: clientes_lista.php?status=success_update");
+
+    } catch (Exception $e) {
+        $conn->rollback(); // Revertir cambios si algo falló
         header("Location: clientes_editar.php?id=" . $id_cliente . "&status=error&message_key=operation_error");
     }
 

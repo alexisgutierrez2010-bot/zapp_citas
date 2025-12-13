@@ -13,7 +13,7 @@ require_once 'config.php';
     <title><?php echo __('audit_title'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
+<body style="background-color: <?php echo $daily_bg_color; ?>;">
     <?php 
     include 'navbar.php';
     ?>

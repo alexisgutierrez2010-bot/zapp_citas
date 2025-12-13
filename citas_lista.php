@@ -44,7 +44,7 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
     <title><?php echo __('appointments_title'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
+<body style="background-color: <?php echo $daily_bg_color; ?>;">
     <?php include 'navbar.php'; ?>
 
     <div class="container mt-4">
@@ -201,7 +201,7 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
                         <tbody>
                             <?php
                             // Modificamos la consulta para filtrar por la fecha seleccionada
-                            $sql_citas = "SELECT j108_citas.id_cita, j108_citas.fecha_hora_inicio, j108_citas.fecha_hora_fin, j108_citas.estado_cita, j108_citas.tipo_cita, j108_citas.IN_EMAIL, j108_citas.IN_SMS, j106_clientes.nombre_completo, j104_servicios.nombre_servicio, j104_servicios.duracion_valor, j104_servicios.duracion_unidad
+                            $sql_citas = "SELECT j108_citas.id_cita, j108_citas.fecha_hora_inicio, j108_citas.fecha_hora_fin, j108_citas.estado_cita, j108_citas.tipo_cita, j108_citas.in_email, j108_citas.in_sms, j106_clientes.nombre_completo, j104_servicios.nombre_servicio, j104_servicios.duracion_valor, j104_servicios.duracion_unidad
                                           FROM j108_citas
                                           JOIN j106_clientes ON j108_citas.id_cliente = j106_clientes.id_cliente
                                           LEFT JOIN j104_servicios ON j108_citas.id_servicio = j104_servicios.id_servicio
@@ -257,8 +257,8 @@ $url_siguiente = 'citas_lista.php?fecha_filtro=' . (clone $fecha_actual_obj)->mo
                                     echo "<td>" . ($es_reunion ? '<strong>Reunión</strong>' : htmlspecialchars($cita["nombre_servicio"])) . "</td>";
                                     echo "<td>" . htmlspecialchars($cita["duracion_valor"]) . " " . htmlspecialchars($cita["duracion_unidad"]) . "</td>";
                                     echo "<td><span class='badge rounded-pill " . $color_clase . "'>" . $estado . "</span></td>";
-                                    echo "<td><span class='badge rounded-pill bg-dark'>" . htmlspecialchars($cita["IN_EMAIL"]) . "</span></td>";
-                                    echo "<td><span class='badge rounded-pill bg-dark'>" . htmlspecialchars($cita["IN_SMS"]) . "</span></td>";
+                                    echo "<td><span class='badge rounded-pill bg-dark'>" . htmlspecialchars($cita["in_email"]) . "</span></td>";
+                                    echo "<td><span class='badge rounded-pill bg-dark'>" . htmlspecialchars($cita["in_sms"]) . "</span></td>";
                                     echo '<td>
                                             <div class="btn-group dropend">
                                                 <button type="button" class="btn btn-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">

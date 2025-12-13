@@ -28,7 +28,7 @@ while ($row = $configs_result->fetch_assoc()) {
     <title><?php echo __('users_title'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
+<body style="background-color: <?php echo $daily_bg_color; ?>;">
     <?php include 'navbar.php'; ?>
 
     <div class="container mt-4">
@@ -47,6 +47,8 @@ while ($row = $configs_result->fetch_assoc()) {
                                 $message = __($message_key);
                             } elseif ($status === 'success_create') {
                                 $message = __('create_success');
+                            } elseif ($status === 'success_deactivate') {
+                                $message = __('deactivate_success');
                             }
                             if (!empty($message)) {
                                 $alert_type = strpos($status, 'error') === false ? 'success' : 'danger';
@@ -138,9 +140,9 @@ while ($row = $configs_result->fetch_assoc()) {
 
                                     if ($puede_actuar) {
                                         echo '<a href="usuarios_editar.php?id=' . $row['id_usuario'] . '&lang=' . $lang . '" class="btn btn-sm btn-warning">' . __('edit') . '</a>
-                                              <form action="usuarios_eliminar.php" method="POST" style="display:inline-block;" onsubmit="return confirm(\'' . __('users_confirm_delete') . '\');">
+                                              <form action="usuarios_eliminar.php" method="POST" style="display:inline-block;" onsubmit="return confirm(\'' . __('users_confirm_deactivate') . '\');">
                                                   <input type="hidden" name="id_usuario" value="' . $row['id_usuario'] . '">
-                                                  <button type="submit" class="btn btn-sm btn-danger">' . __('delete') . '</button>
+                                                  <button type="submit" class="btn btn-sm btn-danger">' . __('deactivate') . '</button>
                                               </form>';
                                     } else {
                                         echo '<span class="text-muted fst-italic"> ' . __('users_not_allowed') . ' </span>';

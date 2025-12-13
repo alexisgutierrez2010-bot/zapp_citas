@@ -38,14 +38,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 
-    $sql = "DELETE FROM j100_usuarios WHERE id_usuario = ?";
+    $sql = "UPDATE j100_usuarios SET activo = 0 WHERE id_usuario = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $id_usuario_eliminar);
 
     if ($stmt->execute()) {
-        $descripcion_audit = "Se eliminó el usuario '{$usuario['nombre_usuario']}' (ID: {$id_usuario_eliminar}).";
-        registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'DELETE_USER', $descripcion_audit);
-        header("Location: usuarios_lista.php?status=success&message=" . urlencode("Usuario eliminado con éxito."));
+        $descripcion_audit = "Se desactivó el usuario '{$usuario['nombre_usuario']}' (ID: {$id_usuario_eliminar}).";
+        registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'DEACTIVATE_USER', $descripcion_audit);
+        header("Location: usuarios_lista.php?status=success_deactivate");
     } else {
         header("Location: usuarios_lista.php?status=error&message=" . urlencode("Error al eliminar el usuario: " . $stmt->error));
     }
