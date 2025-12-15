@@ -1,7 +1,7 @@
 # Manual Técnico y Guía de Despliegue - ZApp Citas
 
-**Versión:** 1.7
-**Última Actualización:** 08 de Diciembre de 2025
+**Versión:** 1.8
+**Última Actualización:** 14 de Diciembre de 2025
 
 ---
 
@@ -140,6 +140,7 @@ La siguiente tabla de diagnóstico detalla la cobertura de auditoría en todo el
 | **Actualizar Cita** | `zapp_citas` | `citas_actualizar.php` | ✅ **Sí** |
 | **Actualizar Estado Cita** | `zapp_citas` | `citas_actualizar_estado.php` | ✅ **Sí** |
 | **Eliminar Cita** | `zapp_citas` | `citas_eliminar.php` | ✅ **Sí** |
+| **Eliminar Cita (Físico)** | `spa_owner` | `api_owner_cita_eliminar_fisico.php` | ✅ **Sí** |
 | **Cerrar Citas Vencidas** | `spa_owner` | `api_owner_citas_cerrar_vencidas.php` | ✅ **Sí** |
 | | | | |
 | **CRUD de Categorías** | `zapp_citas` | `categorias_*.php` | ✅ **Sí** |
@@ -188,12 +189,14 @@ Esta sección detalla cada programa y su propósito dentro del sistema.
     *   `api_owner_logout.php`: Cierra la sesión del propietario.
     *   `api_owner_recuperar_clave.php`: Gestiona la solicitud de recuperación de contraseña.
 *   **Citas y Calendario:**
+    *   `api_owner_dashboard_data.php`: **(NUEVO)** Devuelve los datos agregados para los 4 gráficos del dashboard.
     *   `api_owner_citas.php`: Devuelve la lista de citas para una fecha específica (vista de agenda).
     *   `api_owner_calendario_eventos.php`: Devuelve las citas en formato de evento para FullCalendar.
     *   `api_owner_horario_disponible.php`: Devuelve los slots de tiempo (libres y ocupados) para un día.
     *   `api_owner_cita_detalle.php`: Obtiene los detalles completos de una cita.
     *   `api_owner_cita_crear.php`: Crea una nueva cita (de servicio o reunión).
     *   `api_owner_cita_actualizar.php`: Actualiza los datos o el estado de una cita.
+    *   `api_owner_cita_eliminar_fisico.php`: **(NUEVO)** Elimina permanentemente una cita y sus invitados.
     *   `api_owner_cita_eliminar.php`: Cancela una cita (borrado lógico).
     *   `api_owner_citas_cerrar_vencidas.php`: Marca como 'Vencidas' las citas pasadas.
 *   **Gestión (CRUDs):**
@@ -351,6 +354,13 @@ Este diagrama ilustra el flujo principal de interacción entre los componentes.
 *   `estado_cita` ('Pendiente', 'Confirmada', 'Completada', 'Cancelada', 'No Asistió', 'Vencida')
 *   `descripcion_trabajo`
 
+### j109_invitados_cita
+*   `id_invitado` (PK, AI)
+*   `id_cita` (FK a j108_citas)
+*   `nombre_invitado`
+*   `email_invitado`
+*   `telefono_invitado` (VARCHAR, NULLABLE)
+
 ---
 
 ## 6. Guía de Despliegue
@@ -395,6 +405,7 @@ Este diagrama ilustra el flujo principal de interacción entre los componentes.
     -   Navega al directorio raíz de tu sitio web (normalmente `public_html`).
     -   Sube **todos los archivos y carpetas** del proyecto `zapp_citas` a este directorio.
     -   **Excepción:** **NO subas la carpeta `vendor`**. La instalaremos directamente en el servidor.
+    -   **Nota sobre `spa_owner.php`**: Este archivo ahora incluye un parámetro de versión en la carga de `app_owner.js` (ej. `?v=1.0.1`) para mitigar problemas de caché en producción. Se recomienda incrementar este número en cada despliegue que modifique los archivos JavaScript.
 
 3.  **Instalar Dependencias con Composer:**
     -   Una vez subidos los archivos, necesitas instalar las bibliotecas de PHP (PHPMailer, Parsedown, etc.).
@@ -489,4 +500,4 @@ La implementación de i18n abarcó todos los archivos que presentan texto al usu
 ---
 ***FIN DEL DOCUMENTO***
 
-Author: Alexis Gutierrez y Gemini Code Assist (Update: 12/8/2025)
+Author: Alexis Gutierrez y Gemini Code Assist (Update: 12/14/2025)

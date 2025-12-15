@@ -1,102 +1,43 @@
 // js/modules/auth.js
 import { updateNavbar } from './ui.js';
 
-/**
- * Renderiza la vista de Login.
- * @param {object} context - El objeto de contexto de la aplicación.
- */
-export function renderLoginView(context) {
-    const { dom, T, API_URL, state } = context;
+export async function renderLoginView(context) {
+    const { dom, API_URL } = context;
 
-    // Actualizar título y menú para la vista de login
-    const mainTitle = T.spa_owner_app_title || "Owner App";
-    const subTitle = T.spa_owner_app_subtitle || "Business Appointment Management";
-    document.title = `${mainTitle} - ${subTitle}`;
-    dom.navbarBrand.innerHTML = `${mainTitle} <span class="ms-2 fw-normal text-white-50" style="font-size: 0.8em;">${subTitle}</span>`;
-    updateNavbar(context); // Llama a updateNavbar para mostrar el menú de idioma
-
-    // Cargar datos necesarios (países) y luego renderizar el formulario
-    fetch(`${API_URL}api_paises.php`)
-        .then(response => {
-            if (!response.ok) throw new Error('Error al cargar países.');
-            return response.json();
-        })
-        .then(paises => {
-            const paisesOptions = paises.map(pais => 
-                `<option value="${pais.codigo_telefono}" ${pais.id_pais == 1 ? 'selected' : ''}>${pais.nombre_pais} (${pais.codigo_telefono})</option>`
-            ).join('');
-
-            dom.appContainer.innerHTML = `
-                <div class="row justify-content-center">
-                    <div class="col-md-5 col-lg-4">
-                        <div class="card shadow">
-                            <div class="card-header text-center bg-primary text-white"><h3>${T.login_title || "Owner Access"}</h3></div>
-                            <div class="card-body p-4">
-                                <div id="error-container"></div>
-                                <form id="owner-login-form">
-                                    <div class="mb-3">
-                                        <label for="telefono" class="form-label">${T.businesses_form_phone || "Business Phone"}</label>
-                                        <div class="input-group">
-                                            <select class="form-select" id="country_code" name="country_code" style="max-width: 150px;" required>${paisesOptions}</select>
-                                            <input type="tel" class="form-control" id="telefono" name="telefono" placeholder="${T.phone_placeholder || 'Ej: 4121234567'}" required>
-                                        </div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="password" class="form-label">${T.login_password || "Your Password"}</label>
-                                        <input type="password" class="form-control" id="password" name="password" required>
-                                    </div>
-                                    <div class="d-grid mt-3">
-                                        <button type="submit" class="btn btn-primary btn-lg">${T.login_button || "Login"}</button>
-                                    </div>
-                                    <div class="text-center mt-3">
-                                        <a href="#" id="forgot-password-link">${T.spa_owner_forgot_password || "Forgot your password?"}</a>
-                                    </div>
-                                    <hr>
-                                    <div class="text-center mt-2">
-                                        <a href="index.php?lang=${state.currentLang}" class="text-muted"><small>${T.login_back_to_home || "Back to Home"}</small></a>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('owner-login-form').addEventListener('submit', (e) => handleLogin(e, context));
-            document.getElementById('forgot-password-link').addEventListener('click', (e) => {
-                e.preventDefault();
-                // MODIFICACIÓN: Llamar a la función de renderizado de la vista de recuperación
-                renderForgotPasswordView(context);
-            });
-        })
-        .catch(error => {
-            dom.appContainer.innerHTML = `<div class="alert alert-danger">${T.operation_error || 'Operation Error'}: ${error.message}</div>`;
-        });
-}
-
-/**
- * Renderiza la vista para recuperar la contraseña.
- * @param {object} context - El objeto de contexto de la aplicación.
- */
-function renderForgotPasswordView(context) {
-    const { dom, T, state } = context;
+    document.title = `Acceso Propietario - ZApp Citas`;
+    dom.navbarBrand.innerHTML = `App Propietario <span class="ms-2 fw-normal text-white-50" style="font-size: 0.8em;">Gestión de Citas</span>`;
+    updateNavbar(context);
 
     dom.appContainer.innerHTML = `
-        <div class="row justify-content-center">
+        <div class="row justify-content-center mt-5">
             <div class="col-md-5 col-lg-4">
-                <div class="card shadow">
-                    <div class="card-header text-center"><h3>${T.spa_owner_recover_password_title || "Recover Password"}</h3></div>
+                <div class="card shadow-lg">
+                    <div class="card-header text-center bg-success text-white">
+                        <h3>Acceso Propietario</h3>
+                    </div>
                     <div class="card-body p-4">
-                        <div id="recovery-message-container"></div>
-                        <form id="recovery-form">
+                        <div id="error-container" class="mb-3"></div>
+                        <form id="login-form-simple">
                             <div class="mb-3">
-                                <label for="telefono-recovery" class="form-label">${T.businesses_form_phone || "Business Phone"}</label>
-                                <input type="tel" class="form-control" id="telefono-recovery" placeholder="${T.phone_placeholder_full || 'Ej: +58 4121234567'}" required>
-                                <div class="form-text">${T.spa_owner_recover_password_instructions || "We'll send instructions to the owner's email."}</div>
+                                <label for="telefono" class="form-label">Teléfono del Negocio</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="country_code" name="country_code" style="max-width: 120px;" required></select>
+                                    <input type="tel" class="form-control" id="telefono" placeholder="Ej: 4121234567" required>
+                                </div>
                             </div>
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary">${T.spa_owner_recover_password_button || "Send Instructions"}</button>
-                                <button type="button" id="back-to-login" class="btn btn-secondary">${T.spa_owner_back_to_home || "Back to Login"}</button>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Contraseña</label>
+                                <input type="password" class="form-control" id="password" required>
+                            </div>
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn btn-success btn-lg">Entrar</button>
+                            </div>
+                            <div class="text-center mt-3">
+                                <a href="#" id="forgot-password-link">¿Olvidó su contraseña?</a>
+                            </div>
+                            <hr>
+                            <div class="text-center mt-2">
+                                <a href="index.php" class="text-muted"><small>Volver al Inicio</small></a>
                             </div>
                         </form>
                     </div>
@@ -105,87 +46,172 @@ function renderForgotPasswordView(context) {
         </div>
     `;
 
+    // Cargar y poblar el selector de países
+    try {
+        const response = await fetch(`${API_URL}api_paises.php`);
+        const paises = await response.json();
+        const paisesOptions = paises.map(pais => `<option value="${pais.codigo_telefono}" ${pais.id_pais == 1 ? 'selected' : ''}>${pais.codigo_telefono}</option>`).join('');
+        document.getElementById('country_code').innerHTML = paisesOptions;
+    } catch (error) {
+        console.error("Error cargando códigos de país:", error);
+        document.getElementById('error-container').innerHTML = `<div class="alert alert-warning">No se pudieron cargar los códigos de país.</div>`;
+    }
+
+    document.getElementById('login-form-simple').addEventListener('submit', (e) => handleLogin(e, context));
+    document.getElementById('forgot-password-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        renderForgotPasswordView(context);
+    });
+}
+
+/**
+ * Renderiza la vista para recuperar la contraseña.
+ * @param {object} context - El objeto de contexto de la aplicación.
+ */
+async function renderForgotPasswordView(context) {
+    const { dom, API_URL } = context;
+
+    dom.appContainer.innerHTML = `
+        <div class="row justify-content-center mt-5">
+            <div class="col-md-5 col-lg-4">
+                <div class="card shadow-lg">
+                    <div class="card-header text-center bg-info text-dark">
+                        <h3>Recuperar Contraseña</h3>
+                    </div>
+                    <div class="card-body p-4">
+                        <div id="recovery-message-container" class="mb-3"></div>
+                        <p class="text-muted">Ingrese el teléfono de su negocio. Si existe una cuenta, se enviarán las instrucciones de recuperación al correo del propietario.</p>
+                        <form id="recovery-form">
+                            <div class="mb-3">
+                                <label for="telefono-recovery" class="form-label">Teléfono del Negocio</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="country_code_recovery" name="country_code_recovery" style="max-width: 120px;" required></select>
+                                    <input type="tel" class="form-control" id="telefono-recovery" placeholder="Ej: 4121234567" required>
+                                </div>
+                            </div>
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn btn-info">Enviar Instrucciones</button>
+                            </div>
+                        </form>
+                        <div class="text-center mt-3">
+                            <a href="#" id="back-to-login-link">Volver al inicio de sesión</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Cargar y poblar el selector de países
+    try {
+        const response = await fetch(`${API_URL}api_paises.php`);
+        const paises = await response.json();
+        const paisesOptions = paises.map(pais => `<option value="${pais.codigo_telefono}" ${pais.id_pais == 1 ? 'selected' : ''}>${pais.codigo_telefono}</option>`).join('');
+        document.getElementById('country_code_recovery').innerHTML = paisesOptions;
+    } catch (error) {
+        console.error("Error cargando códigos de país:", error);
+        document.getElementById('recovery-message-container').innerHTML = `<div class="alert alert-warning">No se pudieron cargar los códigos de país.</div>`;
+    }
+
     document.getElementById('recovery-form').addEventListener('submit', (e) => handlePasswordRecovery(e, context));
-    document.getElementById('back-to-login').addEventListener('click', (e) => {
+    document.getElementById('back-to-login-link').addEventListener('click', (e) => {
         e.preventDefault();
         renderLoginView(context);
     });
 }
 
-/**
- * Maneja el envío del formulario de recuperación de contraseña.
- * @param {Event} e - El evento de submit.
- * @param {object} context - El objeto de contexto de la aplicación.
- */
 async function handlePasswordRecovery(e, context) {
     e.preventDefault();
-    const { T, API_URL, state } = context;
+    const { API_URL } = context;
     const messageContainer = document.getElementById('recovery-message-container');
     const submitButton = e.target.querySelector('button[type="submit"]');
-    const telefono = document.getElementById('telefono-recovery').value;
+    const telefono = `${document.getElementById('country_code_recovery').value} ${document.getElementById('telefono-recovery').value.trim()}`;
 
     messageContainer.innerHTML = '';
     submitButton.disabled = true;
 
     try {
-        const response = await fetch(`${API_URL}api_owner_recuperar_clave.php?lang=${state.currentLang}`, {
+        const response = await fetch(`${API_URL}api_owner_recuperar_clave.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ telefono: telefono })
         });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Unknown error');
-        
-        messageContainer.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
 
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'No se pudo procesar la solicitud.');
+        }
+
+        // SOLUCIÓN: Mostrar un mensaje específico si el backend devuelve el correo.
+        let successMessage = 'Si el teléfono está registrado, se han enviado las instrucciones de recuperación.';
+        if (data.email_sent_to) {
+            successMessage = `Se han enviado las instrucciones de recuperación al correo: <strong>${data.email_sent_to}</strong>`;
+        }
+        messageContainer.innerHTML = `<div class="alert alert-success">${successMessage}</div>`;
     } catch (error) {
-        messageContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+        messageContainer.innerHTML = `<div class="alert alert-danger">Falla de conexión con el servidor.</div>`;
     } finally {
         submitButton.disabled = false;
     }
 }
 
-/**
- * Maneja el envío del formulario de login.
- * @param {Event} e - El evento de submit.
- * @param {object} context - El objeto de contexto de la aplicación.
- */
 async function handleLogin(e, context) {
     e.preventDefault();
-    const { state, API_URL, T } = context; // CORRECCIÓN: No desestructurar renderView
+    const { state, API_URL } = context;
     const errorContainer = document.getElementById('error-container');
     errorContainer.innerHTML = '';
     const submitButton = e.target.querySelector('button[type="submit"]');
 
     const payload = {
-        telefono: `${document.getElementById('country_code').value.trim()} ${document.getElementById('telefono').value.trim()}`,
+        telefono: `${document.getElementById('country_code').value} ${document.getElementById('telefono').value.trim()}`,
         password: document.getElementById('password').value
     };
     submitButton.disabled = true;
+
     try {
         const response = await fetch(`${API_URL}api_owner_login.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
 
+        // SOLUCIÓN: Unificar todo el manejo de errores dentro del bloque 'try'.
+        if (!response.ok) {
+            // Si la respuesta no es OK, intentamos leer el error del JSON.
+            const errorData = await response.json().catch(() => ({})); // Si no hay JSON, devuelve objeto vacío.
+            let errorMessage = 'Error inesperado. Intente de nuevo.';
+            
+            switch (errorData.error_key) {
+                case 'login_error_business_not_found':
+                    errorMessage = 'El teléfono del negocio no fue encontrado.';
+                    break;
+                case 'login_error_credentials':
+                    errorMessage = 'La contraseña es inválida.';
+                    break;
+                case 'login_error_fields_required':
+                    errorMessage = 'El teléfono y la contraseña son obligatorios.';
+                    break;
+            }
+            // Lanzamos un error con el mensaje correcto para que sea atrapado por el 'catch'.
+            throw new Error(errorMessage);
+        }
+
+        // Si todo está bien, continuamos.
+        const data = await response.json();
         state.ownerActual = data;
         updateNavbar(context);
-        context.renderView('agenda'); // CORRECCIÓN: Llamar a través de context
+        context.renderView('agenda');
 
     } catch (error) {
-        errorContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+        // Este bloque 'catch' ahora atrapa tanto los errores de red como los de autenticación.
+        // Si el error no tiene un mensaje específico, muestra el de falla de conexión.
+        const displayMessage = error.message || 'Falla de conexión con la Base de Datos o el servidor.';
+        errorContainer.innerHTML = `<div class="alert alert-danger">${displayMessage}</div>`;
     } finally {
         submitButton.disabled = false;
     }
 }
 
-/**
- * Maneja el cierre de sesión.
- * @param {object} context - El objeto de contexto de la aplicación.
- */
 export async function handleLogout(context) {
     const { state, API_URL } = context;
     try {

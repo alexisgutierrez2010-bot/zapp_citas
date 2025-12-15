@@ -26,11 +26,12 @@ $sql_clientes = "SELECT
                     nombre_completo,
                     numero_celular,
                     correo_electronico,
+                    activo,
                     in_sms,
                     in_email,
                     in_whatsapp
                  FROM j106_clientes 
-                 WHERE id_negocio = ? AND activo = 1
+                 WHERE id_negocio = ?
                  ORDER BY nombre_completo ASC";
 
 $stmt = $conn->prepare($sql_clientes);

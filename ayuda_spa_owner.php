@@ -1,109 +1,192 @@
 <?php
-require_once __DIR__ . '/languages.php';
-?>
-<!DOCTYPE html>
-<html lang="<?php echo $lang; ?>">
+// Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
+// ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
+?><!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo __('help_owner_title'); ?></title>
+    <title>Ayuda - App Propietario</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css' rel='stylesheet'>
     <style>
         body { background-color: #f8f9fa; }
+        .container { max-width: 960px; }
         .card-header { background-color: #343a40; color: white; }
-        .accordion-button { font-weight: 500; }
+        .accordion-button:not(.collapsed) {
+            color: #0c63e4;
+            background-color: #e7f1ff;
+        }
     </style>
 </head>
 <body>
     <div class="container mt-4 mb-5">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h1><i class="bi bi-question-circle-fill text-primary"></i> <?php echo __('help_owner_header'); ?></h1>
-            <a href="javascript:window.close();" class="btn btn-secondary"><?php echo __('help_close_window'); ?></a>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center">
+                <img src="logo_zapp_citas.png" alt="Logo ZApp Citas" style="height: 2.5em; margin-right: 15px;">
+                <h1 class="h2 mb-0">Ayuda de la Aplicación del Propietario</h1>
+            </div>
+            <a href="javascript:window.close();" class="btn btn-secondary">Regresar</a>
         </div>
 
-        <div class="card mb-4">
+        <div class="card">
             <div class="card-header">
-                <h4><?php echo __('help_owner_objective_title'); ?></h4>
+                <h4>Guía Rápida de Uso</h4>
             </div>
             <div class="card-body">
-                <p><?php echo __('help_owner_objective_body'); ?></p>
-            </div>
-        </div>
+                <p class="lead">Bienvenido a la guía de la aplicación de gestión para propietarios. Aquí encontrarás una explicación detallada de cada sección y funcionalidad para que puedas administrar tu negocio de manera eficiente.</p>
 
-        <div class="accordion" id="ayudaOwnerAccordion">
-            <!-- Mi Agenda -->
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAgenda" aria-expanded="true">
-                        <i class="bi bi-journal-bookmark-fill me-2"></i> <?php echo __('spa_owner_nav_my_agenda'); ?>
-                    </button>
-                </h2>
-                <div id="collapseAgenda" class="accordion-collapse collapse show" data-bs-parent="#ayudaOwnerAccordion">
-                    <div class="accordion-body">
-                        <p><?php echo __('help_owner_agenda_desc'); ?></p>
-                        <strong><?php echo __('help_functionalities'); ?></strong>
-                        <ul>
-                            <li><?php echo __('help_owner_agenda_func_1'); ?></li>
-                            <li><?php echo __('help_owner_agenda_func_2'); ?></li>
-                            <li><?php echo __('help_owner_agenda_func_3'); ?></li>
-                        </ul>
+                <div class="accordion" id="ayudaAccordion">
+
+                    <!-- Sección 1: Navegación -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingOne">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                <i class="bi bi-compass-fill me-2"></i> Navegación Principal
+                            </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#ayudaAccordion">
+                            <div class="accordion-body">
+                                La barra de navegación superior es tu centro de control. Contiene los siguientes elementos:
+                                <ul>
+                                    <li><strong>Nombre del Negocio:</strong> Al hacer clic aquí, accederás directamente al <strong>Resumen de Gestión (Dashboard)</strong>.</li>
+                                    <li><strong>Mi Agenda:</strong> Es la vista principal. Muestra la lista de citas para el día seleccionado.</li>
+                                    <li><strong>Calendario:</strong> Ofrece una vista mensual, semanal o diaria de todas tus citas.</li>
+                                    <li><strong>Mis Clientes:</strong> Te permite ver, registrar, editar y desactivar a tus clientes.</li>
+                                    <li><strong>Mis Servicios:</strong> Para administrar los servicios que ofreces, incluyendo su duración y precio.</li>
+                                    <li><strong>Administración (Menú desplegable):</strong>
+                                        <ul>
+                                            <li><strong>Mi Negocio:</strong> Configura los datos generales, dirección y horario de trabajo de tu negocio.</li>
+                                            <li><strong>Dashboard:</strong> Accede al "Resumen de Gestión de mi negocio" con gráficos de rendimiento.</li>
+                                            <li><strong>Mi Perfil:</strong> Te permite cambiar tu contraseña de acceso.</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>Cerrar Sesión:</strong> Finaliza tu sesión de forma segura.</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Calendario -->
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCalendar">
-                        <i class="bi bi-calendar-week me-2"></i> <?php echo __('spa_owner_nav_calendar'); ?>
-                    </button>
-                </h2>
-                <div id="collapseCalendar" class="accordion-collapse collapse" data-bs-parent="#ayudaOwnerAccordion">
-                    <div class="accordion-body">
-                        <p><?php echo __('help_owner_calendar_desc'); ?></p>
+                    <!-- Sección 2: Mi Agenda -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingTwo">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                <i class="bi bi-list-ul me-2"></i> Mi Agenda (Vista Diaria)
+                            </button>
+                        </h2>
+                        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#ayudaAccordion">
+                            <div class="accordion-body">
+                                <p>Esta es la pantalla principal donde gestionas las citas del día a día.</p>
+                                <ul>
+                                    <li><strong>Controles de Fecha:</strong> Usa los botones "Día Anterior", "Día Siguiente" o el selector de fecha para navegar rápidamente a cualquier día.</li>
+                                    <li><strong>Lista de Citas:</strong> Cada fila representa una cita y muestra información clave como el horario, cliente, servicio/asunto y estado.</li>
+                                    <li><strong>Menú "Acciones":</strong> Cada cita tiene un menú desplegable con opciones para gestionarla.</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Mis Clientes y Mis Servicios -->
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseClientsServices">
-                        <i class="bi bi-people-fill me-2"></i> <?php echo __('spa_owner_nav_clients'); ?> & <?php echo __('spa_owner_nav_services'); ?>
-                    </button>
-                </h2>
-                <div id="collapseClientsServices" class="accordion-collapse collapse" data-bs-parent="#ayudaOwnerAccordion">
-                    <div class="accordion-body">
-                        <p><?php echo __('help_owner_clients_services_desc'); ?></p>
-                        <strong><?php echo __('spa_owner_nav_clients'); ?>:</strong>
-                        <ul>
-                            <li><?php echo __('help_owner_clients_func_1'); ?></li>
-                            <li><?php echo __('help_owner_clients_func_2'); ?></li>
-                        </ul>
-                        <strong><?php echo __('spa_owner_nav_services'); ?>:</strong>
-                        <ul>
-                            <li><?php echo __('help_owner_services_func_1'); ?></li>
-                            <li><?php echo __('help_owner_services_func_2'); ?></li>
-                        </ul>
+                    <!-- Sección 3: Acciones de Cita -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingThree">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                <i class="bi bi-toggles me-2"></i> Menú de Acciones de Cita
+                            </button>
+                        </h2>
+                        <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#ayudaAccordion">
+                            <div class="accordion-body">
+                                <p>El menú "Acciones" te permite controlar el ciclo de vida de cada cita:</p>
+                                <ul>
+                                    <li><strong>Cambiar Estado:</strong> Puedes marcar una cita como <code>Confirmada</code>, <code>Completada</code>, <code>Cancelada</code>, etc. Estos cambios son lógicos y mantienen el registro en el sistema.</li>
+                                    <li><strong>Enviar Email:</strong> Permite reenviar la notificación de la cita al cliente en cualquier momento.</li>
+                                    <li><strong><span class="text-danger">🔥 Eliminar</span>:</strong> Esta es una <strong>acción irreversible</strong>. Elimina la cita y todos sus datos asociados (incluyendo invitados) de la base de datos. Úsala con precaución, por ejemplo, para citas creadas por error.</li>
+                                    <li><strong>✏️ Editar:</strong> Abre el formulario para modificar los detalles de la cita o reunión.</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Mi Negocio y Mi Perfil -->
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBusinessProfile">
-                        <i class="bi bi-person-badge me-2"></i> <?php echo __('spa_owner_nav_my_business'); ?> & <?php echo __('spa_owner_nav_my_profile'); ?>
-                    </button>
-                </h2>
-                <div id="collapseBusinessProfile" class="accordion-collapse collapse" data-bs-parent="#ayudaOwnerAccordion">
-                    <div class="accordion-body">
-                        <p><?php echo __('help_owner_business_profile_desc'); ?></p>
+                    <!-- Sección 4: Creación de Citas y Reuniones -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingFour">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                                <i class="bi bi-plus-circle-fill me-2"></i> Creación de Citas y Reuniones
+                            </button>
+                        </h2>
+                        <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#ayudaAccordion">
+                            <div class="accordion-body">
+                                <p>El formulario de "Agendar Nueva Cita" te permite crear dos tipos de eventos:</p>
+                                <dl>
+                                    <dt>Servicio</dt>
+                                    <dd>Es el tipo de cita estándar. Debes seleccionar un cliente y un servicio de tu catálogo. La duración se calcula automáticamente.</dd>
+                                    <dt>Reunión</dt>
+                                    <dd>Este tipo de cita es ideal para eventos que no son un servicio, como consultas o reuniones de equipo. En lugar de un servicio, puedes escribir un "Asunto" y añadir una lista de invitados.</dd>
+                                </dl>
+                                <p><strong>Gestión de Invitados (para Reuniones):</strong></p>
+                                <ul>
+                                    <li><strong>Añadir:</strong> Ingresa el nombre, correo y teléfono (opcional) y haz clic en "Añadir".</li>
+                                    <li><strong>Editar:</strong> Haz clic en el botón "Editar" de un invitado en la lista, modifica sus datos y haz clic en "Actualizar".</li>
+                                    <li><strong>Eliminar:</strong> Haz clic en la "X" junto a un invitado para quitarlo de la lista.</li>
+                                </ul>
+                                <p>Al guardar, si la opción "Notificar" está marcada, se enviará un correo de confirmación tanto al cliente principal como a todos los invitados.</p>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
 
+                    <!-- Sección 5: Dashboard -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingFive">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
+                                <i class="bi bi-bar-chart-line-fill me-2"></i> Resumen de Gestión (Dashboard)
+                            </button>
+                        </h2>
+                        <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#ayudaAccordion">
+                            <div class="accordion-body">
+                                <p>Esta sección te ofrece una vista rápida del rendimiento de tu negocio en los últimos 6 meses a través de cuatro gráficos:</p>
+                                <ol>
+                                    <li><strong>Cantidad de Nuevos Clientes por Mes:</strong> Muestra cuántos clientes nuevos has registrado cada mes.</li>
+                                    <li><strong>Estado de Citas por Mes:</strong> Desglosa las citas de cada mes por su estado (Registradas, Completadas, Canceladas), permitiéndote medir la eficiencia.</li>
+                                    <li><strong>Ingresos por Servicios Completados:</strong> Suma los precios de todas las citas de servicios marcadas como "Completada" cada mes.</li>
+                                    <li><strong>Cantidad de Reuniones Registradas por Mes:</strong> Muestra cuántas citas de tipo "Reunión" has agendado.</li>
+                                </ol>
+                                <p>Los números sobre cada barra te dan el valor exacto para una lectura más rápida.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección 6: Otras Secciones -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingSix">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix" aria-expanded="false" aria-controls="collapseSix">
+                                <i class="bi bi-gear-wide-connected me-2"></i> Otras Secciones de Administración
+                            </button>
+                        </h2>
+                        <div id="collapseSix" class="accordion-collapse collapse" aria-labelledby="headingSix" data-bs-parent="#ayudaAccordion">
+                            <div class="accordion-body">
+                                <ul>
+                                    <li>
+                                        <strong>Mis Clientes:</strong> Aquí puedes ver tu lista completa de clientes. Usa los botones para registrar uno nuevo, editar la información de uno existente, o desactivarlo si ya no es un cliente activo. Un cliente desactivado no aparecerá en el formulario para crear nuevas citas.
+                                    </li>
+                                    <li>
+                                        <strong>Mis Servicios:</strong> Administra los servicios que ofreces. Puedes crear nuevos, editar su nombre, duración y precio, o desactivarlos. Un servicio desactivado no podrá ser seleccionado al agendar nuevas citas.
+                                    </li>
+                                    <li>
+                                        <strong>Mi Negocio:</strong> En esta sección configuras la información vital de tu negocio, como el nombre, email de contacto, dirección y, muy importante, tu horario de trabajo (días y horas de inicio/cierre). Esta configuración afecta directamente los horarios disponibles para agendar citas.
+                                    </li>
+                                    <li>
+                                        <strong>Mi Perfil:</strong> Una sección simple y segura para que puedas cambiar tu contraseña de acceso a la aplicación cuando lo necesites.
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+            <div class="card-footer text-center text-muted">
+                <p class="mb-0 small">©2025. Software development and Authorized by WWW.ACTICVEN.COM All rights reserved. Version 1.12.14</p>
+            </div>
         </div>
     </div>
 

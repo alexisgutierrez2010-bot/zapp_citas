@@ -4,7 +4,7 @@
 INSTRUCCIONES DE DESPLIEGUE - ZAPP CITAS
 ==================================================
 
-Fecha: 24 de Noviembre de 2025
+Fecha: 14 de Diciembre de 2025
 
 Este documento proporciona los pasos b&aacute;sicos para desplegar la aplicaci&oacute;n ZApp Citas desde un entorno local (XAMPP en Windows) a un servidor de hosting en producci&oacute;n (como Hostinger, basado en Linux).
 
@@ -90,6 +90,7 @@ La aplicaci&oacute;n del propietario (`spa_owner.php`) sigue una arquitectura mo
 - `agenda.js`: Renderiza la vista principal de la agenda diaria.
 - `calendario.js`: Renderiza la vista del calendario mensual/semanal (FullCalendar).
 - `disponibilidad.js`: Muestra los slots de tiempo libres y ocupados para un d&iacute;a.
+- `dashboard.js`: Renderiza el "Resumen de Gesti&oacute;n" con los gr&aacute;ficos de rendimiento del negocio.
 - `clientes.js`: Gestiona la lista y los formularios de creaci&oacute;n/edici&oacute;n de clientes.
 - `servicios.js`: Gestiona la lista y los formularios de creaci&oacute;n/edici&oacute;n de servicios.
 - `negocio.js`: Gestiona el formulario de configuraci&oacute;n del negocio (datos, direcci&oacute;n, horarios).
@@ -105,25 +106,136 @@ La SPA se comunica con el servidor a trav&eacute;s de una serie de archivos PHP 
 <pre>
 ----------------------------------------
 7. NOTAS DE ARQUITECTURA: ESTRATEGIAS DE INTERNACIONALIZACI&Oacute;N (i18n)
+ 
+La aplicaci&oacute;n implementa una estrategia de internacionalizaci&oacute;n (i18n) unificada para funcionar en espa&ntilde;ol (ES) e ingl&eacute;s (EN) en todas sus interfaces.
+ 
+**Componentes Centrales:**
+ 
+*   **`languages.php`**: Es el coraz&oacute;n del sistema. Carga todos los m&oacute;dulos de traducci&oacute;n (`common.php`, `admin.php`, `owner.php`, etc.) en un &uacute;nico array `$translations`. Tambi&eacute;n contiene la l&oacute;gica para detectar el idioma activo y la funci&oacute;n de ayuda `__()`.
+*   **`api_get_translations.php`**: Es una API que simplemente expone el contenido de `languages.php` en formato JSON para que las aplicaciones JavaScript (SPAs) puedan consumirlo.
+ 
+**Flujo de Funcionamiento:**
+ 
+1.  **Detecci&oacute;n del Idioma:** El sistema determina el idioma a usar con la siguiente prioridad:
+    1.  Par&aacute;metro en la URL (ej. `?lang=en`).
+    2.  Cookie de idioma guardada en el navegador del usuario.
+    3.  Variable de sesi&oacute;n del usuario.
+    4.  Idioma por defecto ('es').
+ 
+2.  **Aplicaci&oacute;n en el Backend (Panel de Admin `zapp_citas`):**
+    -   Las p&aacute;ginas PHP (ej. `clientes_lista.php`) incluyen `auth_check.php`, que a su vez carga `languages.php`.
+    -   Los textos se renderizan en el servidor usando la funci&oacute;n `__('clave_de_texto')` antes de enviar el HTML al navegador.
+ 
+3.  **Aplicaci&oacute;n en el Frontend (SPAs `spa_owner` y `spa_client`):**
+    -   Al iniciar, el JavaScript (`app_owner.js` o `app_client.js`) realiza una petici&oacute;n `fetch` a la API `api_get_translations.php?lang=...`.
+    -   El "diccionario" de traducciones JSON recibido se almacena en la memoria de la aplicaci&oacute;n (ej. `context.T`).
+    -   Todas las vistas se construyen din&aacute;micamente en el navegador usando los textos de ese diccionario (ej. `context.T.welcome_message`).
+ 
+**Conclusi&oacute;n:** Aunque la ejecuci&oacute;n es diferente (renderizado en servidor vs. renderizado en cliente), la **fuente de la verdad** para las traducciones es la misma (`languages.php`), garantizando consistencia en todo el ecosistema.
+</pre>
+
+<pre>
+----------------------------------------
+8. INVENTARIO DE ARCHIVOS DEL PROYECTO
 ----------------------------------------
 
-La aplicaci&oacute;n utiliza dos estrategias diferentes para manejar m&uacute;ltiples idiomas (ES/EN), dependiendo del tipo de interfaz.
+**Directorio Raíz (`/zapp_citas/`)**
 
-**Estrategia 1: Aplicaci&oacute;n Tradicional (Ej: index.php, zapp_citas)**
+*   **Portales Principales:**
+    *   `index.php` (Portal de bienvenida)
+    *   `spa_owner.php` (Contenedor de la SPA del Propietario)
+    *   `spa_client.php` (Contenedor de la SPA del Cliente)
+    *   `sesion_iniciar.php` (Login del Panel de Administración)
 
-- **C&oacute;mo funciona:** Cuando se solicita una p&aacute;gina (ej. `index.php?lang=en`), el servidor PHP se ejecuta, carga el archivo de idioma correspondiente desde el disco (`/languages.php`) y construye la p&aacute;gina HTML completa con los textos ya traducidos antes de enviarla al navegador.
-- **Traducci&oacute;n:** Ocurre en el **servidor (backend)**.
-- **Cambio de Idioma:** Requiere una **recarga completa de la p&aacute;gina** para que el servidor pueda generar un nuevo HTML.
+*   **Archivos de Configuración y Seguridad:**
+    *   `config.php` (Credenciales de BD y SMTP)
+    *   `auth_check.php` (Guardián de sesión para el Panel de Admin)
+    *   `api_owner_session_check.php` (Guardián de sesión para la API del Propietario)
+    *   `api_cliente_session_check.php` (Guardián de sesión para la API del Cliente)
+    *   `audit_log.php` (Función de auditoría)
+    *   `languages.php` (Traducciones para i18n)
 
-**Estrategia 2: Single-Page Application (SPA) (Ej: spa_owner.php, spa_client.php)**
-- **C&oacute;mo funciona:** El servidor env&iacute;a una p&aacute;gina HTML m&iacute;nima (`spa_owner.php`) que act&uacute;a como un "contenedor". El c&oacute;digo JavaScript (`app_owner.js`) toma el control total de la interfaz dentro del navegador.
-- **Traducci&oacute;n:**
-  1. JavaScript detecta el idioma en la URL (`?lang=en`).
-  2. Realiza una petici&oacute;n a la API `api_get_translations.php` para obtener el "diccionario" de traducciones en formato JSON.
-  3. JavaScript almacena este diccionario en memoria (en el objeto `context.T`).
-  4. A partir de ese momento, JavaScript construye y actualiza din&aacute;micamente todas las vistas (login, agenda, clientes, etc.) directamente en el navegador, utilizando los textos del diccionario cargado.
-- **Cambio de Idioma:** Requiere una recarga de la p&aacute;gina para que la SPA solicite el nuevo diccionario de idioma a la API.
+*   **Panel de Administración (CRUDs PHP):**
+    *   `dashboard.php`
+    *   `negocios_*.php` (CRUD de Negocios)
+    *   `usuarios_*.php` (CRUD de Usuarios)
+    *   `clientes_*.php` (CRUD de Clientes)
+    *   `servicios_*.php` (CRUD de Servicios)
+    *   `categorias_*.php` (CRUD de Categorías)
+    *   `citas_*.php` (CRUD de Citas)
+    *   `documento_*.php` (Gestión de documentos)
+    *   `paises_*.php` / `estados_*.php` (Gestión de localizaciones)
+    *   `perfil_actualizar.php`
 
-**&iquest;Por qu&eacute; la diferencia?**
-La arquitectura SPA es m&aacute;s r&aacute;pida y fluida para el usuario. Una vez cargada, la navegaci&oacute;n entre vistas (ej. de "Mi Agenda" a "Mis Clientes") es instant&aacute;nea porque no necesita pedir una p&aacute;gina nueva al servidor, solo actualiza una parte de la pantalla. Esto crea una experiencia de usuario similar a la de una aplicaci&oacute;n de escritorio o m&oacute;vil.
+*   **APIs para SPA del Propietario (`api_owner_*.php`):**
+    *   `api_owner_login.php`, `_logout.php`, `_recuperar_clave.php`
+    *   `api_owner_get_current_user.php`
+    *   `api_owner_dashboard_data.php`
+    *   `api_owner_citas.php` (Lista de citas)
+    *   `api_owner_cita_crear.php`, `_actualizar.php`, `_detalle.php`
+    *   `api_owner_cita_eliminar.php` (Borrado lógico)
+    *   `api_owner_cita_eliminar_fisico.php` (Borrado físico)
+    *   `api_owner_citas_cerrar_vencidas.php`
+    *   `api_owner_calendario_eventos.php`
+    *   `api_owner_horario_disponible.php`
+    *   `api_owner_clientes.php` (y su CRUD: `_crear`, `_actualizar`, etc.)
+    *   `api_owner_servicios.php` (y su CRUD)
+    *   `api_owner_negocio_get.php`, `_update.php`
+    *   `api_owner_perfil_detalle.php`, `_actualizar.php`
+    *   `api_get_translations.php`
+    *   `api_paises.php`, `api_estados.php`
+
+*   **APIs para SPA del Cliente (`api_cliente_*.php`):**
+    *   `api_cliente_login.php`, `_logout.php`, `_registro.php`
+    *   `api_cliente_perfil.php`
+    *   `api_cliente_citas.php`, `_historial.php`
+    *   `api_negocios_lista_publica.php`
+    *   `api_servicios_publicos.php`
+
+*   **Scripts de Ayuda y Diagnóstico:**
+    *   `check_composer.php`
+    *   `check_phpmailer.php`
+    *   `ayuda_spa_owner.php`
+    *   `ayuda_index.php`
+
+*   **Componentes de UI y Lógica JS:**
+    *   `app_owner.js` (Cerebro de la SPA del Propietario)
+    *   `app_client.js` (Cerebro de la SPA del Cliente)
+    *   `navbar.php`, `footer.php`, `spa_owner_footer.php`
+
+**Subdirectorio (`/js/modules/`)**
+
+*   **Módulos de la SPA del Propietario:**
+    *   `auth.js`
+    *   `agenda.js`
+    *   `calendario.js`
+    *   `citas.js`
+    *   `clientes.js`
+    *   `dashboard.js`
+    *   `disponibilidad.js`
+    *   `negocio.js`
+    *   `perfil.js`
+    *   `servicios.js`
+    *   `ui.js`
+
+**Subdirectorio (`/js/client_modules/`)**
+
+*   **Módulos de la SPA del Cliente:**
+    *   `auth.js`
+    *   `booking.js`
+    *   `dashboard.js`
+    *   `history.js`
+    *   `profile.js`
+    *   `ui.js`
+
+**Subdirectorio (`/documentos/`)**
+
+*   `leeme.txt` (Este archivo)
+*   `MANUAL_TECNICO.MD` (Documentación principal)
+*   `pendientes_.md` (Lista de tareas por hacer)
+*   `plan_de_pruebas.md` (Resumen de validación)
+
+**Subdirectorio (`/assets/`)**
+
+*   Contiene subdirectorios para CSS, imágenes (`/images/hero/`, `logo_zapp_citas.png`), etc.
 </pre>

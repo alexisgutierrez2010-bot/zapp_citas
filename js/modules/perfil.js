@@ -5,72 +5,88 @@
  * @param {object} context - El objeto de contexto de la aplicación.
  */
 export async function renderPerfilView(context) {
-    const { dom, T, API_URL } = context;
-    dom.appContainer.innerHTML = `<div class="text-center"><div class="spinner-border" role="status"></div></div>`;
+    const { dom, state } = context;
+    const owner = state.ownerActual;
 
-    try {
-        const response = await fetch(`${API_URL}api_owner_perfil_detalle.php`);
-        if (!response.ok) throw new Error(T.profile_error_loading || 'Could not load your profile.');
-        const usuario = await response.json();
-
-        dom.appContainer.innerHTML = `
-            <div class="row justify-content-center">
-                <div class="col-md-8">
-                    <div class="card">
-                        <div class="card-header"><h3>${T.profile_title || 'My Profile'}</h3></div>
-                        <div class="card-body">
-                            <div id="error-container-perfil"></div>
-                            <form id="perfil-form">
-                                <div class="mb-3"><label for="nombre_usuario_perfil" class="form-label">${T.users_form_username || 'Username'}</label><input type="text" class="form-control" id="nombre_usuario_perfil" value="${usuario.nombre_usuario}" required></div>
-                                <div class="mb-3"><label for="correo_electronico_perfil" class="form-label">${T.users_form_email || 'Email'}</label><input type="email" class="form-control" id="correo_electronico_perfil" value="${usuario.correo_electronico}" required></div>
-                                <hr><h5 class="mt-4">${T.profile_change_password || 'Change Password'} (${T.optional || 'Optional'})</h5>
-                                <div class="mb-3"><label for="current_password" class="form-label">${T.profile_current_password || 'Current Password'}</label><input type="password" class="form-control" id="current_password" placeholder="${T.profile_current_password_placeholder || 'Enter your current password to change it'}"></div>
-                                <div class="mb-3"><label for="new_password" class="form-label">${T.users_form_new_password || 'New Password'}</label><input type="password" class="form-control" id="new_password"></div>
-                                <div class="d-flex justify-content-end gap-2 mt-4">
-                                    <button type="button" class="btn btn-secondary" id="btn-cancelar-perfil">${T.cancel || 'Cancel'}</button>
-                                    <button type="submit" class="btn btn-primary">${T.users_form_update || 'Update User'}</button>
+    dom.appContainer.innerHTML = `
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card">
+                    <div class="card-header"><h3>Mi Perfil</h3></div>
+                    <div class="card-body">
+                        <div id="error-container-perfil"></div>
+                        <form id="perfil-form">
+                            <div class="row align-items-center">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">${owner.nombre_usuario}</label>
+                                    <div class="text-muted small">Propietario</div>
                                 </div>
-                            </form>
-                        </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="password_actual" class="form-label">Contraseña Actual</label>
+                                    <input type="password" class="form-control" id="password_actual" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="nueva_password" class="form-label">Nueva Contraseña</label>
+                                    <input type="password" class="form-control" id="nueva_password" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="confirmar_password" class="form-label">Confirmar Nueva Contraseña</label>
+                                    <input type="password" class="form-control" id="confirmar_password" required>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end mt-3">
+                                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
-        `;
+        </div>`;
 
-        document.getElementById('btn-cancelar-perfil').addEventListener('click', () => context.renderView('agenda'));
-        document.getElementById('perfil-form').addEventListener('submit', (e) => handleUpdatePerfil(e, context));
-
-    } catch (error) {
-        dom.appContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
-    }
+    document.getElementById('perfil-form').addEventListener('submit', (e) => handleUpdatePerfil(e, context));
 }
 
 async function handleUpdatePerfil(e, context) {
     e.preventDefault();
     const { API_URL } = context;
     const errorContainer = document.getElementById('error-container-perfil');
+    const submitButton = e.target.querySelector('button[type="submit"]');
     errorContainer.innerHTML = '';
 
+    const passwordActual = document.getElementById('password_actual').value;
+    const nuevaPassword = document.getElementById('nueva_password').value;
+    const confirmarPassword = document.getElementById('confirmar_password').value;
+
+    if (nuevaPassword !== confirmarPassword) {
+        errorContainer.innerHTML = `<div class="alert alert-danger">Las contraseñas nuevas no coinciden.</div>`;
+        return;
+    }
+
+    submitButton.disabled = true;
+    submitButton.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Guardando...`;
+
     const payload = {
-        nombre_usuario: document.getElementById('nombre_usuario_perfil').value,
-        correo_electronico: document.getElementById('correo_electronico_perfil').value,
-        current_password: document.getElementById('current_password').value,
-        new_password: document.getElementById('new_password').value,
+        password_actual: passwordActual,
+        nueva_password: nuevaPassword,
     };
 
     try {
-        const response = await fetch(`${API_URL}api_owner_perfil_actualizar.php`, {
+        const response = await fetch(`${API_URL}api_owner_password_update.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
+        if (!response.ok) throw new Error(data.error || 'No se pudo actualizar la contraseña.');
 
-        errorContainer.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
-        document.getElementById('current_password').value = '';
-        document.getElementById('new_password').value = '';
+        errorContainer.innerHTML = `<div class="alert alert-success">${data.message || 'Contraseña actualizada con éxito.'}</div>`;
+        document.getElementById('perfil-form').reset();
     } catch (error) {
         errorContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+    } finally {
+        submitButton.disabled = false;
+        submitButton.innerHTML = 'Guardar Cambios';
     }
 }

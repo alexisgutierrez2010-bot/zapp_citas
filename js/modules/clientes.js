@@ -5,8 +5,8 @@
  * @param {object} context - El objeto de contexto de la aplicación.
  */
 export async function renderClientesView(context) {
-    const { dom, T, API_URL } = context;
-    dom.appContainer.innerHTML = `<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">${T.spa_owner_loading_clients}</span></div></div>`;
+    const { dom, API_URL, renderView } = context;
+    dom.appContainer.innerHTML = `<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando clientes...</span></div></div>`;
 
     try {
         const response = await fetch(`${API_URL}api_owner_clientes.php`);
@@ -14,36 +14,46 @@ export async function renderClientesView(context) {
             const errorData = await response.json();
             throw new Error(errorData.error || 'No se pudieron cargar los clientes.');
         }
-        const clientes = await response.json();
+        // SOLUCIÓN: La API devuelve { "clientes": [...] }, por lo que debemos acceder a esa propiedad.
+        const data = await response.json();
+        const clientes = data.clientes || [];
 
         let clientesHtml = '';
         if (clientes.length > 0) {
             const clientesRows = clientes.map((cliente, index) => `
-                <tr>
+                <tr class="${cliente.activo == 1 ? '' : 'table-secondary text-muted'}">
                     <td>${index + 1}</td>
                     <td>${cliente.nombre_completo}</td>
                     <td>${cliente.numero_celular}</td>
                     <td>${cliente.correo_electronico}</td>
                     <td>
-                        <button class="btn btn-sm btn-warning btn-edit-cliente" data-id-cliente="${cliente.id_cliente}">${T.edit || 'Edit'}</button>
-                        <button class="btn btn-sm btn-danger btn-delete-cliente" data-id-cliente="${cliente.id_cliente}">${T.deactivate || 'Deactivate'}</button>
+                        <span class="badge ${cliente.activo == 1 ? 'bg-success' : 'bg-danger'}">
+                            ${cliente.activo == 1 ? 'Activo' : 'Inactivo'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-warning btn-edit-cliente" data-id-cliente="${cliente.id_cliente}" ${cliente.activo == 0 ? 'disabled' : ''}>Editar</button>
+                        ${cliente.activo == 1 
+                            ? `<button class="btn btn-sm btn-danger btn-delete-cliente" data-id-cliente="${cliente.id_cliente}">Desactivar</button>`
+                            : `<button class="btn btn-sm btn-success btn-activate-cliente" data-id-cliente="${cliente.id_cliente}">Activar</button>`
+                        }
                     </td>
                 </tr>
             `).join('');
 
             clientesHtml = `
                 <table class="table table-striped table-hover">
-                    <thead class="table-dark"><tr><th>#</th><th>${T.clients_col_name || 'Name'}</th><th>${T.clients_col_phone || 'Phone'}</th><th>${T.clients_col_email || 'Email'}</th><th>${T.actions || 'Actions'}</th></tr></thead>
+                    <thead class="table-dark"><tr><th>#</th><th>Nombre</th><th>Celular</th><th>Email</th><th>Estado</th><th>Acciones</th></tr></thead>
                     <tbody>${clientesRows}</tbody>
                 </table>`;
         } else {
-            clientesHtml = `<div class="alert alert-info">${T.clients_no_clients}</div>`;
+            clientesHtml = `<div class="alert alert-info">No hay clientes registrados.</div>`;
         }
 
         dom.appContainer.innerHTML = `
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3>${T.clients_title}</h3>
-                <button class="btn btn-primary" id="btn-crear-cliente">${T.clients_register_new}</button>
+                <h3>Gestión de Clientes</h3>
+                <button class="btn btn-primary" id="btn-crear-cliente">Registrar Nuevo Cliente</button>
             </div>
             ${clientesHtml}
         `;
@@ -56,6 +66,9 @@ export async function renderClientesView(context) {
         document.querySelectorAll('.btn-delete-cliente').forEach(btn => {
             btn.addEventListener('click', (e) => handleDeleteCliente(context, e.target.dataset.idCliente));
         });
+        document.querySelectorAll('.btn-activate-cliente').forEach(btn => {
+            btn.addEventListener('click', (e) => handleActivateCliente(context, e.target.dataset.idCliente));
+        });
 
     } catch (error) {
         dom.appContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
@@ -63,30 +76,54 @@ export async function renderClientesView(context) {
 }
 
 async function handleDeleteCliente(context, id_cliente) {
-    const { T, API_URL, renderView } = context;
-    if (!confirm(T.clients_confirm_deactivate || 'Are you sure you want to deactivate this client?')) {
+    const { API_URL, renderView } = context; // renderView ya está en el contexto
+    if (!confirm('¿Estás seguro de que quieres desactivar este cliente? No se podrá usar para nuevas citas.')) {
         return;
     }
     try {
         const response = await fetch(`${API_URL}api_owner_cliente_eliminar.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_cliente: id_cliente, activo: 0 }) // Borrado lógico
+            body: JSON.stringify({ id_cliente: id_cliente }) 
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
-        
+        if (!response.ok) {
+            throw new Error(data.error || 'Error en la operación');
+        }
         alert(data.message);
         renderView('clientes'); // Recargar la lista de clientes
     } catch (error) {
-        alert(`${T.operation_error || 'Operation Error'}: ${error.message}`);
+        alert(`Error en la operación: ${error.message}`);
+    }
+}
+
+async function handleActivateCliente(context, id_cliente) {
+    const { API_URL, renderView } = context;
+    if (!confirm('¿Estás seguro de que quieres reactivar este cliente?')) {
+        return;
+    }
+    try {
+        // Usamos la API de actualizar para cambiar el estado a activo (1)
+        const response = await fetch(`${API_URL}api_owner_cliente_actualizar.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_cliente: id_cliente, activo: 1 }) 
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Error en la operación');
+        }
+        alert(data.message || 'Cliente activado con éxito.');
+        renderView('clientes');
+    } catch (error) {
+        alert(`Error en la operación: ${error.message}`);
     }
 }
 
 async function openClienteModal(context, id_cliente = null) {
-    const { T, API_URL, renderView } = context;
+    const { API_URL, renderView } = context; // renderView ya está en el contexto
     let cliente = {};
-    let modalTitle = T.clients_register_new;
+    let modalTitle = 'Registrar Nuevo Cliente';
     let paises = [];
     let estados = [];
 
@@ -95,9 +132,9 @@ async function openClienteModal(context, id_cliente = null) {
         paises = await paisesResponse.json();
 
         if (id_cliente) {
-            modalTitle = T.clients_edit_title;
+            modalTitle = 'Editar Cliente';
             const clienteResponse = await fetch(`${API_URL}api_owner_cliente_detalle.php?id_cliente=${id_cliente}`);
-            if (!clienteResponse.ok) throw new Error(T.error_loading_client_details || 'Could not load client details.');
+            if (!clienteResponse.ok) throw new Error('No se pudieron cargar los detalles del cliente.');
             cliente = await clienteResponse.json();
 
             if (cliente.id_pais) {
@@ -106,7 +143,7 @@ async function openClienteModal(context, id_cliente = null) {
             }
         }
     } catch (error) {
-        alert(`${T.operation_error}: ${error.message}`);
+        alert(`Error en la operación: ${error.message}`);
         return;
     }
 
@@ -135,28 +172,28 @@ async function openClienteModal(context, id_cliente = null) {
                         <div id="modal-error-container"></div>
                         <form id="cliente-form">
                             <input type="hidden" id="cliente_id" value="${cliente.id_cliente || ''}">
-                            <div class="mb-3"><label for="nombre_completo" class="form-label">${T.clients_form_name}</label><input type="text" class="form-control" id="nombre_completo" value="${cliente.nombre_completo || ''}" required></div>
+                            <div class="mb-3"><label for="nombre_completo" class="form-label">Nombre Completo</label><input type="text" class="form-control" id="nombre_completo" value="${cliente.nombre_completo || ''}" required></div>
                             <div class="mb-3">
-                                <label for="numero_celular" class="form-label">${T.clients_col_phone}</label>
+                                <label for="numero_celular" class="form-label">Celular</label>
                                 <div class="input-group">
                                     <select class="form-select" id="country_code_cliente" style="max-width: 120px;">${paises.map(p => `<option value="${p.codigo_telefono}" ${currentCountryCode === p.codigo_telefono ? 'selected' : ''}>${p.codigo_telefono}</option>`).join('')}</select>
-                                    <input type="tel" class="form-control" id="numero_celular" value="${currentPhoneNumber}" placeholder="${T.phone_placeholder || 'Ej: 4121234567'}" required>
+                                    <input type="tel" class="form-control" id="numero_celular" value="${currentPhoneNumber}" placeholder="Ej: 4121234567" required>
                                 </div>
                             </div>
-                            <div class="mb-3"><label for="correo_electronico" class="form-label">${T.clients_col_email}</label><input type="email" class="form-control" id="correo_electronico" value="${cliente.correo_electronico || ''}" required></div>
-                            <div class="mb-3"><label for="direccion1" class="form-label">${T.clients_form_address1}</label><input type="text" class="form-control" id="direccion1" value="${cliente.direccion1 || ''}"></div>
-                            <div class="row"><div class="col-md-6 mb-3"><label for="id_pais" class="form-label">${T.clients_form_country}</label><select class="form-select" id="id_pais">${paisesOptions}</select></div><div class="col-md-6 mb-3"><label for="id_estado" class="form-label">${T.clients_form_state}</label><select class="form-select" id="id_estado" ${cliente.id_pais ? '' : 'disabled'}>${estadosOptions}</select></div></div>
-                            <div class="mb-3"><label for="notas_adicionales" class="form-label">${T.clients_form_notes}</label><textarea class="form-control" id="notas_adicionales" rows="3">${cliente.notas_adicionales || ''}</textarea></div>
+                            <div class="mb-3"><label for="correo_electronico" class="form-label">Email</label><input type="email" class="form-control" id="correo_electronico" value="${cliente.correo_electronico || ''}" required></div>
+                            <div class="mb-3"><label for="direccion1" class="form-label">Dirección</label><input type="text" class="form-control" id="direccion1" value="${cliente.direccion1 || ''}"></div>
+                            <div class="row"><div class="col-md-6 mb-3"><label for="id_pais" class="form-label">País</label><select class="form-select" id="id_pais">${paisesOptions}</select></div><div class="col-md-6 mb-3"><label for="id_estado" class="form-label">Estado</label><select class="form-select" id="id_estado" ${cliente.id_pais ? '' : 'disabled'}>${estadosOptions}</select></div></div>
+                            <div class="mb-3"><label for="notas_adicionales" class="form-label">Notas Adicionales</label><textarea class="form-control" id="notas_adicionales" rows="3">${cliente.notas_adicionales || ''}</textarea></div>
                             <hr>
                             <div class="mb-3">
-                                <label class="form-label">${T.clients_form_communication}</label>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" id="in_sms" ${cliente.in_sms == 1 ? 'checked' : ''}><label class="form-check-label" for="in_sms">${T.clients_form_sms_notifications}</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" id="in_email" ${cliente.in_email == 1 ? 'checked' : ''}><label class="form-check-label" for="in_email">${T.clients_form_email_notifications}</label></div>
-                                <div class="form-check"><input class="form-check-input" type="checkbox" id="in_whatsapp" ${cliente.in_whatsapp == 1 ? 'checked' : ''}><label class="form-check-label" for="in_whatsapp">${T.clients_form_whatsapp_notifications}</label></div>
+                                <label class="form-label">Preferencias de Comunicación</label>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="in_sms" ${cliente.in_sms == 1 ? 'checked' : ''}><label class="form-check-label" for="in_sms">Recibir notificaciones por SMS</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="in_email" ${cliente.in_email == 1 ? 'checked' : ''}><label class="form-check-label" for="in_email">Recibir notificaciones por Email</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" id="in_whatsapp" ${cliente.in_whatsapp == 1 ? 'checked' : ''}><label class="form-check-label" for="in_whatsapp">Recibir notificaciones por WhatsApp</label></div>
                             </div>
                         </form>
                     </div>
-                    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${T.cancel}</button><button type="button" class="btn btn-primary" id="save-cliente-btn">${T.clients_form_save}</button></div>
+                    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" id="save-cliente-btn">Guardar Cliente</button></div>
                 </div>
             </div>
         </div>
@@ -173,11 +210,11 @@ async function openClienteModal(context, id_cliente = null) {
 
     async function cargarEstadosModal(idPais, idEstadoSeleccionado = null) {
         if (!idPais) {
-            estadoSelectModal.innerHTML = `<option value="">${T.businesses_form_select_country}</option>`;
+            estadoSelectModal.innerHTML = `<option value="">Seleccione un país...</option>`;
             estadoSelectModal.disabled = true;
             return;
         }
-        estadoSelectModal.innerHTML = `<option value="">${T.businesses_form_loading}</option>`;
+        estadoSelectModal.innerHTML = `<option value="">Cargando...</option>`;
         const response = await fetch(`${API_URL}api_estados.php?id_pais=${idPais}`);
         const estadosData = await response.json();
         estadoSelectModal.innerHTML = estadosData.map(estado => `<option value="${estado.id_estado}" ${estado.id_estado == idEstadoSeleccionado ? 'selected' : ''}>${estado.nombre_estado}</option>`).join('');
@@ -222,10 +259,11 @@ async function openClienteModal(context, id_cliente = null) {
                 body: JSON.stringify(payload)
             });
             const saveData = await saveResponse.json();
-            if (!saveResponse.ok) throw new Error(saveData.error);
+            if (!saveResponse.ok) throw new Error(saveData.error || 'Hubo un problema al guardar.');
             
             modal.hide();
             renderView('clientes');
+            alert(saveData.message); // Notificar al usuario del éxito.
         } catch (saveError) {
             document.getElementById('modal-error-container').innerHTML = `<div class="alert alert-danger">${saveError.message}</div>`;
         }

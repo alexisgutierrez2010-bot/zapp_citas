@@ -5,16 +5,16 @@
  * @param {object} context - El objeto de contexto de la aplicación.
  */
 export async function renderDisponibilidadView(context) {
-    const { state, dom, T, API_URL, renderView } = context;
+    const { state, dom, API_URL, renderView } = context;
 
-    dom.appContainer.innerHTML = `<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">${T.spa_owner_loading_data || 'Loading...'}</span></div></div>`;
+    dom.appContainer.innerHTML = `<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div></div>`;
 
     try {
         const fechaFiltro = state.currentDate.toISOString().split('T')[0];
         const response = await fetch(`${API_URL}api_owner_horario_disponible.php?fecha=${fechaFiltro}`);
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error || T.error_loading_schedule || 'Could not load the schedule.');
+            throw new Error(errorData.error || 'No se pudo cargar el horario.');
         }
         const data = await response.json();
         const slots = data.slots;
@@ -25,10 +25,10 @@ export async function renderDisponibilidadView(context) {
         const diaSemanaActual = (state.currentDate.getDay() === 0) ? '7' : String(state.currentDate.getDay());
 
         if (slots.length === 0 && !diasTrabajo.includes(diaSemanaActual)) {
-            const dayName = state.currentDate.toLocaleDateString(state.currentLang === 'es' ? 'es-ES' : 'en-US', { weekday: 'long' });
-            cronogramaHtml = `<div class="alert alert-warning">${(T.spa_owner_not_working_day || 'The business is closed on {day}.').replace('{day}', dayName)}</div>`;
+            const dayName = state.currentDate.toLocaleDateString('es-ES', { weekday: 'long' });
+            cronogramaHtml = `<div class="alert alert-warning">El negocio está cerrado los ${dayName}.</div>`;
         } else if (slots.length === 0) {
-            cronogramaHtml = `<div class="alert alert-info">${T.spa_owner_no_appointments_for_date || 'No slots available for this day.'}</div>`;
+            cronogramaHtml = `<div class="alert alert-info">No hay horarios disponibles para este día.</div>`;
         } else {
             cronogramaHtml = `<div class="list-group">`;
             slots.forEach(slot => {
@@ -39,11 +39,11 @@ export async function renderDisponibilidadView(context) {
                 if (slot.status === 'booked') {
                     slotClass += ' list-group-item-danger';
                     slotContent += `<br>${slot.cita.nombre_cliente} - ${slot.cita.nombre_servicio} (${slot.cita.estado_cita})`;
-                    actionButton = `<button class="btn btn-sm btn-outline-light btn-edit-cita" data-id-cita="${slot.cita.id_cita}">${T.edit || 'Edit'}</button>`;
+                    actionButton = `<button class="btn btn-sm btn-outline-light btn-edit-cita" data-id-cita="${slot.cita.id_cita}">Editar</button>`;
                 } else {
                     slotClass += ' list-group-item-success';
                     slotContent += `<br>Disponible`;
-                    actionButton = `<button class="btn btn-sm btn-outline-light btn-agendar-cita" data-start-time="${fechaFiltro} ${slot.start_time}">${T.spa_owner_btn_new_appointment || 'Schedule'}</button>`;
+                    actionButton = `<button class="btn btn-sm btn-outline-light btn-agendar-cita" data-start-time="${fechaFiltro} ${slot.start_time}">Agendar</button>`;
                 }
 
                 cronogramaHtml += `
@@ -56,15 +56,15 @@ export async function renderDisponibilidadView(context) {
             cronogramaHtml += `</div>`;
         }
 
-        const viewTitle = (T.spa_owner_agenda_for_date || 'Agenda for {date}').replace('{date}', state.currentDate.toLocaleDateString(state.currentLang === 'es' ? 'es-ES' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long' }));
+        const viewTitle = `Disponibilidad para el ${state.currentDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}`;
 
         dom.appContainer.innerHTML = `
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h3>${viewTitle}</h3>
                 <div class="btn-group">
-                    <button class="btn btn-secondary" id="prev-day-btn">${T.spa_owner_btn_prev_day}</button>
+                    <button class="btn btn-secondary" id="prev-day-btn">« Día Anterior</button>
                     <input type="date" class="form-control" id="date-picker" value="${fechaFiltro}">
-                    <button class="btn btn-secondary" id="next-day-btn">${T.spa_owner_btn_next_day}</button>
+                    <button class="btn btn-secondary" id="next-day-btn">Día Siguiente »</button>
                 </div>
             </div>
             ${cronogramaHtml}

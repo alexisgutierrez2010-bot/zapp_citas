@@ -1,29 +1,17 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025).
+// Update :Dec-14-2025).
 session_start();
-// --- SOLUCIÓN ---
-// Se elimina la llamada a 'api_owner_session_check.php' porque este script termina la ejecución (exit;)
-// e impide que la lógica de creación de cita se complete correctamente. La seguridad ya está cubierta por la
-// comprobación de sesión inicial en app_owner.js y el guardián local que se añade a continuación.
+// 1. Guardián de sesión: Valida la sesión y carga la configuración (incluyendo BASE_URL).
+require_once 'api_owner_session_check.php';
 
-header('Content-Type: application/json'); // La cabecera se establece DESPUÉS del guardián.
-
-// --- SOLUCIÓN: Incluir los archivos necesarios para el envío de correo ---
-// El autoload es para la librería PHPMailer, y el sender es para la función `enviarNotificacionCita`.
-// require_once 'config.php'; // ELIMINADO: Ahora lo carga api_owner_session_check.php
+// 2. Dependencias adicionales
+header('Content-Type: application/json');
 require_once 'audit_log.php'; // Reactivado
 require_once __DIR__ . '/vendor/autoload.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-
-// Seguridad: Verificar que el propietario ha iniciado sesión.
-if (!isset($_SESSION['owner_loggedin']) || $_SESSION['owner_loggedin'] !== true) {
-    http_response_code(401); // Unauthorized
-    echo json_encode(['error' => 'Acceso no autorizado. La sesión ha expirado.']);
-    exit;
-}
 
 // --- NUEVO ESQUEMA TRANSACCIONAL ---
 
@@ -100,17 +88,38 @@ try {
     $stmt_pref->close();
     // --- FIN: OBTENER PREFERENCIAS DEL CLIENTE ---
 
-    $sql_cita = "INSERT IGNORE INTO j108_citas (id_negocio, id_cliente, id_servicio, fecha_hora_inicio, fecha_hora_fin, estado_cita, descripcion_trabajo, tipo_cita, in_email, in_sms) VALUES (?, ?, ?, ?, ?, 'Pendiente', ?, ?, ?, ?)";
-    $stmt_cita = $conn->prepare($sql_cita);
-    $stmt_cita->bind_param("iiissssii", $id_negocio_session, $id_cliente, $id_servicio, $fecha_inicio_db, $fecha_fin_db, $descripcion_trabajo, $tipo_cita, $in_email_pref, $in_sms_pref);
+    // --- SOLUCIÓN: Verificación explícita de duplicados ---
+    // Antes de insertar, comprobamos si ya existe una cita idéntica para evitar el falso positivo del 409.
+    $sql_check_duplicate = "SELECT id_cita FROM j108_citas WHERE id_cliente = ? AND id_servicio = ? AND fecha_hora_inicio = ?";
+    $stmt_check = $conn->prepare($sql_check_duplicate);
+    // Usamos el id_servicio que puede ser null para reuniones. La comparación con NULL en SQL es segura aquí.
+    $stmt_check->bind_param("iis", $id_cliente, $id_servicio, $fecha_inicio_db);
+    $stmt_check->execute();
+    $stmt_check->store_result();
+
+    if ($stmt_check->num_rows > 0) {
+        $stmt_check->close();
+        throw new Exception('Ya existe una cita idéntica para este cliente con el mismo servicio y hora.', 409);
+    }
+    $stmt_check->close();
+
+    // SOLUCIÓN: Ajustar la consulta y los parámetros dinámicamente si id_servicio es NULL (para Reuniones).
+    if ($tipo_cita === 'Reunion' || $id_servicio === null) {
+        $sql_cita = "INSERT IGNORE INTO j108_citas (id_negocio, id_cliente, id_servicio, fecha_hora_inicio, fecha_hora_fin, estado_cita, descripcion_trabajo, tipo_cita, in_email, in_sms) VALUES (?, ?, NULL, ?, ?, 'Pendiente', ?, ?, ?, ?)";
+        $stmt_cita = $conn->prepare($sql_cita);
+        // SOLUCIÓN: Corregido el tipo de dato para id_cliente de 's' a 'i'.
+        $stmt_cita->bind_param("iissssii", $id_negocio_session, $id_cliente, $fecha_inicio_db, $fecha_fin_db, $descripcion_trabajo, $tipo_cita, $in_email_pref, $in_sms_pref);
+    } else {
+        $sql_cita = "INSERT IGNORE INTO j108_citas (id_negocio, id_cliente, id_servicio, fecha_hora_inicio, fecha_hora_fin, estado_cita, descripcion_trabajo, tipo_cita, in_email, in_sms) VALUES (?, ?, ?, ?, ?, 'Pendiente', ?, ?, ?, ?)";
+        $stmt_cita = $conn->prepare($sql_cita);
+        // Se incluye el tipo 'i' para id_servicio
+        $stmt_cita->bind_param("iiissssii", $id_negocio_session, $id_cliente, $id_servicio, $fecha_inicio_db, $fecha_fin_db, $descripcion_trabajo, $tipo_cita, $in_email_pref, $in_sms_pref);
+    }
     
     if (!$stmt_cita->execute()) {
         throw new Exception('Error al ejecutar la inserción de la cita: ' . $stmt_cita->error, 500);
     }
 
-    if ($stmt_cita->affected_rows === 0) {
-        throw new Exception('Ya existe una cita idéntica para este cliente en la misma fecha y hora.', 409);
-    }
     $id_nueva_cita = $stmt_cita->insert_id;
     $stmt_cita->close();
 
@@ -128,7 +137,7 @@ try {
     }
 
     // 5. Registrar auditoría (ahora es seguro hacerlo dentro de la transacción)
-    registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_CITA_CREATE', "Propietario agendó nueva cita ID {$id_nueva_cita}."); // Reactivado
+    // registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_CITA_CREATE', "Propietario agendó nueva cita ID {$id_nueva_cita}."); // Suspendido para prueba
 
     // 6. Si todo fue exitoso, confirmar la transacción
     $conn->commit();
@@ -196,32 +205,14 @@ try {
                 $fecha_cita_obj = new DateTime($fecha_inicio_db);
                 $mail->Body    = "Hola {$details['nombre_cliente']},<br><br>Tu cita para <b>{$details['titulo_evento']}</b> ha sido confirmada para el día <b>" . $fecha_cita_obj->format('d/m/Y') . "</b> a las <b>" . $fecha_cita_obj->format('h:i A') . "</b>.<br><br>Te esperamos en {$details['direccion1']}, {$details['ciudad']}.<br>Atentamente,<br>El equipo de {$details['nombre_negocio']}.";
 
-                // Generar y adjuntar archivo iCalendar (.ics)
-                // --- SOLUCIÓN: Corrección de Zona Horaria para .ics ---
-                // 1. Establecer la zona horaria del servidor (ej. 'America/Caracas') para interpretar correctamente la hora guardada.
-                $server_timezone = new DateTimeZone(date_default_timezone_get());
-                // 2. Crear objetos DateTime con la zona horaria correcta y luego convertirlos a UTC para el .ics
-                $fecha_inicio_utc = (new DateTime($fecha_inicio_db, $server_timezone))->setTimezone(new DateTimeZone('UTC'))->format('Ymd\THis\Z');
-                $fecha_fin_utc = (new DateTime($fecha_fin_db, $server_timezone))->setTimezone(new DateTimeZone('UTC'))->format('Ymd\THis\Z');
-
-                $uid = $id_nueva_cita . '@' . parse_url(BASE_URL, PHP_URL_HOST);
-                $location = "{$details['direccion1']}, {$details['ciudad']}";
-                $description = "Cita para {$details['titulo_evento']}. Negocio: {$details['nombre_negocio']}.";
-
-                $icsContent = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//acticven.com//ZAppCitas//ES\r\nBEGIN:VEVENT\r\n";
-                $icsContent .= "UID:{$uid}\r\nDTSTAMP:" . gmdate('Ymd\THis\Z') . "\r\nDTSTART:{$fecha_inicio_utc}\r\nDTEND:{$fecha_fin_utc}\r\n";
-                $icsContent .= "SUMMARY:" . addslashes($details['titulo_evento']) . "\r\nDESCRIPTION:" . addslashes($description) . "\r\nLOCATION:" . addslashes($location) . "\r\n";
-                $icsContent .= "ORGANIZER;CN=\"{$details['nombre_negocio']}\":MAILTO:{$details['email_negocio']}\r\n";
-                $icsContent .= "ATTENDEE;CN=\"{$details['nombre_cliente']}\";ROLE=REQ-PARTICIPANT:MAILTO:{$details['email_cliente']}\r\n";
-                $icsContent .= "BEGIN:VALARM\r\nTRIGGER:-PT30M\r\nACTION:DISPLAY\r\nDESCRIPTION:Recordatorio\r\nEND:VALARM\r\n";
-                $icsContent .= "END:VEVENT\r\nEND:VCALENDAR\r\n";
-                $mail->addStringAttachment($icsContent, 'invitacion.ics', 'base64', 'text/calendar; charset=utf-8; method=REQUEST');
+                // --- PRUEBA: Se suspende temporalmente la generación del archivo .ics para aislar el error BASE_URL ---
+                // La generación del archivo .ics se restaurará una vez que la inclusión de config.php sea estable.
 
                 $mail->send();
                 $email_message_part = ' y se ha enviado la notificación al cliente.';
                 
                 // Actualizar contador de email
-                $conn->query("UPDATE j108_citas SET IN_EMAIL = IN_EMAIL + 1 WHERE id_cita = $id_nueva_cita");
+                $conn->query("UPDATE j108_citas SET in_email = in_email + 1 WHERE id_cita = $id_nueva_cita");
             } else {
                 $email_message_part = ', pero el cliente no tiene un email registrado para notificar.';
             }

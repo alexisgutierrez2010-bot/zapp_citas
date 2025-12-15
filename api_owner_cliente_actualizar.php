@@ -35,9 +35,31 @@ $in_email = (int)($input['in_email'] ?? 0);
 $in_whatsapp = (int)($input['in_whatsapp'] ?? 0);
 $activo = (int)($input['activo'] ?? 0);
 
-if ($id_cliente <= 0 || empty($nombre) || empty($email) || empty($celular)) {
+// SOLUCIÓN: Hacer la API más flexible para manejar actualizaciones parciales (como solo activar/desactivar).
+if ($id_cliente <= 0) {
     http_response_code(400);
-    echo json_encode(['error' => 'ID, Nombre, email y celular son obligatorios.']);
+    echo json_encode(['error' => 'ID de cliente no válido.']);
+    exit;
+}
+
+// Si solo se está cambiando el estado 'activo'
+if (isset($input['activo']) && count($input) === 2) {
+    $sql = "UPDATE j106_clientes SET activo = ? WHERE id_cliente = ? AND id_negocio = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("iii", $activo, $id_cliente, $id_negocio_session);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Estado del cliente actualizado con éxito.']);
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => 'Error al actualizar el estado del cliente.']);
+    }
+    exit;
+}
+
+// Si es una actualización completa, se requiere todo
+if (empty($nombre) || empty($email) || empty($celular)) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Nombre, email y celular son obligatorios para una actualización completa.']);
     exit;
 }
 

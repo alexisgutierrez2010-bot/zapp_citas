@@ -49,36 +49,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Normalizar el número de teléfono de entrada (solo dígitos)
 $telefono_negocio_cleaned_input = preg_replace('/[^0-9]/', '', $telefono_negocio); 
 
-// 3. Buscar el negocio por el número de teléfono, comparando versiones limpias
-$sql_all_negocios = "SELECT id_negocio, nombre_negocio, telefono, activo, fecha_desactivacion FROM j102_negocios";
-$result_all_negocios = $conn->query($sql_all_negocios);
-
-$found_negocio = null;
-if ($result_all_negocios) {
-    while ($row = $result_all_negocios->fetch_assoc()) {
-        $db_telefono_cleaned = preg_replace('/[^0-9]/', '', $row['telefono']);
-        if ($db_telefono_cleaned === $telefono_negocio_cleaned_input) {
-            $found_negocio = $row;
-            break;
-        }
-    }
-}
+// 3. Buscar el negocio por el número de teléfono de forma directa y eficiente.
+$sql_negocio = "SELECT id_negocio, nombre_negocio, telefono, activo, fecha_desactivacion FROM j102_negocios WHERE REPLACE(REPLACE(REPLACE(telefono, '+', ''), ' ', ''), '-', '') LIKE CONCAT('%', ?, '%')";
+$stmt_negocio = $conn->prepare($sql_negocio);
+$stmt_negocio->bind_param("s", $telefono_negocio_cleaned_input);
+$stmt_negocio->execute();
+$found_negocio = $stmt_negocio->get_result()->fetch_assoc();
+$stmt_negocio->close();
 
 if (!$found_negocio) {
     http_response_code(404);
-    echo json_encode(['error' => 'Negocio no encontrado con ese número de teléfono.']);
+    echo json_encode(['error' => 'El negocio no fue encontrado.']);
     exit;
 }
 
 // --- VALIDACIÓN DE PERÍODO DE PRUEBA ---
 if ($found_negocio['activo'] == 2) { // 2 = Suspendido
     http_response_code(403); // Forbidden
-    echo json_encode(['error' => 'Tu cuenta ha sido suspendida. Por favor, contacta al administrador.']);
+    echo json_encode(['error' => 'La cuenta de este negocio se encuentra suspendida.']);
     exit;
 }
 if ($found_negocio['activo'] == 3) { // 3 = Eliminado
     http_response_code(403); // Forbidden
-    echo json_encode(['error' => 'Esta cuenta de negocio ya no existe.']);
+    echo json_encode(['error' => 'La cuenta de este negocio ha sido eliminada.']);
     exit;
 }
 // --- FIN DE VALIDACIÓN ---
@@ -125,12 +118,11 @@ if ($result_user->num_rows > 0) { // Puede haber más de un propietario, validam
 
 // Si llegamos aquí, no se encontró un propietario con esa contraseña o no hay propietario para el negocio
 http_response_code(401);
-echo json_encode(['error' => 'Contraseña incorrecta.']);
+echo json_encode(['error' => 'Las credenciales son incorrectas.']);
 exit;
 }
 
 // Si no es GET ni POST, es un método no permitido.
 http_response_code(405);
 echo json_encode(['error' => 'Método no permitido.']);
-
 ?>

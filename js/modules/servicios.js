@@ -5,30 +5,40 @@
  * @param {object} context - El objeto de contexto de la aplicación.
  */
 export async function renderServiciosView(context) {
-    const { dom, T, API_URL } = context;
-    dom.appContainer.innerHTML = `<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">${T.spa_owner_loading_services}</span></div></div>`;
+    const { dom, API_URL, renderView } = context;
+    dom.appContainer.innerHTML = `<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando servicios...</span></div></div>`;
 
     try {
         const response = await fetch(`${API_URL}api_owner_servicios.php`);
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error || T.error_loading_services || 'Could not load services.');
+            throw new Error(errorData.error || 'No se pudieron cargar los servicios.');
         }
-        const servicios = await response.json();
+        // SOLUCIÓN: La API devuelve { "servicios": [...] }, por lo que debemos acceder a esa propiedad.
+        const data = await response.json();
+        const servicios = data.servicios || [];
 
         let serviciosHtml = '';
-        if (servicios.length > 0) {
+        if (servicios && servicios.length > 0) {
             const serviciosRows = servicios.map((servicio, index) => {
                 const precioFormateado = servicio.precio ? `$${parseFloat(servicio.precio).toFixed(2)}` : 'N/A';
                 return `
-                    <tr>
+                    <tr class="${servicio.activo == 1 ? '' : 'table-secondary text-muted'}">
                         <td>${index + 1}</td>
                         <td>${servicio.nombre_servicio}</td>
                         <td>${servicio.duracion_valor} ${servicio.duracion_unidad}</td>
                         <td>${precioFormateado}</td>
                         <td>
-                            <button class="btn btn-sm btn-warning btn-edit-servicio" data-id-servicio='${JSON.stringify(servicio)}'>${T.edit || 'Edit'}</button>
-                            <button class="btn btn-sm btn-danger btn-delete-servicio" data-id-servicio="${servicio.id_servicio}">${T.deactivate || 'Deactivate'}</button>
+                            <span class="badge ${servicio.activo == 1 ? 'bg-success' : 'bg-danger'}">
+                                ${servicio.activo == 1 ? 'Activo' : 'Inactivo'}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-warning btn-edit-servicio" data-servicio-json='${JSON.stringify(servicio)}' ${servicio.activo == 0 ? 'disabled' : ''}>Editar</button>
+                            ${servicio.activo == 1
+                                ? `<button class="btn btn-sm btn-danger btn-delete-servicio" data-id-servicio="${servicio.id_servicio}">Desactivar</button>`
+                                : `<button class="btn btn-sm btn-success btn-activate-servicio" data-id-servicio="${servicio.id_servicio}">Activar</button>`
+                            }
                         </td>
                     </tr>
                 `;
@@ -36,17 +46,17 @@ export async function renderServiciosView(context) {
 
             serviciosHtml = `
                 <table class="table table-striped table-hover">
-                    <thead class="table-dark"><tr><th>#</th><th>${T.services_col_service || 'Service'}</th><th>${T.services_col_duration || 'Duration'}</th><th>${T.services_col_price || 'Price'}</th><th>${T.actions || 'Actions'}</th></tr></thead>
+                    <thead class="table-dark"><tr><th>#</th><th>Servicio</th><th>Duración</th><th>Precio</th><th>Estado</th><th>Acciones</th></tr></thead>
                     <tbody>${serviciosRows}</tbody>
                 </table>`;
         } else {
-            serviciosHtml = `<div class="alert alert-info">${T.services_no_services || 'No services registered.'}</div>`;
+            serviciosHtml = `<div class="alert alert-info">No hay servicios registrados.</div>`;
         }
 
         dom.appContainer.innerHTML = `
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3>${T.services_title || 'Service Management'}</h3>
-                <button class="btn btn-primary" id="btn-crear-servicio">${T.services_register_new || 'Register New Service'}</button>
+                <h3>Gestión de Servicios</h3>
+                <button class="btn btn-primary" id="btn-crear-servicio">Registrar Nuevo Servicio</button>
             </div>
             ${serviciosHtml}
         `;
@@ -54,12 +64,15 @@ export async function renderServiciosView(context) {
         document.getElementById('btn-crear-servicio').addEventListener('click', () => openServicioModal(context));
         document.querySelectorAll('.btn-edit-servicio').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const servicioData = JSON.parse(e.currentTarget.dataset.idServicio);
+                const servicioData = JSON.parse(e.currentTarget.dataset.servicioJson);
                 openServicioModal(context, servicioData);
             });
         });
         document.querySelectorAll('.btn-delete-servicio').forEach(btn => {
             btn.addEventListener('click', (e) => handleDeleteServicio(context, e.target.dataset.idServicio));
+        });
+        document.querySelectorAll('.btn-activate-servicio').forEach(btn => {
+            btn.addEventListener('click', (e) => handleActivateServicio(context, e.target.dataset.idServicio));
         });
 
     } catch (error) {
@@ -68,8 +81,8 @@ export async function renderServiciosView(context) {
 }
 
 async function handleDeleteServicio(context, id_servicio) {
-    const { T, API_URL, renderView } = context;
-    if (!confirm(T.services_confirm_deactivate || 'Are you sure you want to deactivate this service?')) return;
+    const { API_URL, renderView } = context;
+    if (!confirm('¿Estás seguro de que quieres desactivar este servicio?')) return;
     try {
         const response = await fetch(`${API_URL}api_owner_servicio_eliminar.php`, {
             method: 'POST',
@@ -81,15 +94,33 @@ async function handleDeleteServicio(context, id_servicio) {
         alert(data.message);
         renderView('servicios');
     } catch (error) {
-        alert(`${T.operation_error || 'Operation Error'}: ${error.message}`);
+        alert(`Error en la operación: ${error.message}`);
+    }
+}
+
+async function handleActivateServicio(context, id_servicio) {
+    const { API_URL, renderView } = context;
+    if (!confirm('¿Estás seguro de que quieres reactivar este servicio?')) return;
+    try {
+        const response = await fetch(`${API_URL}api_owner_servicio_actualizar.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_servicio: id_servicio, activo: 1 })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+        alert(data.message || 'Servicio activado con éxito.');
+        renderView('servicios');
+    } catch (error) {
+        alert(`Error en la operación: ${error.message}`);
     }
 }
 
 function openServicioModal(context, servicio = null) {
-    const { T, API_URL, renderView } = context;
+    const { API_URL, renderView } = context;
     const isNew = !servicio;
-    const modalTitle = isNew ? T.services_register_new : T.services_edit_title;
-    const duracionUnidades = { 'Minutos': T.duration_minutes, 'Horas': T.duration_hours, 'Dias': T.duration_days };
+    const modalTitle = isNew ? 'Registrar Nuevo Servicio' : 'Editar Servicio';
+    const duracionUnidades = { 'Minutos': 'Minutos', 'Horas': 'Horas', 'Dias': 'Días' };
     const unidadesOptions = Object.entries(duracionUnidades).map(([key, value]) => `<option value="${key}" ${!isNew && servicio.duracion_unidad === key ? 'selected' : ''}>${value}</option>`).join('');
 
     const modalHtml = `
@@ -100,12 +131,13 @@ function openServicioModal(context, servicio = null) {
                     <div class="modal-body">
                         <div id="modal-error-container"></div>
                         <form id="servicio-form">
-                            <div class="mb-3"><label for="nombre_servicio" class="form-label">${T.services_form_name || 'Service Name'}</label><input type="text" class="form-control" id="nombre_servicio" value="${servicio?.nombre_servicio || ''}" required></div>
-                            <div class="mb-3"><label class="form-label">${T.services_form_duration || 'Duration'}</label><div class="input-group"><input type="number" class="form-control" id="duracion_valor" value="${servicio?.duracion_valor || 30}" required><select class="form-select" id="duracion_unidad">${unidadesOptions}</select></div></div>
-                            <div class="mb-3"><label for="precio" class="form-label">${T.services_form_price || 'Price (optional)'}</label><input type="number" step="0.01" class="form-control" id="precio" value="${servicio?.precio || ''}"></div>
+                            <input type="hidden" id="id_servicio" value="${servicio?.id_servicio || ''}">
+                            <div class="mb-3"><label for="nombre_servicio" class="form-label">Nombre del Servicio</label><input type="text" class="form-control" id="nombre_servicio" value="${servicio?.nombre_servicio || ''}" required></div>
+                            <div class="mb-3"><label class="form-label">Duración</label><div class="input-group"><input type="number" class="form-control" id="duracion_valor" value="${servicio?.duracion_valor || 30}" required><select class="form-select" id="duracion_unidad">${unidadesOptions}</select></div></div>
+                            <div class="mb-3"><label for="precio" class="form-label">Precio (opcional)</label><input type="number" step="0.01" class="form-control" id="precio" value="${servicio?.precio || ''}"></div>
                         </form>
                     </div>
-                    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${T.cancel || 'Cancel'}</button><button type="button" class="btn btn-primary" id="save-servicio-btn">${T.save || 'Save'}</button></div>
+                    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" id="save-servicio-btn">Guardar</button></div>
                 </div>
             </div>
         </div>`;
@@ -117,7 +149,13 @@ function openServicioModal(context, servicio = null) {
 
     document.getElementById('save-servicio-btn').addEventListener('click', async () => {
         const endpoint = isNew ? `${API_URL}api_owner_servicio_crear.php` : `${API_URL}api_owner_servicio_actualizar.php`;
-        const payload = { id_servicio: servicio?.id_servicio, nombre_servicio: document.getElementById('nombre_servicio').value, duracion_valor: document.getElementById('duracion_valor').value, duracion_unidad: document.getElementById('duracion_unidad').value, precio: document.getElementById('precio').value };
+        const payload = { 
+            id_servicio: document.getElementById('id_servicio').value, 
+            nombre_servicio: document.getElementById('nombre_servicio').value, 
+            duracion_valor: document.getElementById('duracion_valor').value, 
+            duracion_unidad: document.getElementById('duracion_unidad').value, 
+            precio: document.getElementById('precio').value 
+        };
         try {
             const saveResponse = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             const saveData = await saveResponse.json();

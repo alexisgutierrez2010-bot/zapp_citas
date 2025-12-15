@@ -66,16 +66,16 @@ require_once 'auth_check.php'; // Inicia la sesión, carga el idioma y verifica 
           events: 'api_citas.php',
 
           // --- AJUSTE DE HORAS LABORABLES ---
-          slotMinTime: '<?php echo $hora_inicio; ?>', // Hora de inicio visible
-          slotMaxTime: '<?php echo $hora_cierre; ?>', // Hora de fin visible
-          // SOLUCIÓN: Ajustar la altura para que se adapte al contenido y no deje espacio extra.
+          // SOLUCIÓN: Se ajusta la configuración para que el calendario se centre en el horario laboral.
+          slotMinTime: '<?php echo $hora_inicio; ?>',
+          slotMaxTime: '<?php echo $hora_cierre; ?>',
+          scrollTime: '<?php echo $hora_inicio; ?>', // Desplaza la vista a la hora de inicio
           height: 'auto',
           businessHours: {
             daysOfWeek: <?php echo json_encode($dias_trabajo); ?>, // Días laborables
             startTime: '<?php echo $hora_inicio; ?>',
             endTime: '<?php echo $hora_cierre; ?>',
           },
-          // --- FIN DEL AJUSTE ---
 
           // Hacer que los eventos sean clickables para ir a la página de edición
           eventClick: function(info) {

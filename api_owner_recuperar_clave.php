@@ -13,12 +13,6 @@ use PHPMailer\PHPMailer\Exception;
 
 header('Content-Type: application/json');
 
-// Cargar traducciones para los correos
-$lang = isset($_GET['lang']) ? $_GET['lang'] : 'es';
-$translations_common = require 'common.php';
-$translations_admin = require 'admin.php';
-$T = array_merge($translations_common[$lang], $translations_admin[$lang]);
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['error' => 'Método no permitido.']);
@@ -50,25 +44,15 @@ $stmt->close();
 
 if (!$usuario) {
     // Para no dar pistas a atacantes, siempre devolvemos un mensaje genérico de éxito.
-    echo json_encode(['message' => $T['email_recovery_generic_success']]);
+    // SOLUCIÓN: Devolver una estructura consistente para que el frontend sepa que no se envió correo.
+    echo json_encode([
+        'message' => 'Solicitud procesada.'
+    ]);
     exit;
 }
 
 // 2. Generar nueva contraseña temporal
 $nueva_password = bin2hex(random_bytes(4)); // 8 caracteres hexadecimales
-$password_hash = password_hash($nueva_password, PASSWORD_DEFAULT);
-
-// 3. Actualizar la contraseña en la base de datos
-$sql_update = "UPDATE j100_usuarios SET password_hash = ? WHERE id_usuario = ?";
-$stmt_update = $conn->prepare($sql_update);
-$stmt_update->bind_param("si", $password_hash, $usuario['id_usuario']);
-
-if (!$stmt_update->execute()) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Error al actualizar la contraseña.']);
-    exit;
-}
-$stmt_update->close();
 
 // 4. Enviar correo electrónico con la nueva contraseña
 try {
@@ -86,19 +70,42 @@ try {
     $mail->addAddress($usuario['correo_electronico'], $usuario['nombre_usuario']);
 
     $mail->isHTML(true);
-    $mail->Subject = $T['email_recovery_subject'];
-    $mail->Body = str_replace(
-        ['{name}', '{user}', '{password}', '{footer_recommendation}', '{footer_ignore}'],
-        [htmlspecialchars($usuario['nombre_usuario']), htmlspecialchars($usuario['nombre_usuario']), "<b>{$nueva_password}</b>", $T['email_recovery_footer'], $T['email_recovery_ignore']],
-        file_get_contents('email_templates/password_recovery_template.html')
-    );
+    // SOLUCIÓN: Eliminar la dependencia de traducciones y fijar los textos en español.
+    $mail->Subject = 'Recuperación de Contraseña - ZApp Citas';
+    $mail->Body    = '
+        <html><body>
+            <h2>Recuperación de Contraseña</h2>
+            <p>Hola ' . htmlspecialchars($usuario['nombre_usuario']) . ',</p>
+            <p>Has solicitado una nueva contraseña. Tus nuevos datos de acceso son:</p>
+            <p><strong>Contraseña Temporal:</strong> ' . $nueva_password . '</p>
+            <p>Te recomendamos cambiar esta contraseña después de iniciar sesión.</p>
+        </body></html>';
 
     $mail->send();
+
+    // SOLUCIÓN: Actualizar la contraseña en la BD SOLO DESPUÉS de que el correo se haya enviado con éxito.
+    $password_hash = password_hash($nueva_password, PASSWORD_DEFAULT);
+    $sql_update = "UPDATE j100_usuarios SET password_hash = ? WHERE id_usuario = ?";
+    $stmt_update = $conn->prepare($sql_update);
+    if (!$stmt_update) {
+        throw new Exception('Error al preparar la actualización de la contraseña.');
+    }
+    $stmt_update->bind_param("si", $password_hash, $usuario['id_usuario']);
+    if (!$stmt_update->execute()) {
+        // Esto es un caso raro: el correo se envió pero la BD falló. Se debe registrar.
+        throw new Exception('El correo se envió, pero hubo un error al guardar la nueva contraseña.');
+    }
+    $stmt_update->close();
+
     registrar_auditoria($conn, $usuario['id_usuario'], null, 'OWNER_PASSWORD_RECOVERY', "Usuario '{$usuario['nombre_usuario']}' solicitó recuperación de contraseña.");
-    echo json_encode(['message' => $T['email_recovery_generic_success']]);
+    // SOLUCIÓN: Devolver el correo al que se enviaron las instrucciones.
+    echo json_encode([
+        'message' => 'Instrucciones enviadas con éxito.',
+        'email_sent_to' => $usuario['correo_electronico']
+    ]);
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(['error' => "No se pudo enviar el correo. Error: {$mail->ErrorInfo}"]);
+    echo json_encode(['error' => "No se pudo enviar el correo. Error del servidor: {$mail->ErrorInfo}"]);
 }
 
 ?>

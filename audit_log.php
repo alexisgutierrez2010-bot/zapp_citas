@@ -28,15 +28,15 @@ function registrar_auditoria($conn, $id_usuario, $id_negocio, $tipo_evento, $des
     
     if ($stmt = $conn->prepare($sql)) {
         // --- SOLUCIÓN DEFINITIVA: Asignar todos los parámetros a variables locales ---
-        // La función `bind_param` requiere que sus argumentos sean variables pasadas por referencia.
-        // Al asignar todos los valores a variables locales antes de la llamada, se elimina
-        // la advertencia "Only variables should be passed by reference" que corrompe la salida JSON.
-        $id_usuario_bind = $id_usuario;
-        $id_negocio_bind = $id_negocio;
-        $accion_bind = $tipo_evento; // La variable de entrada se llama $tipo_evento, pero la columna es 'accion'
-        $descripcion_bind = $descripcion;
-        $ip_address_bind = $ip_address;
-        $stmt->bind_param("iisss", $id_usuario_bind, $id_negocio_bind, $accion_bind, $descripcion_bind, $ip_address_bind);
+        // La función `bind_param` requiere que sus argumentos sean variables pasadas por referencia,
+        // de lo contrario genera una advertencia que corrompe la salida JSON.
+        // Al asignar todos los valores a variables locales antes de la llamada, se soluciona el problema.
+        $id_usuario_ref = $id_usuario;
+        $id_negocio_ref = $id_negocio;
+        $tipo_evento_ref = $tipo_evento;
+        $descripcion_ref = $descripcion;
+        $ip_address_ref = $ip_address;
+        $stmt->bind_param("iisss", $id_usuario_ref, $id_negocio_ref, $tipo_evento_ref, $descripcion_ref, $ip_address_ref);
         $stmt->execute();
         $stmt->close();
     }

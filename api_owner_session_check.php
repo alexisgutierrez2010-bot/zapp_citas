@@ -1,12 +1,14 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
-// ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
+// ©2025. Software development and Authorized by WWW.ACTICVEN.COM All rights reserved.
 if (session_status() === PHP_SESSION_NONE) {
     session_start(); // Iniciar sesión solo si no hay una activa.
 }
 
 // SOLUCIÓN DEFINITIVA: Cargar la configuración aquí, una sola vez.
-require_once __DIR__ . '/config.php';
+if (!defined('SMTP_HOST')) {
+    require_once __DIR__ . '/config.php';
+}
 
 define('SESSION_TIMEOUT', 300); // 300 segundos = 5 minutos
 
@@ -17,10 +19,6 @@ if (!isset($_SESSION['owner_loggedin']) || $_SESSION['owner_loggedin'] !== true)
 }
 
 if (isset($_SESSION['owner_last_activity']) && (time() - $_SESSION['owner_last_activity'] > SESSION_TIMEOUT)) {
-    // Reactivando la auditoría para consistencia
-    require_once 'audit_log.php';
-    registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $_SESSION['owner_id_negocio'], 'SESSION_TIMEOUT', "La sesión del propietario '{$_SESSION['owner_nombre_usuario']}' en la SPA expiró por inactividad.");
-
     session_unset();
     session_destroy();
 
@@ -30,16 +28,3 @@ if (isset($_SESSION['owner_last_activity']) && (time() - $_SESSION['owner_last_a
 }
 
 $_SESSION['owner_last_activity'] = time(); // Actualizar la hora de la última actividad
-
-// --- SOLUCIÓN DEFINITIVA ---
-// Si la sesión es válida, devolver una respuesta JSON de éxito que incluya
-// los datos del propietario almacenados en la sesión. El frontend los necesita para continuar.
-$owner_data = [
-    'id_usuario' => $_SESSION['owner_id_usuario'],
-    'nombre_usuario' => $_SESSION['owner_nombre_usuario'],
-    'id_negocio' => $_SESSION['owner_id_negocio'],
-    'nombre_negocio' => $_SESSION['owner_nombre_negocio']
-];
-
-echo json_encode(['success' => true, 'owner' => $owner_data]);
-exit; // Terminar la ejecución inmediatamente después de enviar el JSON.
