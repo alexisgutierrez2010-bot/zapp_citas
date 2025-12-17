@@ -5,15 +5,15 @@
  * @param {object} context - El contexto global de la aplicación.
  */
 export async function renderBookingView(context) {
-    context.dom.appContainer.innerHTML = `<div class="text-center"><div class="spinner-border"></div></div>`;
+    context.dom.appContainer.innerHTML = `<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div></div>`;
 
     try {
         const response = await fetch(`${context.API_URL}api_servicios_publicos.php?id_negocio=${context.state.clienteActual.id_negocio}`);
-        if (!response.ok) throw new Error(context.T.client_booking_error_loading_services);
+        if (!response.ok) throw new Error('Error al cargar los servicios.');
         const servicios = await response.json();
 
         if (servicios.length === 0) {
-            context.dom.appContainer.innerHTML = `<div class="alert alert-warning">${context.T.client_booking_no_services}</div>`;
+            context.dom.appContainer.innerHTML = `<div class="alert alert-warning">No hay servicios disponibles para agendar en este momento.</div>`;
             return;
         }
 
@@ -21,16 +21,16 @@ export async function renderBookingView(context) {
             <a href="#" class="list-group-item list-group-item-action btn-seleccionar-servicio" data-id-servicio="${s.id_servicio}" data-nombre-servicio="${s.nombre_servicio}">
                 <div class="d-flex w-100 justify-content-between">
                     <h5 class="mb-1">${s.nombre_servicio}</h5>
-                    <small>${context.T.client_booking_duration}: ${s.duracion_valor} ${s.duracion_unidad}</small>
+                    <small>Duración: ${s.duracion_valor} ${s.duracion_unidad}</small>
                 </div>
-                <p class="mb-1">${context.T.client_booking_price}: ${s.precio ? `$${parseFloat(s.precio).toFixed(2)}` : context.T.client_booking_consult}</p>
+                <p class="mb-1">Precio: ${s.precio ? `$${parseFloat(s.precio).toFixed(2)}` : 'Consultar'}</p>
             </a>
         `).join('');
 
         context.dom.appContainer.innerHTML = `
-            <h3>${context.T.client_booking_title}</h3>
+            <h3>Agendar Nueva Cita: <span class="text-muted fw-normal fs-5">¿Qué servicio quieres?</span></h3>
             <div class="card">
-                <div class="card-header">${context.T.client_booking_step1}</div>
+                <div class="card-header">Paso 1: Elige un servicio de la lista</div>
                 <div class="list-group list-group-flush">${serviciosHtml}</div>
             </div>
         `;
@@ -45,7 +45,7 @@ export async function renderBookingView(context) {
         });
 
     } catch (error) {
-        context.dom.appContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+        context.dom.appContainer.innerHTML = `<div class="alert alert-danger">Error al cargar la página de agendamiento: ${error.message}</div>`;
     }
 }
 
@@ -58,25 +58,25 @@ export async function renderBookingView(context) {
 function renderTimeSlotSelection(context, idServicio, nombreServicio) {
     const hoy = new Date().toISOString().split('T')[0];
     context.dom.appContainer.innerHTML = `
-        <h3>${context.T.client_booking_title_with_service.replace('{service}', nombreServicio)}</h3>
+        <h3>Agendar: <span class="text-muted fw-normal fs-5">¿Cuándo lo quieres?</span></h3>
         <div class="card">
-            <div class="card-header">${context.T.client_booking_step2}</div>
+            <div class="card-header">Paso 2: Elige fecha y hora para "${nombreServicio}"</div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-5 mb-3">
-                        <label for="fecha-cita" class="form-label">${context.T.client_booking_select_date}</label>
+                        <label for="fecha-cita" class="form-label">Selecciona una fecha</label>
                         <input type="date" id="fecha-cita" class="form-control" min="${hoy}">
                     </div>
                     <div class="col-md-7">
-                        <label class="form-label">${context.T.client_booking_available_slots}</label>
+                        <label class="form-label">Horarios disponibles</label>
                         <div id="slots-container" class="p-3 bg-light rounded" style="min-height: 100px;">
-                            <p class="text-muted text-center">${context.T.client_booking_select_date_prompt}</p>
+                            <p class="text-muted text-center">Selecciona una fecha para ver los horarios.</p>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="card-footer">
-                <button class="btn btn-secondary" data-view="booking">${context.T.client_booking_back_to_services}</button>
+                <button class="btn btn-secondary" data-view="booking">« Volver a Servicios</button>
             </div>
         </div>
     `;
@@ -88,15 +88,17 @@ function renderTimeSlotSelection(context, idServicio, nombreServicio) {
         const fechaSeleccionada = fechaInput.value;
         if (!fechaSeleccionada) return;
 
-        slotsContainer.innerHTML = `<div class="text-center"><div class="spinner-border spinner-border-sm"></div> ${context.T.client_booking_searching_slots}</div>`;
+        slotsContainer.innerHTML = `<div class="text-center"><div class="spinner-border spinner-border-sm"></div> Buscando horarios...</div>`;
 
         try {
-            const response = await fetch(`${context.API_URL}api_cliente_horario_disponible.php?id_negocio=${context.state.clienteActual.id_negocio}&id_servicio=${idServicio}&fecha=${fechaSeleccionada}`);
-            if (!response.ok) throw new Error(context.T.client_booking_error_loading_slots);
+            // SOLUCIÓN ANTI-CACHÉ: Añadimos un timestamp para asegurar que la petición a la API sea siempre nueva.
+            const cacheBuster = `&_=${new Date().getTime()}`;
+            const response = await fetch(`${context.API_URL}api_cliente_horario_disponible.php?id_negocio=${context.state.clienteActual.id_negocio}&id_servicio=${idServicio}&fecha=${fechaSeleccionada}${cacheBuster}`);
+            if (!response.ok) throw new Error('Error al cargar los horarios.');
             const slots = await response.json();
 
             if (slots.length === 0) {
-                slotsContainer.innerHTML = `<p class="text-muted text-center">${context.T.client_booking_no_slots}</p>`;
+                slotsContainer.innerHTML = `<p class="text-muted text-center">No hay horarios disponibles para esta fecha.</p>`;
             } else {
                 const slotsHtml = slots.map(slot => `<button class="btn btn-outline-primary m-1 btn-seleccionar-slot" data-fecha-hora="${fechaSeleccionada} ${slot}">${slot}</button>`).join('');
                 slotsContainer.innerHTML = `<div class="d-flex flex-wrap">${slotsHtml}</div>`;
@@ -104,12 +106,14 @@ function renderTimeSlotSelection(context, idServicio, nombreServicio) {
                 document.querySelectorAll('.btn-seleccionar-slot').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const fechaHora = e.target.dataset.fechaHora;
-                        handleBookingConfirmation(context, idServicio, fechaHora, nombreServicio);
+                        renderBookingConfirmationView(context, idServicio, fechaHora, nombreServicio);
                     });
                 });
             }
         } catch (error) {
-            slotsContainer.innerHTML = `<p class="text-danger text-center">${error.message}</p>`;
+            // CENTINELA FRONTEND: Mensaje de error único para confirmar que el JS está actualizado.
+            slotsContainer.innerHTML = `<p class="text-danger text-center"><b>[Centinela JS v4]</b> Fallo al buscar horarios. El JS está actualizado. Revisa la consola (F12) para ver el error del servidor.</p>`;
+            console.error("Error al llamar a la API de horarios:", error);
         }
     });
 }
@@ -121,20 +125,63 @@ function renderTimeSlotSelection(context, idServicio, nombreServicio) {
  * @param {string} fechaHora - La fecha y hora seleccionadas.
  * @param {string} nombreServicio - El nombre del servicio.
  */
-async function handleBookingConfirmation(context, idServicio, fechaHora, nombreServicio) {
+function renderBookingConfirmationView(context, idServicio, fechaHora, nombreServicio) {
     const fechaObj = new Date(fechaHora);
-    const fechaFormateada = fechaObj.toLocaleDateString(context.state.currentLang, { weekday: 'long', day: 'numeric', month: 'long' });
-    const horaFormateada = fechaObj.toLocaleTimeString(context.state.currentLang, { hour: '2-digit', minute: '2-digit' });
+    const fechaFormateada = fechaObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+    const horaFormateada = fechaObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
-    const confirmMessage = context.T.client_booking_confirm_prompt
-        .replace('{service}', `"${nombreServicio}"`)
-        .replace('{date}', fechaFormateada)
-        .replace('{time}', horaFormateada);
+    context.dom.appContainer.innerHTML = `
+        <h3>Confirmar Cita</h3>
+        <div class="card">
+            <div class="card-header">Paso 3: Revisa y confirma los detalles</div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>Servicio:</strong> ${nombreServicio}</li>
+                    <li class="list-group-item"><strong>Fecha:</strong> ${fechaFormateada}</li>
+                    <li class="list-group-item"><strong>Hora:</strong> ${horaFormateada}</li>
+                </ul>
+                <div class="mt-3">
+                    <label for="cita-notas" class="form-label">Notas adicionales (opcional)</label>
+                    <textarea id="cita-notas" class="form-control" rows="3" placeholder="Ej: Prefiero que me contacten por correo, tengo una alergia, etc."></textarea>
+                </div>
+            </div>
+            <div class="card-footer d-flex justify-content-between">
+                <button id="btn-volver-slots" class="btn btn-secondary">« Volver</button>
+                <button id="btn-confirmar-reserva" class="btn btn-primary">Confirmar y Agendar Cita</button>
+            </div>
+        </div>
+    `;
 
-    if (!confirm(confirmMessage)) return;
+    document.getElementById('btn-confirmar-reserva').addEventListener('click', () => {
+        const notas = document.getElementById('cita-notas').value;
+        processBooking(context, idServicio, fechaHora, notas);
+    });
 
+    document.getElementById('btn-volver-slots').addEventListener('click', () => {
+        renderTimeSlotSelection(context, idServicio, nombreServicio);
+    });
+}
+
+/**
+ * Procesa el agendamiento final de la cita enviando los datos a la API.
+ * @param {object} context - El contexto global de la aplicación.
+ * @param {string} idServicio - El ID del servicio.
+ * @param {string} fechaHora - La fecha y hora seleccionadas.
+ * @param {string} notas - Las notas opcionales del cliente.
+ */
+async function processBooking(context, idServicio, fechaHora, notas) {
+    const btnConfirmar = document.getElementById('btn-confirmar-reserva');
+    btnConfirmar.disabled = true;
+    btnConfirmar.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Agendando...`;
+    
     try {
-        const payload = { id_cliente: context.state.clienteActual.id_cliente, id_negocio: context.state.clienteActual.id_negocio, id_servicio: idServicio, fecha_hora_inicio: fechaHora };
+        const payload = { 
+            id_cliente: context.state.clienteActual.id_cliente, 
+            id_negocio: context.state.clienteActual.id_negocio, 
+            id_servicio: idServicio, 
+            fecha_hora_inicio: fechaHora,
+            descripcion_trabajo: notas // <-- AÑADIDO: Enviamos las notas
+        };
         const response = await fetch(`${context.API_URL}api_cliente_agendar_cita.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
@@ -142,7 +189,9 @@ async function handleBookingConfirmation(context, idServicio, fechaHora, nombreS
         alert(data.message);
         context.renderView('dashboard');
     } catch (error) {
-        alert(`${context.T.client_booking_error_final}: ${error.message}`);
+        alert(`Error al agendar la cita: ${error.message}`);
+        btnConfirmar.disabled = false;
+        btnConfirmar.textContent = 'Confirmar y Agendar Cita';
     }
 }
 
@@ -153,21 +202,21 @@ async function handleBookingConfirmation(context, idServicio, fechaHora, nombreS
  * @param {HTMLElement} button - El botón que disparó la acción, para dar feedback.
  */
 export async function handleCancelarCita(context, idCita, button) {
-    if (!confirm(context.T.client_dashboard_confirm_cancel)) return;
+    if (!confirm('¿Estás seguro de que deseas cancelar esta cita?')) return;
 
     const originalText = button.innerHTML;
     button.disabled = true;
-    button.innerHTML = `<span class="spinner-border spinner-border-sm"></span> ${context.T.processing}...`;
+    button.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Procesando...`;
 
     try {
         const response = await fetch(`${context.API_URL}api_cliente_accion_cita.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id_cita: idCita, id_cliente: context.state.clienteActual.id_cliente, accion: 'cancelar' }) });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
 
-        // Recargar la vista para mostrar el estado actualizado
+        // Recargar la vista para mostrar el estado actualizado.
         context.renderView('dashboard');
     } catch (error) {
-        alert(`${context.T.client_dashboard_error_cancel}: ${error.message}`);
+        alert(`Error al cancelar la cita: ${error.message}`);
         button.disabled = false;
         button.innerHTML = originalText;
     }
@@ -180,21 +229,21 @@ export async function handleCancelarCita(context, idCita, button) {
  * @param {HTMLElement} button - El botón que disparó la acción, para dar feedback.
  */
 export async function handleConfirmarCita(context, idCita, button) {
-    if (!confirm(context.T.client_dashboard_confirm_confirm)) return;
+    if (!confirm('¿Deseas confirmar tu asistencia a esta cita?')) return;
 
     const originalText = button.innerHTML;
     button.disabled = true;
-    button.innerHTML = `<span class="spinner-border spinner-border-sm"></span> ${context.T.processing}...`;
+    button.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Procesando...`;
 
     try {
         const response = await fetch(`${context.API_URL}api_cliente_accion_cita.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id_cita: idCita, id_cliente: context.state.clienteActual.id_cliente, accion: 'confirmar' }) });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
 
-        // Recargar la vista para mostrar el estado actualizado
+        // Recargar la vista para mostrar el estado actualizado.
         context.renderView('dashboard');
     } catch (error) {
-        alert(`${context.T.client_dashboard_error_confirm}: ${error.message}`);
+        alert(`Error al confirmar la cita: ${error.message}`);
         button.disabled = false;
         button.innerHTML = originalText;
     }

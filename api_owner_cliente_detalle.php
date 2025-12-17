@@ -25,8 +25,8 @@ if ($id_cliente <= 0) {
 
 $sql = "SELECT 
             id_cliente, nombre_completo, numero_celular, correo_electronico,
-            direccion1, direccion2, ciudad, zip_code, notas_adicionales,
-            id_pais, id_estado, activo,
+            direccion1, direccion2, ciudad, zip_code, notas_adicionales, -- CORRECCIÓN: Se eliminó la coma sobrante aquí.
+            id_pais, id_estado, activo, 
             in_sms, in_email, in_whatsapp
         FROM j106_clientes
         WHERE id_cliente = ? AND id_negocio = ?";

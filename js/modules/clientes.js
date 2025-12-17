@@ -24,7 +24,13 @@ export async function renderClientesView(context) {
                 <tr class="${cliente.activo == 1 ? '' : 'table-secondary text-muted'}">
                     <td>${index + 1}</td>
                     <td>${cliente.nombre_completo}</td>
-                    <td>${cliente.numero_celular}</td>
+                    <td>
+                        ${
+                            // CORRECCIÓN: Asegurar que el número se muestre con el formato estándar.
+                            // Si el número ya tiene un '+' al principio, se muestra tal cual. Si no, se asume que es un número sin código y se muestra.
+                            (cliente.numero_celular && cliente.numero_celular.includes(' ')) ? cliente.numero_celular.replace(' ', '') : cliente.numero_celular
+                        }
+                    </td>
                     <td>${cliente.correo_electronico}</td>
                     <td>
                         <span class="badge ${cliente.activo == 1 ? 'bg-success' : 'bg-danger'}">
@@ -180,8 +186,24 @@ async function openClienteModal(context, id_cliente = null) {
                                     <input type="tel" class="form-control" id="numero_celular" value="${currentPhoneNumber}" placeholder="Ej: 4121234567" required>
                                 </div>
                             </div>
-                            <div class="mb-3"><label for="correo_electronico" class="form-label">Email</label><input type="email" class="form-control" id="correo_electronico" value="${cliente.correo_electronico || ''}" required></div>
-                            <div class="mb-3"><label for="direccion1" class="form-label">Dirección</label><input type="text" class="form-control" id="direccion1" value="${cliente.direccion1 || ''}"></div>
+                            <div class="mb-3">
+                                <label for="correo_electronico" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="correo_electronico" value="${cliente.correo_electronico || ''}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="direccion1" class="form-label">Dirección</label>
+                                <input type="text" class="form-control" id="direccion1" value="${cliente.direccion1 || ''}">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label for="ciudad" class="form-label">Ciudad</label>
+                                    <input type="text" class="form-control" id="ciudad" value="${cliente.ciudad || ''}">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="zip_code" class="form-label">Código Postal</label>
+                                    <input type="text" class="form-control" id="zip_code" value="${cliente.zip_code || ''}">
+                                </div>
+                            </div>
                             <div class="row"><div class="col-md-6 mb-3"><label for="id_pais" class="form-label">País</label><select class="form-select" id="id_pais">${paisesOptions}</select></div><div class="col-md-6 mb-3"><label for="id_estado" class="form-label">Estado</label><select class="form-select" id="id_estado" ${cliente.id_pais ? '' : 'disabled'}>${estadosOptions}</select></div></div>
                             <div class="mb-3"><label for="notas_adicionales" class="form-label">Notas Adicionales</label><textarea class="form-control" id="notas_adicionales" rows="3">${cliente.notas_adicionales || ''}</textarea></div>
                             <hr>
@@ -243,6 +265,8 @@ async function openClienteModal(context, id_cliente = null) {
             numero_celular: `${document.getElementById('country_code_cliente').value} ${document.getElementById('numero_celular').value.trim()}`,
             correo_electronico: document.getElementById('correo_electronico').value,
             direccion1: document.getElementById('direccion1').value,
+            ciudad: document.getElementById('ciudad').value,
+            zip_code: document.getElementById('zip_code').value,
             id_pais: document.getElementById('id_pais').value,
             id_estado: document.getElementById('id_estado').value,
             notas_adicionales: document.getElementById('notas_adicionales').value,

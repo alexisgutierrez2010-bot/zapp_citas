@@ -176,7 +176,7 @@ if (is_dir($hero_images_dir)) {
             <p class="lead mb-5"><?php echo __('index_subtitle'); ?></p>
 
             <div class="row g-4">
-                <div class="col-md-6 col-lg-4 d-flex">
+                <div class="col-lg-4 col-md-6 d-flex">
                     <a href="sesion_iniciar.php?lang=<?php echo $lang; ?>" class="action-card w-100">
                         <div class="card-body">
                             <h5><i class="bi bi-gear-wide-connected"></i> <?php echo __('zapp_citas'); ?></h5>
@@ -184,21 +184,19 @@ if (is_dir($hero_images_dir)) {
                         </div>
                     </a>
                 </div>
-                <div class="col-md-6 col-lg-4 d-flex">
+                <div class="col-lg-4 col-md-6 d-flex">
+                    <a href="spa_owner.php?lang=<?php echo $lang; ?>" class="action-card w-100">
+                        <div class="card-body">
+                            <h5><i class="bi bi-shop"></i> <?php echo __('spa_owner_app_title'); ?></h5>
+                            <p><?php echo __('spa_owner_app_subtitle'); ?></p>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-lg-4 col-md-12 d-flex">
                     <a href="spa_client.php?lang=<?php echo $lang; ?>" class="action-card w-100">
                         <div class="card-body">
                             <h5><i class="bi bi-person-circle"></i> <?php echo __('index_card_client_title'); ?></h5>
                             <p><?php echo __('index_card_client_desc'); ?></p>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-md-12 col-lg-4 d-flex">
-                    <a href="spa_owner.php?lang=<?php echo $lang; ?>" class="action-card w-100">
-                        <div class="card-body">
-                            <div class="lh-1">
-                                <h5 class="card-title mb-1">App Propietario</h5>
-                                <p class="card-text text-white-50 small mb-0">Gestión de Citas del Negocio</p>
-                            </div>
                         </div>
                     </a>
                 </div>

@@ -22,7 +22,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $sql = "SELECT 
                 nombre_completo, correo_electronico, numero_celular, id_pais, id_estado,
-                direccion1, direccion2, ciudad, zip_code
+                direccion1, direccion2, ciudad, zip_code,
+                in_email, in_sms, in_whatsapp
             FROM j106_clientes 
             WHERE id_cliente = ?";
     $stmt = $conn->prepare($sql);
@@ -48,12 +49,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id_cliente = (int)($input['id_cliente'] ?? 0);
     $nombre = trim($input['nombre_completo'] ?? '');
     $email = trim($input['correo_electronico'] ?? '');
+    $celular = trim($input['numero_celular'] ?? ''); // AÑADIDO
     $id_pais = (int)($input['id_pais'] ?? 0);
     $id_estado = (int)($input['id_estado'] ?? 0);
     $direccion1 = trim($input['direccion1'] ?? '');
     $direccion2 = trim($input['direccion2'] ?? '');
     $ciudad = trim($input['ciudad'] ?? '');
     $zip_code = trim($input['zip_code'] ?? '');
+    $in_email = isset($input['in_email']) ? 1 : 0; // AÑADIDO
+    $in_sms = isset($input['in_sms']) ? 1 : 0;     // AÑADIDO
+    $in_whatsapp = isset($input['in_whatsapp']) ? 1 : 0; // AÑADIDO
 
     if ($id_cliente <= 0 || empty($nombre) || empty($email) || $id_pais <= 0 || $id_estado <= 0) {
         http_response_code(400);
@@ -73,16 +78,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $stmt_check->close();
 
+    // AÑADIDO: Verificar que el celular no esté en uso por OTRO cliente
+    $sql_check_cel = "SELECT id_cliente FROM j106_clientes WHERE numero_celular = ? AND id_cliente != ?";
+    $stmt_check_cel = $conn->prepare($sql_check_cel);
+    $stmt_check_cel->bind_param("si", $celular, $id_cliente);
+    $stmt_check_cel->execute();
+    if ($stmt_check_cel->get_result()->num_rows > 0) {
+        http_response_code(409); // Conflict
+        echo json_encode(['error' => 'El número de celular ya está en uso por otro cliente.']);
+        exit;
+    }
+    $stmt_check_cel->close();
+
     // Actualizar los datos
     $sql_update = "UPDATE j106_clientes SET 
-                        nombre_completo = ?, correo_electronico = ?, 
-                        direccion1 = ?, direccion2 = ?, ciudad = ?, zip_code = ?,
-                        id_pais = ?, id_estado = ? 
+                        nombre_completo = ?, correo_electronico = ?, numero_celular = ?,
+                        direccion1 = ?, direccion2 = ?, ciudad = ?, zip_code = ?, id_pais = ?, 
+                        id_estado = ?, in_email = ?, in_sms = ?, in_whatsapp = ?
                    WHERE id_cliente = ?";
     $stmt_update = $conn->prepare($sql_update);
-    $stmt_update->bind_param("ssssssiii", 
-        $nombre, $email, $direccion1, $direccion2, $ciudad, $zip_code,
-        $id_pais, $id_estado, $id_cliente
+    $stmt_update->bind_param("sssssssiiiiii", 
+        $nombre, $email, $celular, $direccion1, $direccion2, $ciudad, $zip_code,
+        $id_pais, $id_estado, $in_email, $in_sms, $in_whatsapp, $id_cliente
     );
 
     if ($stmt_update->execute()) {

@@ -9,9 +9,8 @@ export async function renderHistoryView(context) {
 
     try {
         const response = await fetch(`${context.API_URL}api_cliente_historial.php?id_cliente=${context.state.clienteActual.id_cliente}`);
-        if (!response.ok) {
-            throw new Error(context.T.client_history_error_loading);
-        }
+        if (!response.ok) throw new Error('Error al cargar el historial de citas.');
+
         const historial = await response.json();
 
         let historialHtml = '';
@@ -33,24 +32,24 @@ export async function renderHistoryView(context) {
                 return `
                     <tr>
                         <td>${index + 1}</td>
-                        <td>${fecha.toLocaleDateString(context.state.currentLang)}</td>
-                        <td>${fecha.toLocaleTimeString(context.state.currentLang, { hour: 'numeric', minute: 'numeric' })}</td>
+                        <td>${fecha.toLocaleDateString('es-ES')}</td>
+                        <td>${fecha.toLocaleTimeString('es-ES', { hour: 'numeric', minute: 'numeric' })}</td>
                         <td>${cita.nombre_servicio}</td>
                         <td><span class="badge ${color_clase}">${estado}</span></td>
-                        <td><small class="text-muted">${cita.id_cita}</small></td>
+                        <td><small class="text-muted">${cita.descripcion_trabajo || 'Sin notas'}</small></td>
                     </tr>
                 `;
             }).join('');
 
             historialHtml = `
                 <table class="table table-striped table-hover">
-                    <thead class="table-dark"><tr><th>#</th><th>${context.T.date}</th><th>${context.T.time}</th><th>${context.T.service}</th><th>${context.T.status}</th><th>ID</th></tr></thead>
+                    <thead class="table-dark"><tr><th>#</th><th>Fecha</th><th>Hora</th><th>Servicio</th><th>Estado</th><th>Notas</th></tr></thead>
                     <tbody>${citasRows}</tbody>
                 </table>`;
         } else {
-            historialHtml = `<div class="alert alert-info">${context.T.client_history_no_records}</div>`;
+            historialHtml = `<div class="alert alert-info">No tienes citas en tu historial.</div>`;
         }
-        context.dom.appContainer.innerHTML = `<h3>${context.T.client_nav_history}</h3>${historialHtml}`;
+        context.dom.appContainer.innerHTML = `<h3>Mi Historial de Citas</h3>${historialHtml}`;
 
     } catch (error) {
         context.dom.appContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;

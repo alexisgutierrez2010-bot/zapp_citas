@@ -5,7 +5,7 @@ export async function renderDashboardView(context) {
     try {
         const response = await fetch(`${context.API_URL}api_cliente_citas.php?id_cliente=${context.state.clienteActual.id_cliente}`);
         if (!response.ok) {
-            throw new Error(context.T.client_dashboard_error_load);
+            throw new Error('Error al cargar tus citas.');
         }
         const data = await response.json();
         const cita = data.cita_reciente;
@@ -19,32 +19,31 @@ export async function renderDashboardView(context) {
 
             citaHtml = `
                 <div class="card">
-                    <div class="card-header">${context.T.client_dashboard_recent_appointment}</div>
+                    <div class="card-header">Tu Próxima Cita</div>
                     <div class="card-body">
                         <h5 class="card-title">${cita.nombre_servicio}</h5>
                         <p class="card-text">
-                            <strong>${context.T.date}:</strong> ${fecha.toLocaleDateString(context.state.currentLang, opcionesFecha)}<br>
-                            <strong>${context.T.time}:</strong> ${fecha.toLocaleTimeString(context.state.currentLang, opcionesHora)}<br>
-                            <strong>${context.T.status}:</strong> <span class="badge bg-info text-dark">${cita.estado_cita}</span><br>
-                            ${cita.descripcion_trabajo ? `<strong>${context.T.description}:</strong> ${cita.descripcion_trabajo}` : ''}
+                            <strong>Fecha:</strong> ${fecha.toLocaleDateString('es-ES', opcionesFecha)}<br>
+                            <strong>Hora:</strong> ${fecha.toLocaleTimeString('es-ES', opcionesHora)}<br>
+                            <strong>Estado:</strong> <span class="badge bg-info text-dark">${cita.estado_cita}</span><br>
+                            ${cita.descripcion_trabajo ? `<strong>Notas:</strong> ${cita.descripcion_trabajo}` : ''}
                         </p>
-                        <p class="card-text"><small class="text-muted">ID: ${cita.id_cita}</small></p>
-                        ${cita.estado_cita === 'Pendiente' ? `<a href="#" class="btn btn-success" data-action="confirm-appointment" data-id-cita="${cita.id_cita}">${context.T.client_dashboard_confirm_btn}</a>` : ''}
-                        ${cita.estado_cita === 'Pendiente' || cita.estado_cita === 'Confirmada' ? `<a href="#" class="btn btn-danger ms-2" data-action="cancel-appointment" data-id-cita="${cita.id_cita}">${context.T.client_dashboard_cancel_btn}</a>` : ''}
+                        ${cita.estado_cita === 'Pendiente' ? `<a href="#" class="btn btn-success" data-action="confirm-appointment" data-id-cita="${cita.id_cita}">Confirmar Asistencia</a>` : ''}
+                        ${cita.estado_cita === 'Pendiente' || cita.estado_cita === 'Confirmada' ? `<a href="#" class="btn btn-danger ms-2" data-action="cancel-appointment" data-id-cita="${cita.id_cita}">Cancelar Cita</a>` : ''}
                     </div>
                 </div>
             `;
         } else {
             citaHtml = `
-                <div class="alert alert-info">${context.T.client_dashboard_no_appointments}</div>
-                <button class="btn btn-primary" data-view="booking">${context.T.client_dashboard_book_first_btn}</button>
+                <div class="alert alert-info">No tienes citas próximas.</div>
+                <button class="btn btn-primary" data-view="booking">Agenda tu primera cita</button>
             `;
         }
 
         context.dom.appContainer.innerHTML = `
             <div class="row">
                 <div class="col-12">
-                    <h3>${context.T.hello}, ${cliente.nombre_completo}!</h3>
+                    <h3>¡Hola, ${cliente.nombre_completo}!</h3>
                     <hr>
                 </div>
                 <div class="col-md-8">${citaHtml}</div>

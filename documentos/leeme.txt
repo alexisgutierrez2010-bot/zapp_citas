@@ -127,11 +127,11 @@ La aplicaci&oacute;n implementa una estrategia de internacionalizaci&oacute;n (i
     -   Los textos se renderizan en el servidor usando la funci&oacute;n `__('clave_de_texto')` antes de enviar el HTML al navegador.
  
 3.  **Aplicaci&oacute;n en el Frontend (SPAs `spa_owner` y `spa_client`):**
-    -   Al iniciar, el JavaScript (`app_owner.js` o `app_client.js`) realiza una petici&oacute;n `fetch` a la API `api_get_translations.php?lang=...`.
-    -   El "diccionario" de traducciones JSON recibido se almacena en la memoria de la aplicaci&oacute;n (ej. `context.T`).
-    -   Todas las vistas se construyen din&aacute;micamente en el navegador usando los textos de ese diccionario (ej. `context.T.welcome_message`).
+    -   **Decisión Estratégica:** Para simplificar la versión 1.0, se ha decidido que las SPAs (`spa_owner` y `spa_client`) serán **monolingües (solo español)**.
+    -   Los textos están escritos directamente en el código JavaScript de cada módulo (ej. `agenda.js`, `booking.js`).
+    -   No se realiza ninguna llamada a la API de traducciones.
  
-**Conclusi&oacute;n:** Aunque la ejecuci&oacute;n es diferente (renderizado en servidor vs. renderizado en cliente), la **fuente de la verdad** para las traducciones es la misma (`languages.php`), garantizando consistencia en todo el ecosistema.
+**Conclusi&oacute;n:** El sistema de internacionalización (i18n) se aplica **únicamente al panel de administración (`zapp_citas`)**. Las aplicaciones de cliente y propietario (SPAs) permanecen en español para esta versión.
 </pre>
 
 <pre>

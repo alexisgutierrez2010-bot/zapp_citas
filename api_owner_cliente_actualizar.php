@@ -24,7 +24,6 @@ $nombre = trim($input['nombre_completo'] ?? '');
 $celular = trim($input['numero_celular'] ?? '');
 $email = trim($input['correo_electronico'] ?? '');
 $direccion1 = trim($input['direccion1'] ?? '');
-$direccion2 = trim($input['direccion2'] ?? '');
 $ciudad = trim($input['ciudad'] ?? '');
 $id_pais = (int)($input['id_pais'] ?? 0);
 $id_estado = (int)($input['id_estado'] ?? 0);
@@ -73,9 +72,9 @@ if ($stmt_check->get_result()->num_rows > 0) {
     exit;
 }
 
-$sql = "UPDATE j106_clientes SET nombre_completo=?, numero_celular=?, correo_electronico=?, direccion1=?, direccion2=?, ciudad=?, id_pais=?, id_estado=?, zip_code=?, notas_adicionales=?, in_sms=?, in_email=?, in_whatsapp=?, activo=? WHERE id_cliente=? AND id_negocio=?";
+$sql = "UPDATE j106_clientes SET nombre_completo=?, numero_celular=?, correo_electronico=?, direccion1=?, ciudad=?, id_pais=?, id_estado=?, zip_code=?, notas_adicionales=?, in_sms=?, in_email=?, in_whatsapp=?, activo=? WHERE id_cliente=? AND id_negocio=?";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("ssssssiissiiiiii", $nombre, $celular, $email, $direccion1, $direccion2, $ciudad, $id_pais, $id_estado, $zip_code, $notas, $in_sms, $in_email, $in_whatsapp, $activo, $id_cliente, $id_negocio_session);
+$stmt->bind_param("sssssiisssiiiiii", $nombre, $celular, $email, $direccion1, $ciudad, $id_pais, $id_estado, $zip_code, $notas, $in_sms, $in_email, $in_whatsapp, $activo, $id_cliente, $id_negocio_session);
 
 if ($stmt->execute()) {
     echo json_encode(['success' => true, 'message' => 'Cliente actualizado con éxito.']);

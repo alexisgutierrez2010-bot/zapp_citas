@@ -70,6 +70,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($result->num_rows === 1) {
         $cliente = $result->fetch_assoc();
+
+        // CORRECCIÓN CRÍTICA: Guardar los datos del cliente en la sesión.
+        $_SESSION['client_loggedin'] = true;
+        $_SESSION['client_id'] = $cliente['id_cliente'];
+        $_SESSION['client_nombre_completo'] = $cliente['nombre_completo'];
+        $_SESSION['client_last_activity'] = time();
+
         registrar_auditoria($conn, null, null, 'CLIENT_LOGIN_SUCCESS', "Cliente '{$cliente['nombre_completo']}' (ID: {$cliente['id_cliente']}) inició sesión.");
         echo json_encode($cliente);
     } else {

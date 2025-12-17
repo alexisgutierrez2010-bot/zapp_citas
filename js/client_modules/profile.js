@@ -1,169 +1,198 @@
 // c:/xampp/htdocs/zapp_citas/js/client_modules/profile.js
 
 /**
- * Muestra la vista del perfil del cliente, con un formulario completo para editar sus datos.
+ * Renderiza la vista del perfil del cliente.
  * @param {object} context - El contexto global de la aplicación.
  */
 export async function renderProfileView(context) {
-    context.dom.appContainer.innerHTML = `<div class="text-center"><div class="spinner-border" role="status"></div></div>`;
+    context.dom.appContainer.innerHTML = `<div class="text-center"><div class="spinner-border"></div></div>`;
 
     try {
-        const [perfilResponse, paisesResponse] = await Promise.all([
-            fetch(`${context.API_URL}api_cliente_perfil.php?id_cliente=${context.state.clienteActual.id_cliente}`),
-            fetch(`${context.API_URL}api_paises.php`)
-        ]);
+        // 1. Cargar datos del perfil del cliente
+        const profileResponse = await fetch(`${context.API_URL}api_cliente_perfil.php?id_cliente=${context.state.clienteActual.id_cliente}`);
+        if (!profileResponse.ok) throw new Error('No se pudo cargar el perfil.');
+        const profileData = await profileResponse.json();
 
-        if (!perfilResponse.ok) throw new Error(context.T.client_profile_error_loading);
-
-        const perfil = await perfilResponse.json();
+        // 2. Cargar lista de países
+        const paisesResponse = await fetch(`${context.API_URL}api_paises.php`);
         const paises = await paisesResponse.json();
 
-        const paisesOptions = paises.map(pais =>
-            `<option value="${pais.id_pais}" ${perfil.id_pais == pais.id_pais ? 'selected' : ''}>${pais.nombre_pais}</option>`
-        ).join('');
+        // --- LÓGICA PARA SEPARAR CÓDIGO DE PAÍS Y NÚMERO ---
+        let currentCountryCode = '';
+        let currentPhoneNumber = profileData.numero_celular || '';
+        if (profileData.numero_celular && profileData.numero_celular.includes(' ')) {
+            const parts = profileData.numero_celular.split(' ');
+            if (parts.length > 1 && parts[0].startsWith('+')) {
+                currentCountryCode = parts[0];
+                currentPhoneNumber = parts.slice(1).join(' ');
+            }
+        } else if (paises.length > 0) {
+            // Si no hay código, se asigna uno por defecto (el del primer país de la lista)
+            currentCountryCode = paises.find(p => p.id_pais == profileData.id_pais)?.codigo_telefono || paises[0].codigo_telefono;
+        }
+
+        // 3. Construir el HTML del formulario
+        const paisesOptions = paises.map(p => `<option value="${p.id_pais}" ${profileData.id_pais == p.id_pais ? 'selected' : ''}>${p.nombre_pais}</option>`).join('');
 
         context.dom.appContainer.innerHTML = `
-            <div class="row justify-content-center">
-                <div class="col-md-8">
-                    <div class="card">
-                        <div class="card-header"><h3>${context.T.client_nav_profile}</h3></div>
-                        <div class="card-body">
-                            <div id="feedback-container"></div>
-                            <form id="profile-form">
-                                <div class="mb-3">
-                                    <label for="nombre_completo" class="form-label">${context.T.clients_form_name}</label>
-                                    <input type="text" class="form-control" id="nombre_completo" value="${perfil.nombre_completo}" required>
+            <h3>Mi Perfil</h3>
+            <form id="profile-form">
+                <div class="card">
+                    <div class="card-header">Mis Datos Personales</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="nombre_completo" class="form-label">Nombre Completo</label>
+                                <input type="text" class="form-control" id="nombre_completo" value="${profileData.nombre_completo || ''}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="correo_electronico" class="form-label">Correo Electrónico</label>
+                                <input type="email" class="form-control" id="correo_electronico" value="${profileData.correo_electronico || ''}" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="numero_celular" class="form-label">Número de Celular (para Login y Notificaciones)</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="country_code_profile" style="max-width: 120px;">${paises.map(p => `<option value="${p.codigo_telefono}" ${currentCountryCode === p.codigo_telefono ? 'selected' : ''}>${p.codigo_telefono}</option>`).join('')}</select>
+                                    <input type="tel" class="form-control" id="numero_celular" value="${currentPhoneNumber}" required>
                                 </div>
-                                <div class="mb-3">
-                                    <label for="numero_celular" class="form-label">${context.T.clients_form_phone} (Login)</label>
-                                    <input type="tel" class="form-control" id="numero_celular" value="${perfil.numero_celular || ''}" readonly disabled>
-                                    <small class="form-text text-muted">${context.T.phone_cannot_be_modified}</small>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="correo_electronico" class="form-label">${context.T.clients_form_email}</label>
-                                    <input type="email" class="form-control" id="correo_electronico" value="${perfil.correo_electronico}" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="direccion1" class="form-label">${context.T.clients_form_address1}</label>
-                                    <input type="text" class="form-control" id="direccion1" value="${perfil.direccion1 || ''}">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="direccion2" class="form-label">${context.T.clients_form_address2}</label>
-                                    <input type="text" class="form-control" id="direccion2" value="${perfil.direccion2 || ''}">
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="id_pais" class="form-label">${context.T.clients_form_country}</label>
-                                        <select class="form-select" id="id_pais" required>${paisesOptions}</select>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="id_estado" class="form-label">${context.T.clients_form_state}</label>
-                                        <select class="form-select" id="id_estado" required disabled><option>${context.T.businesses_form_loading}</option></select>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-8 mb-3">
-                                        <label for="ciudad" class="form-label">${context.T.clients_form_city}</label>
-                                        <input type="text" class="form-control" id="ciudad" value="${perfil.ciudad || ''}">
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <label for="zip_code" class="form-label">${context.T.clients_form_zip}</label>
-                                        <input type="text" class="form-control" id="zip_code" value="${perfil.zip_code || ''}">
-                                    </div>
-                                </div>
-                                <div class="d-grid">
-                                    <button type="submit" class="btn btn-primary">${context.T.client_profile_update_button}</button>
-                                </div>
-                            </form>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">Mi Dirección</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="direccion1" class="form-label">Dirección 1</label>
+                            <input type="text" class="form-control" id="direccion1" value="${profileData.direccion1 || ''}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="direccion2" class="form-label">Dirección 2 (Opcional)</label>
+                            <input type="text" class="form-control" id="direccion2" value="${profileData.direccion2 || ''}">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_pais" class="form-label">País</label>
+                                <select class="form-select" id="id_pais" required>
+                                    <option value="">Seleccione un país...</option>
+                                    ${paisesOptions}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_estado" class="form-label">Estado / Provincia</label>
+                                <select class="form-select" id="id_estado" required>
+                                    <option value="">Seleccione un país primero...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="ciudad" class="form-label">Ciudad</label>
+                                <input type="text" class="form-control" id="ciudad" value="${profileData.ciudad || ''}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="zip_code" class="form-label">Código Postal</label>
+                                <input type="text" class="form-control" id="zip_code" value="${profileData.zip_code || ''}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">Preferencias de Comunicación</div>
+                    <div class="card-body">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="in_email" ${profileData.in_email == 1 ? 'checked' : ''}>
+                            <label class="form-check-label" for="in_email">
+                                Deseo recibir notificaciones y recordatorios por correo electrónico.
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="in_sms" ${profileData.in_sms == 1 ? 'checked' : ''}>
+                            <label class="form-check-label" for="in_sms">
+                                Deseo recibir notificaciones y recordatorios por SMS (pueden aplicarse cargos).
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="in_whatsapp" ${profileData.in_whatsapp == 1 ? 'checked' : ''}>
+                            <label class="form-check-label" for="in_whatsapp">
+                                Deseo recibir notificaciones y recordatorios por WhatsApp.
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
         `;
 
-        // Lógica para cargar estados dinámicamente
+        // 4. Lógica para cargar estados dinámicamente
         const paisSelect = document.getElementById('id_pais');
         const estadoSelect = document.getElementById('id_estado');
 
-        async function cargarEstados(idPais, idEstadoSeleccionado) {
-            try {
-                const response = await fetch(`${context.API_URL}api_estados.php?id_pais=${idPais}`);
-                const estados = await response.json();
-                estadoSelect.innerHTML = `<option value="">${context.T.businesses_form_select_state}</option>`;
-                estados.forEach(estado => {
-                    const option = document.createElement('option');
-                    option.value = estado.id_estado;
-                    option.textContent = estado.nombre_estado;
-                    if (idEstadoSeleccionado && estado.id_estado == idEstadoSeleccionado) {
-                        option.selected = true;
-                    }
-                    estadoSelect.appendChild(option);
-                });
-                estadoSelect.disabled = false;
-            } catch (error) { console.error('Error loading states:', error); }
-        }
+        const cargarEstados = async (idPais, idEstadoSeleccionado = null) => {
+            if (!idPais) {
+                estadoSelect.innerHTML = '<option value="">Seleccione un país primero...</option>';
+                return;
+            }
+            estadoSelect.innerHTML = '<option value="">Cargando...</option>';
+            const response = await fetch(`${context.API_URL}api_estados.php?id_pais=${idPais}`);
+            const estados = await response.json();
+            estadoSelect.innerHTML = estados.map(e => `<option value="${e.id_estado}" ${idEstadoSeleccionado == e.id_estado ? 'selected' : ''}>${e.nombre_estado}</option>`).join('');
+        };
+
         paisSelect.addEventListener('change', () => cargarEstados(paisSelect.value));
-        await cargarEstados(paisSelect.value, perfil.id_estado);
+        if (profileData.id_pais) {
+            cargarEstados(profileData.id_pais, profileData.id_estado);
+        }
 
-        document.getElementById('profile-form').addEventListener('submit', (e) => handleUpdateProfile(context, e));
+        // 5. Lógica para enviar el formulario
+        document.getElementById('profile-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Guardando...`;
 
-    } catch (error) {
-        context.dom.appContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
-    }
-}
+            const payload = {
+                id_cliente: context.state.clienteActual.id_cliente,
+                nombre_completo: document.getElementById('nombre_completo').value,
+                correo_electronico: document.getElementById('correo_electronico').value,
+                numero_celular: `${document.getElementById('country_code_profile').value} ${document.getElementById('numero_celular').value.trim()}`,
+                direccion1: document.getElementById('direccion1').value,
+                direccion2: document.getElementById('direccion2').value,
+                id_pais: document.getElementById('id_pais').value,
+                id_estado: document.getElementById('id_estado').value,
+                ciudad: document.getElementById('ciudad').value,
+                zip_code: document.getElementById('zip_code').value,
+                in_email: document.getElementById('in_email').checked,
+                in_sms: document.getElementById('in_sms').checked,
+                in_whatsapp: document.getElementById('in_whatsapp').checked,
+            };
 
-/**
- * Maneja el envío del formulario de actualización del perfil.
- * @param {object} context - El contexto global de la aplicación.
- * @param {Event} event - El evento de submit del formulario.
- */
-async function handleUpdateProfile(context, event) {
-    event.preventDefault();
-    const feedbackContainer = document.getElementById('feedback-container');
-    const form = event.target;
-    const submitButton = form.querySelector('button[type="submit"]');
-    feedbackContainer.innerHTML = '';
+            try {
+                const response = await fetch(`${context.API_URL}api_cliente_perfil.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error);
 
-    const payload = {
-        id_cliente: context.state.clienteActual.id_cliente,
-        nombre_completo: form.querySelector('#nombre_completo').value,
-        correo_electronico: form.querySelector('#correo_electronico').value,
-        id_pais: form.querySelector('#id_pais').value,
-        id_estado: form.querySelector('#id_estado').value,
-        direccion1: form.querySelector('#direccion1').value,
-        direccion2: form.querySelector('#direccion2').value,
-        ciudad: form.querySelector('#ciudad').value,
-        zip_code: form.querySelector('#zip_code').value,
-    };
-
-    submitButton.disabled = true;
-    submitButton.innerHTML = `<span class="spinner-border spinner-border-sm"></span> ${context.T.updating}...`;
-
-    try {
-        const response = await fetch(`${context.API_URL}api_cliente_perfil.php`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+                alert(result.message);
+                context.renderView('dashboard'); // Volver al dashboard
+            } catch (error) {
+                alert(`Error al actualizar el perfil: ${error.message}`);
+                btn.disabled = false;
+                btn.innerHTML = 'Guardar Cambios';
+            }
         });
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || context.T.client_profile_error_updating);
-        }
-
-        // Actualizar el nombre en el estado local y en la barra de navegación
-        context.state.clienteActual.nombre_completo = payload.nombre_completo;
-        await context.updateNavbar(context);
-
-        // MEJORA: Usar una clave de traducción en lugar del mensaje directo de la API.
-        const messageKey = data.message_key || 'operation_success';
-        feedbackContainer.innerHTML = `<div class="alert alert-success">${context.T[messageKey]}</div>`;
-
     } catch (error) {
-        feedbackContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
-    } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = context.T.client_profile_update_button;
+        context.dom.appContainer.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
     }
 }

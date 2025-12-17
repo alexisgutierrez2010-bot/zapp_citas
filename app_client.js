@@ -2,7 +2,7 @@
 // Versión modularizada y refactorizada para la SPA del Cliente
 
 // --- 1. IMPORTACIÓN DE MÓDULOS ---
-// Importamos toda la lógica desde la nueva carpeta /js/client_modules/
+// Importamos toda la lógica desde la carpeta /js/client_modules/
 import { renderLoginView, handleLogout, renderConfirmacionRegistroView, renderRegistroView } from './js/client_modules/auth.js';
 import { renderDashboardView } from './js/client_modules/dashboard.js';
 import { renderProfileView } from './js/client_modules/profile.js';
@@ -17,31 +17,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     const context = {
         state: {
             currentView: null,
-            currentLang: new URLSearchParams(window.location.search).get('lang') || 'es',
-            clienteActual: null, // Reemplaza la variable global
-            negocioInfo: null,   // Para guardar el nombre del negocio, etc.
+            clienteActual: null,
+            negocioInfo: null,
         },
         dom: {
             appContainer: document.getElementById('app-container'),
             navMenu: document.getElementById('nav-menu'),
             navbarBrand: document.getElementById('navbar-brand-title'),
         },
-        T: {}, // Objeto de traducciones
         API_URL: '', // Misma raíz
         renderView: null, // Se define más abajo
         updateNavbar: updateNavbar, // Hacemos la función de UI accesible globalmente en el contexto
     };
-
-    // --- B. CARGA DE TRADUCCIONES ---
-    try {
-        const response = await fetch(`${context.API_URL}api_get_translations.php?lang=${context.state.currentLang}`);
-        if (!response.ok) throw new Error('Failed to load language file.');
-        context.T = await response.json();
-    } catch (error) {
-        console.error("Critical Error:", error);
-        context.dom.appContainer.innerHTML = `<div class="alert alert-danger">Error crítico: No se pudieron cargar los datos de idioma.</div>`;
-        return;
-    }
 
     // --- C. ROUTER: GESTOR DE VISTAS ---
     const routes = {
@@ -96,22 +83,24 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // --- F. PUNTO DE ARRANQUE DE LA LÓGICA ---
     try {
+        // 1. Verificar si hay una sesión activa.
         const sessionResponse = await fetch(`${context.API_URL}api_cliente_session_check.php`);
-
         if (!sessionResponse.ok) {
-            await updateNavbar(context); // Actualizar navbar para estado "no logueado"
-            context.renderView('login');
-            return;
+            // Si no hay sesión (error 401), lanzamos un error para ir directamente al bloque catch.
+            throw new Error('No active session');
         }
 
+        // 2. Si la sesión es válida, obtener los datos del cliente.
         const sessionData = await sessionResponse.json();
         context.state.clienteActual = sessionData.client;
         
+        // 3. Si todo está bien, actualizar la UI y mostrar el dashboard.
         await updateNavbar(context);
-        
         context.renderView('dashboard');
 
     } catch (error) {
+        // Si CUALQUIER paso del 'try' falla, se llega aquí.
+        // Mostramos el login de forma segura.
         console.error("Error checking session, defaulting to login view.", error);
         await updateNavbar(context);
         context.renderView('login');

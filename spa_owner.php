@@ -83,7 +83,7 @@
     <?php 
         include 'spa_owner_footer.php'; 
     ?>
-    <!-- SOLUCIÓN: Se añade un parámetro de versión para forzar la recarga del script principal y sus módulos, evitando problemas de caché. -->
-    <script type="module" src="app_owner.js?v=1.0.1"></script>
+    <!-- MEJORA: Se usa filemtime para el versionado automático del script, evitando problemas de caché de forma dinámica. -->
+    <script type="module" src="app_owner.js?v=<?php echo filemtime('app_owner.js'); ?>"></script>
 </body>
 </html>

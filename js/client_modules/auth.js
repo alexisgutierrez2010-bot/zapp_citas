@@ -12,7 +12,7 @@ export async function renderLoginView(context) {
         ]);
 
         if (!captchaResponse.ok || !paisesResponse.ok) {
-            throw new Error(context.T.client_login_error_loading_data);
+            throw new Error('Error al cargar datos iniciales. Por favor, recarga la página.');
         }
 
         const captchaData = await captchaResponse.json();
@@ -27,31 +27,31 @@ export async function renderLoginView(context) {
             <div class="row justify-content-center">
                 <div class="col-md-5 col-lg-4">
                     <div class="card">
-                        <div class="card-header text-center bg-primary text-white"><h3>${context.T.welcome}</h3></div>
+                        <div class="card-header text-center bg-primary text-white"><h3>Bienvenido</h3></div>
                         <div class="card-body">
                             <div id="error-container"></div>
                             <form id="login-form">
                                 <div class="mb-3">
-                                    <label for="numero_celular" class="form-label">${context.T.client_login_phone_label}</label>
+                                    <label for="numero_celular" class="form-label">Tu Número de Teléfono</label>
                                     <div class="input-group">
                                         <select class="form-select" id="country_code" name="country_code" style="max-width: 150px;">
                                             ${paisesOptions}
                                         </select>
-                                        <input type="tel" class="form-control" id="numero_celular" name="numero_celular" placeholder="${context.T.client_login_phone_placeholder}" required>
+                                        <input type="tel" class="form-control" id="numero_celular" name="numero_celular" placeholder="Ej: 555 123 4567" required>
                                     </div>
                                 </div>
                                 <div class="mb-3 text-center">
-                                    <label for="captcha" class="form-label">${context.T.client_login_captcha_label}</label>
+                                    <label for="captcha" class="form-label">Ingresa el código de seguridad</label>
                                     <div class="p-2 bg-dark text-white rounded font-monospace fs-4" style="letter-spacing: 5px;">
                                         ${captchaHash}
                                     </div>
                                     <div class="mx-auto" style="max-width: 200px;">
                                         <input type="text" name="captcha" id="captcha" class="form-control mt-2 text-center" autocomplete="off" required>
                                     </div>
-                                <small class="form-text text-muted">${context.T.client_login_captcha_expires}</small>
+                                <small class="form-text text-muted">El código expira en 2 minutos.</small>
                                 </div>
                                 <div class="d-grid">
-                                    <button type="submit" class="btn btn-primary">${context.T.login_button}</button>
+                                    <button type="submit" class="btn btn-primary">Ingresar</button>
                                 </div>
                             </form>
                         </div>
@@ -93,10 +93,11 @@ async function handleLogin(context, event) {
 
         if (!response.ok) {
             if (response.status === 404) {
+                // CORRECCIÓN: Volver al flujo original de confirmación.
                 context.renderView('confirm-register', { numeroCelular: fullPhoneNumber });
                 return;
             } else {
-                throw new Error(data.error || context.T.client_login_error_unknown);
+                throw new Error(data.error || 'Ocurrió un error desconocido.');
             }
         }
 
@@ -131,13 +132,13 @@ export function renderConfirmacionRegistroView(context, params) {
         <div class="row justify-content-center">
             <div class="col-md-7">
                 <div class="card text-center">
-                    <div class="card-header"><h3>${context.T.client_register_not_found_title}</h3></div>
+                    <div class="card-header"><h3>Cliente no Encontrado</h3></div>
                     <div class="card-body">
-                        <p class="lead">${context.T.client_register_not_found_lead.replace('{phone}', `<strong>${numeroCelular}</strong>`)}</p>
-                        <p>${context.T.client_register_not_found_prompt}</p>
+                        <p class="lead">El número <strong>${numeroCelular}</strong> no está registrado.</p>
+                        <p>¿Deseas registrarte como un nuevo cliente?</p>
                         <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mt-4">
-                            <button class="btn btn-primary btn-lg px-4 gap-3" data-view="register" data-numero-celular="${numeroCelular}">${context.T.yes_register}</button>
-                            <button class="btn btn-outline-secondary btn-lg px-4" data-view="login">${context.T.no_back}</button>
+                            <button class="btn btn-primary btn-lg px-4 gap-3" data-view="register" data-numero-celular="${numeroCelular}">Sí, registrarme</button>
+                            <button class="btn btn-outline-secondary btn-lg px-4" data-view="login">No, volver</button>
                         </div>
                     </div>
                 </div>
@@ -152,45 +153,131 @@ export function renderConfirmacionRegistroView(context, params) {
  * @param {object} params - Parámetros, debe incluir `numeroCelular`.
  */
 export async function renderRegistroView(context, params) {
-    const { numeroCelular } = params;
+    const { numeroCelular } = params; // El número ya viene con el formato "+código número"
     try {
         const [paisesResponse, negociosResponse] = await Promise.all([
             fetch(`${context.API_URL}api_paises.php`),
             fetch(`${context.API_URL}api_negocios_lista_publica.php`)
         ]);
-
+ 
         const paises = await paisesResponse.json();
         const negocios = await negociosResponse.json();
-
-        const paisesOptions = paises.map(pais => `<option value="${pais.id_pais}" ${pais.id_pais == 1 ? 'selected' : ''}>${pais.nombre_pais}</option>`).join('');
-        const negociosOptions = negocios.map(negocio => `<option value="${negocio.id_negocio}">${negocio.nombre_negocio}</option>`).join('');
-
+ 
+        const paisesOptions = '<option value="" disabled selected>Seleccione un país...</option>' + paises.map(pais => `<option value="${pais.id_pais}">${pais.nombre_pais}</option>`).join('');
+        const negociosOptions = '<option value="" disabled selected>Seleccione un negocio...</option>' + negocios.map(negocio => `<option value="${negocio.id_negocio}">${negocio.nombre_negocio}</option>`).join('');
+ 
         context.dom.appContainer.innerHTML = `
             <div class="row justify-content-center">
                 <div class="col-md-8">
                     <div class="card">
-                        <div class="card-header text-center"><h3>${context.T.client_register_form_title}</h3></div>
+                        <div class="card-header text-center"><h3>Registro de Nuevo Cliente</h3></div>
                         <div class="card-body">
-                            <p class="text-muted">${context.T.client_register_form_subtitle}</p>
                             <div id="error-container"></div>
                             <form id="registro-form">
                                 <input type="hidden" id="numero_celular_registro" value="${numeroCelular}">
-                                <div class="mb-3"><label class="form-label">${context.T.clients_form_phone}</label><input type="tel" class="form-control" value="${numeroCelular}" readonly></div>
-                                <div class="mb-3"><label for="nombre_completo" class="form-label">${context.T.clients_form_name}</label><input type="text" class="form-control" id="nombre_completo" required></div>
-                                <div class="mb-3"><label for="correo_electronico" class="form-label">${context.T.clients_form_email}</label><input type="email" class="form-control" id="correo_electronico" required></div>
-                                <div class="mb-3"><label for="id_negocio" class="form-label">${context.T.client_register_form_business_label}</label><select class="form-select" id="id_negocio" required>${negociosOptions}</select></div>
-                                <div class="d-grid"><button type="submit" class="btn btn-success">${context.T.client_register_form_button}</button></div>
+                                
+                                <div class="alert alert-light">
+                                    <strong>Número a registrar:</strong> ${numeroCelular}
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="nombre_completo" class="form-label">Nombre Completo</label>
+                                        <input type="text" class="form-control" id="nombre_completo" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="correo_electronico" class="form-label">Correo Electrónico</label>
+                                        <input type="email" class="form-control" id="correo_electronico" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="id_negocio" class="form-label">¿Para qué negocio te registras?</label>
+                                    <select class="form-select" id="id_negocio" required>${negociosOptions}</select>
+                                </div>
+
+                                <hr>
+                                <h5 class="mt-3">Datos Adicionales (Opcional)</h5>
+
+                                <div class="mb-3">
+                                    <label for="direccion1" class="form-label">Dirección 1</label>
+                                    <input type="text" class="form-control" id="direccion1">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="direccion2" class="form-label">Dirección 2 (Opcional)</label>
+                                    <input type="text" class="form-control" id="direccion2">
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-8 mb-3"><label for="ciudad" class="form-label">Ciudad</label><input type="text" class="form-control" id="ciudad"></div>
+                                    <div class="col-md-4 mb-3"><label for="zip_code" class="form-label">Código Postal</label><input type="text" class="form-control" id="zip_code"></div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_pais" class="form-label">País</label>
+                                        <select class="form-select" id="id_pais">${paisesOptions}</select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="id_estado" class="form-label">Estado / Provincia</label>
+                                        <select class="form-select" id="id_estado" disabled>
+                                            <option value="">Seleccione un país primero...</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Preferencias de Comunicación</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="in_email" checked>
+                                        <label class="form-check-label" for="in_email">Recibir notificaciones por correo.</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="in_sms">
+                                        <label class="form-check-label" for="in_sms">Recibir notificaciones por SMS.</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="in_whatsapp">
+                                        <label class="form-check-label" for="in_whatsapp">Recibir notificaciones por WhatsApp.</label>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-between mt-4">
+                                    <button type="button" class="btn btn-secondary" data-view="login">Cancelar</button>
+                                    <button type="submit" class="btn btn-success">Completar Registro</button>
+                                </div>
                             </form>
                         </div>
                     </div>
                 </div>
             </div>
         `;
-
+ 
+        const paisSelect = document.getElementById('id_pais');
+        const estadoSelect = document.getElementById('id_estado');
+ 
+        paisSelect.addEventListener('change', async () => {
+            const idPais = paisSelect.value;
+            if (!idPais) {
+                estadoSelect.innerHTML = '<option value="">Seleccione un país primero...</option>';
+                estadoSelect.disabled = true;
+                return;
+            }
+            estadoSelect.disabled = false;
+            estadoSelect.innerHTML = '<option value="">Cargando...</option>';
+            try {
+                const response = await fetch(`${context.API_URL}api_estados.php?id_pais=${idPais}`);
+                const estados = await response.json();
+                estadoSelect.innerHTML = '<option value="" disabled selected>Seleccione un estado...</option>' + estados.map(e => `<option value="${e.id_estado}">${e.nombre_estado}</option>`).join('');
+            } catch (error) {
+                estadoSelect.innerHTML = '<option value="">Error al cargar</option>';
+            }
+        });
+ 
         document.getElementById('registro-form').addEventListener('submit', (e) => handleRegistro(context, e));
-
+ 
     } catch (error) {
-        context.dom.appContainer.innerHTML = `<div class="alert alert-danger">${context.T.client_register_error_loading}</div>`;
+        context.dom.appContainer.innerHTML = `<div class="alert alert-danger">Error al cargar el formulario de registro.</div>`;
         console.error("Error in renderRegistroView:", error);
     }
 }
@@ -210,17 +297,24 @@ async function handleRegistro(context, event) {
         numero_celular: form.querySelector('#numero_celular_registro').value,
         nombre_completo: form.querySelector('#nombre_completo').value,
         correo_electronico: form.querySelector('#correo_electronico').value,
-        id_negocio: form.querySelector('#id_negocio').value,
-        // Campos opcionales/no solicitados en este formulario simplificado
-        id_pais: 1, // Valor por defecto o se podría añadir al form
-        id_estado: 1, // Valor por defecto
+        id_negocio: form.querySelector('#id_negocio').value,        
+        direccion1: form.querySelector('#direccion1').value,
+        direccion2: form.querySelector('#direccion2').value,
+        ciudad: form.querySelector('#ciudad').value,
+        zip_code: form.querySelector('#zip_code').value,
+        id_pais: form.querySelector('#id_pais').value,
+        id_estado: form.querySelector('#id_estado').value,
+        in_email: form.querySelector('#in_email').checked ? 1 : 0,
+        in_sms: form.querySelector('#in_sms').checked ? 1 : 0,
+        in_whatsapp: form.querySelector('#in_whatsapp').checked ? 1 : 0,
     };
 
     if (!payload.nombre_completo || !payload.correo_electronico || !payload.id_negocio) {
-        errorContainer.innerHTML = `<div class="alert alert-danger">${context.T.error_all_fields_required}</div>`;
+        errorContainer.innerHTML = `<div class="alert alert-danger">Todos los campos son obligatorios.</div>`;
         return;
     }
-
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
     try {
         const response = await fetch(`${context.API_URL}api_cliente_registro.php`, {
             method: 'POST',
@@ -231,13 +325,15 @@ async function handleRegistro(context, event) {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.error || context.T.client_register_error_generic);
+            throw new Error(data.error || 'Ocurrió un error durante el registro.');
         }
 
-        context.dom.appContainer.innerHTML = `<div class="alert alert-success"><h4>${context.T.client_register_success_title}</h4><p>${data.message}</p><p>${context.T.client_register_success_redirect}</p></div>`;
+        context.dom.appContainer.innerHTML = `<div class="alert alert-success"><h4>¡Registro Exitoso!</h4><p>${data.message}</p><p>Serás redirigido a la pantalla de inicio de sesión en unos segundos.</p></div>`;
         setTimeout(() => context.renderView('login'), 4000);
 
     } catch (error) {
         errorContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+    } finally {
+        submitButton.disabled = false;
     }
 }
