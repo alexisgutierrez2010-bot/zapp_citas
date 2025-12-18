@@ -24,9 +24,4 @@ Este documento resume las tareas de optimización y corrección para la aplicaci
 
 ---
 
-## 3. [PENDIENTE] Refactorizar SPA del Cliente
-*   Aplicar las mismas mejoras (internacionalización, borrado lógico, etc.) a la `spa_client` para unificar la calidad del código en todo el proyecto.
-
----
-
 *Este documento sirve como bitácora de desarrollo y planificación.*

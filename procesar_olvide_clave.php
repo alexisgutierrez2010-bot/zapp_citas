@@ -4,8 +4,7 @@
 // Update :Dec-05-2025). Internacionalización completa del contenido de los correos.
 
 // Cargar sistema de internacionalización (i18n)
-session_start(); // Necesario para que el selector de idioma funcione
-require_once __DIR__ . '/languages.php';
+session_start();
 
 require_once 'audit_log.php';
 require_once 'config.php';
@@ -16,10 +15,9 @@ use PHPMailer\PHPMailer\Exception;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $correo_electronico = trim($_POST['correo_electronico']);
-    $lang_param = isset($_POST['lang']) ? '&lang=' . $_POST['lang'] : '';
 
     if (empty($correo_electronico) || !filter_var($correo_electronico, FILTER_VALIDATE_EMAIL)) {
-        header("Location: olvide_clave.php?status=error&message_key=error_invalid_email" . $lang_param);
+        header("Location: olvide_clave.php?status=error&message=Email inválido");
         exit();
     }
 
@@ -64,35 +62,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $mail->addAddress($correo_electronico);
 
                 $mail->isHTML(true);
-                $mail->Subject = __('email_recovery_subject');
+                $mail->Subject = 'Recuperación de Contraseña - ZApp Citas';
                 $mail->Body    = '
                     <html><body>
-                        <h2>' . __('email_recovery_title') . '</h2>
-                        <p>' . str_replace('{name}', htmlspecialchars($nombre_usuario), __('email_hello')) . '</p>
-                        <p>' . __('email_recovery_body') . '</p>
+                        <h2>Recuperación de Contraseña</h2>
+                        <p>Hola ' . htmlspecialchars($nombre_usuario) . ',</p>
+                        <p>Has solicitado restablecer tu contraseña. Aquí están tus nuevos datos de acceso:</p>
                         <ul>
-                            <li><strong>' . __('email_recovery_user') . ':</strong> ' . htmlspecialchars($nombre_usuario) . '</li>
-                            <li><strong>' . __('email_recovery_password') . ':</strong> ' . $nueva_password_temporal . '</li>
+                            <li><strong>Usuario:</strong> ' . htmlspecialchars($nombre_usuario) . '</li>
+                            <li><strong>Nueva Contraseña Temporal:</strong> ' . $nueva_password_temporal . '</li>
                         </ul>
-                        <p>' . __('email_recovery_footer') . '</p>
-                        <p>' . __('email_recovery_ignore') . '</p>
+                        <p>Te recomendamos iniciar sesión y cambiar esta contraseña por una de tu elección lo antes posible.</p>
+                        <p>Si no solicitaste esto, puedes ignorar este correo electrónico.</p>
                     </body></html>';
 
                 $mail->send();
-                header("Location: olvide_clave.php?status=success&message_key=email_recovery_generic_success" . $lang_param);
+                header("Location: olvide_clave.php?status=success&message=Si tu correo está en nuestro sistema, recibirás un email con instrucciones.");
 
             } catch (Exception $e) {
-                header("Location: olvide_clave.php?status=error&message_key=operation_error" . $lang_param);
+                header("Location: olvide_clave.php?status=error&message=Error en la operación.");
             }
         } else {
-            header("Location: olvide_clave.php?status=error&message_key=operation_error" . $lang_param);
+            header("Location: olvide_clave.php?status=error&message=Error en la operación.");
         }
         $update_stmt->close();
 
     } else {
         // Para no dar pistas a posibles atacantes, mostramos un mensaje genérico
         // aunque el correo no exista.
-        header("Location: olvide_clave.php?status=success&message_key=email_recovery_generic_success" . $lang_param);
+        header("Location: olvide_clave.php?status=success&message=Si tu correo está en nuestro sistema, recibirás un email con instrucciones.");
     }
 
     $stmt->close();

@@ -4,7 +4,7 @@
 // Update :Dec-01-2025).
 session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
 require_once 'config.php';
-// require_once 'audit_log.php'; // SIMPLIFICACIÓN: Auditoría desactivada.
+require_once 'audit_log.php';
 
 header('Content-Type: application/json');
 
@@ -43,7 +43,7 @@ if ($stmt->execute() && $stmt->affected_rows > 0) {
     $stmt_info->bind_param("i", $id_servicio);
     $stmt_info->execute();
     $nombre_servicio = $stmt_info->get_result()->fetch_assoc()['nombre_servicio'] ?? 'Desconocido';
-    // registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_SERVICE_DEACTIVATE', "Propietario desactivó el servicio '{$nombre_servicio}' (ID: {$id_servicio}) desde la SPA.");
+    registrar_auditoria($conn, $_SESSION['owner_id_usuario'], $id_negocio_session, 'OWNER_SPA_SERVICE_DEACTIVATE', "Propietario desactivó el servicio '{$nombre_servicio}' (ID: {$id_servicio}) desde la SPA.");
     echo json_encode(['success' => true, 'message' => 'Servicio eliminado con éxito.']);
 } else {
     http_response_code(500);

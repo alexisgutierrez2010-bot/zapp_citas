@@ -30,7 +30,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // Preparar la consulta SQL para evitar inyecciones SQL
-    $sql = "INSERT INTO j104_servicios (nombre_servicio, duracion_valor, duracion_unidad, precio, id_negocio) VALUES (?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO j104_servicios (nombre_servicio, duracion_valor, duracion_unidad, precio, id_negocio, fecha_registro) VALUES (?, ?, ?, ?, ?, NOW())";
 
     if ($stmt = $conn->prepare($sql)) {
         // Vincular los parámetros: s = string, i = integer, s = string, d = double, i = integer

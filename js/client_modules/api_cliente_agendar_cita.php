@@ -59,10 +59,21 @@ try {
     $fecha_hora_fin = clone $fecha_hora_inicio;
     $fecha_hora_fin->add(new DateInterval('PT' . $duracion_minutos . 'M'));
 
+    // Obtener preferencias de notificación del cliente
+    $stmt_prefs = $conn->prepare("SELECT in_sms, in_email, in_whatsapp FROM j106_clientes WHERE id_cliente = ?");
+    $stmt_prefs->bind_param("i", $id_cliente);
+    $stmt_prefs->execute();
+    $prefs = $stmt_prefs->get_result()->fetch_assoc();
+    $stmt_prefs->close();
+
+    $in_sms = $prefs['in_sms'] ?? 1;
+    $in_email = $prefs['in_email'] ?? 1;
+    $in_whatsapp = $prefs['in_whatsapp'] ?? 1;
+
     // Insertar la nueva cita
-    $sql = "INSERT INTO j108_citas (id_cliente, id_negocio, id_servicio, fecha_hora_inicio, fecha_hora_fin, estado_cita, descripcion_trabajo, tipo_cita) VALUES (?, ?, ?, ?, ?, 'Pendiente', ?, 'Servicio')";
+    $sql = "INSERT INTO j108_citas (id_cliente, id_negocio, id_servicio, fecha_hora_inicio, fecha_hora_fin, estado_cita, descripcion_trabajo, tipo_cita, in_sms, in_email, in_whatsapp) VALUES (?, ?, ?, ?, ?, 'Pendiente', ?, 'Servicio', ?, ?, ?)";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iiisss", $id_cliente, $id_negocio, $id_servicio, $fecha_hora_inicio->format('Y-m-d H:i:s'), $fecha_hora_fin->format('Y-m-d H:i:s'), $descripcion_trabajo);
+    $stmt->bind_param("iiisssiii", $id_cliente, $id_negocio, $id_servicio, $fecha_hora_inicio->format('Y-m-d H:i:s'), $fecha_hora_fin->format('Y-m-d H:i:s'), $descripcion_trabajo, $in_sms, $in_email, $in_whatsapp);
 
     if ($stmt->execute()) {
         registrar_auditoria($conn, $id_cliente, $id_negocio, 'CLIENT_BOOKING_SUCCESS', "Cliente ID {$id_cliente} agendó cita para servicio ID {$id_servicio}.");

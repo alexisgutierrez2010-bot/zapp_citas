@@ -17,8 +17,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
         // 1. Validación de seguridad: solo permitir archivos .txt
-        if (!in_array($file_extension, ['txt', 'pdf', 'md'])) {
-            header("Location: seleccionar_resumen.php?status=error&message=" . urlencode("Error: Solo se permiten archivos .txt, .pdf o .md."));
+        if (!in_array($file_extension, ['txt', 'pdf', 'md', 'sql'])) {
+            header("Location: seleccionar_resumen.php?status=error&message=" . urlencode("Error: Solo se permiten archivos .txt, .pdf, .md o .sql."));
             exit;
         }
 

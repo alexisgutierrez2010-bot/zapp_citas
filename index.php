@@ -1,14 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-05-2025). Retoque para añadir soporte multi-idioma (ES/EN).
-date_default_timezone_set('America/Chicago'); // Establecer la zona horaria a US Central Time
-
-// --- LÓGICA MULTI-IDIOMA (CORREGIDA) ---
-// Iniciar sesión para que el idioma se pueda guardar entre páginas
-session_start();
-// Cargar el sistema de internacionalización completo
-require_once __DIR__ . '/languages.php';
+// Update :Dec-14-2025). Eliminada toda la lógica multi-idioma (ES/EN) por solicitud.
 
 // --- LÓGICA PARA IMÁGENES DE FONDO DINÁMICAS ---
 $hero_images_dir = 'assets/images/hero/';
@@ -29,7 +22,7 @@ if (is_dir($hero_images_dir)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo __('welcome'); ?> a <?php echo __('zapp_citas'); ?></title>
+    <title>Bienvenido a ZApp Citas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/css/intlTelInput.css"/>
@@ -121,22 +114,6 @@ if (is_dir($hero_images_dir)) {
             font-size: clamp(1.5rem, 5vw, 2rem); /* CORRECCIÓN: Tamaño de fuente adaptable */
             font-weight: 500;
         }
-        .language-switcher {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            text-shadow: 1px 1px 4px rgba(0,0,0,0.7);
-        }
-        .language-switcher a {
-            color: white;
-            text-decoration: none;
-            font-weight: bold;
-            padding: 5px;
-        }
-        .language-switcher a.active {
-            text-decoration: underline;
-            color: #0d6efd;
-        }
         .help-fab {
             position: fixed;
             bottom: 20px;
@@ -163,40 +140,36 @@ if (is_dir($hero_images_dir)) {
 
     <div class="hero-section">
         <div class="time-display">
-            <div class="date"><?php echo date($lang === 'es' ? 'l, j \d\e F \d\e Y' : 'l, F j, Y'); ?></div>
+            <div class="date"><?php echo date('l, j \d\e F \d\e Y'); ?></div>
             <div class="time" id="current-time"><?php echo date('h:i:s A'); ?></div>
-        </div>
-        <div class="language-switcher">
-            <a href="?lang=es" class="<?php echo $lang === 'es' ? 'active' : ''; ?>">ES</a> | 
-            <a href="?lang=en" class="<?php echo $lang === 'en' ? 'active' : ''; ?>">EN</a>
         </div>
         <div class="hero-text">
             <img src="logo_zapp_citas.png" alt="ZApp Citas Logo" class="hero-logo">
-            <h1><?php echo __('zapp_citas'); ?></h1>
-            <p class="lead mb-5"><?php echo __('index_subtitle'); ?></p>
+            <h1>ZApp Citas</h1>
+            <p class="lead mb-5">Tu sistema de gestión de citas.</p>
 
             <div class="row g-4">
                 <div class="col-lg-4 col-md-6 d-flex">
-                    <a href="sesion_iniciar.php?lang=<?php echo $lang; ?>" class="action-card w-100">
+                    <a href="sesion_iniciar.php" class="action-card w-100">
                         <div class="card-body">
-                            <h5><i class="bi bi-gear-wide-connected"></i> <?php echo __('zapp_citas'); ?></h5>
-                            <p><?php echo __('index_card_admin_desc'); ?></p>
+                            <h5><i class="bi bi-gear-wide-connected"></i> ZApp Citas</h5>
+                            <p>Panel de control para administradores.</p>
                         </div>
                     </a>
                 </div>
                 <div class="col-lg-4 col-md-6 d-flex">
-                    <a href="spa_owner.php?lang=<?php echo $lang; ?>" class="action-card w-100">
+                    <a href="spa_owner.php" class="action-card w-100">
                         <div class="card-body">
-                            <h5><i class="bi bi-shop"></i> <?php echo __('spa_owner_app_title'); ?></h5>
-                            <p><?php echo __('spa_owner_app_subtitle'); ?></p>
+                            <h5><i class="bi bi-shop"></i> App del Propietario</h5>
+                            <p>Gestiona tu negocio y agenda.</p>
                         </div>
                     </a>
                 </div>
                 <div class="col-lg-4 col-md-12 d-flex">
-                    <a href="spa_client.php?lang=<?php echo $lang; ?>" class="action-card w-100">
+                    <a href="spa_client.php" class="action-card w-100">
                         <div class="card-body">
-                            <h5><i class="bi bi-person-circle"></i> <?php echo __('index_card_client_title'); ?></h5>
-                            <p><?php echo __('index_card_client_desc'); ?></p>
+                            <h5><i class="bi bi-person-circle"></i> App del Cliente</h5>
+                            <p>Agenda y gestiona tus citas.</p>
                         </div>
                     </a>
                 </div>
@@ -205,7 +178,7 @@ if (is_dir($hero_images_dir)) {
     </div>
 
     <!-- Botón Flotante de Ayuda -->
-    <a href="ayuda_index.php?lang=<?php echo $lang; ?>" target="_blank" class="help-fab" title="Ayuda">
+    <a href="ayuda_index.php" target="_blank" class="help-fab" title="Ayuda">
         <i class="bi bi-question-lg" style="font-size: 1.8rem;"></i>
     </a>
 
@@ -221,7 +194,7 @@ if (is_dir($hero_images_dir)) {
         const timeElement = document.getElementById('current-time');
         if (timeElement) {
             setInterval(() => {
-                timeElement.textContent = new Date().toLocaleTimeString('<?php echo $lang === 'es' ? 'es-ES' : 'en-US'; ?>', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                timeElement.textContent = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
             }, 1000);
         }
 

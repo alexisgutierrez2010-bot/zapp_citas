@@ -14,6 +14,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $duracion_valor = (int)$_POST['duracion_valor'];
     $duracion_unidad = $_POST['duracion_unidad'];
     $precio = !empty($_POST['precio']) ? (float)$_POST['precio'] : NULL;
+    $activo = isset($_POST['activo']) ? 1 : 0;
 
     if ($id_servicio <= 0) {
         header("Location: servicios_lista.php?status=error&message=" . urlencode("ID de servicio inválido."));
@@ -35,11 +36,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // 3. Preparar la consulta SQL de actualización
-    $sql = "UPDATE j104_servicios SET nombre_servicio = ?, duracion_valor = ?, duracion_unidad = ?, precio = ? WHERE id_servicio = ? AND id_negocio = ?";
+    $sql = "UPDATE j104_servicios SET nombre_servicio = ?, duracion_valor = ?, duracion_unidad = ?, precio = ?, activo = ? WHERE id_servicio = ? AND id_negocio = ?";
 
     if ($stmt = $conn->prepare($sql)) {
-        // Vincular los parámetros: s = string, i = int, s = string, d = double, i = int, i = int
-        $stmt->bind_param("sisdii", $nombre, $duracion_valor, $duracion_unidad, $precio, $id_servicio, $id_negocio_session);
+        // Vincular los parámetros: s, i, s, d, i, i, i
+        $stmt->bind_param("sisdiii", $nombre, $duracion_valor, $duracion_unidad, $precio, $activo, $id_servicio, $id_negocio_session);
 
         if ($stmt->execute()) {
             $descripcion_audit = "Se actualizó el servicio '{$nombre}' (ID: {$id_servicio}).";

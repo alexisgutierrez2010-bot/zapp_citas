@@ -220,6 +220,33 @@ Esta sección detalla cada programa y su propósito dentro del sistema.
 *   `api_negocios_lista_publica.php`: Devuelve la lista de negocios activos.
 *   `api_servicios_publicos.php`: Devuelve los servicios de un negocio específico.
 
+#### 3.6. Estructura de Archivos JavaScript (SPAs)
+
+*   **SPA del Propietario (`/js/owner_modules/`)**
+    *   `app_owner.js` (en raíz): Orquestador principal de la SPA.
+    *   `auth.js`: Módulo de autenticación.
+    *   `agenda.js`: Módulo para la vista de agenda diaria.
+    *   `calendario.js`: Módulo para la vista de calendario mensual.
+    *   `citas.js`: Módulo para los formularios de creación/edición de citas.
+    *   `clientes.js`: Módulo para el CRUD de clientes.
+    *   `dashboard.js`: Módulo para los gráficos de resumen de gestión.
+    *   `disponibilidad.js`: Módulo para la vista de slots de tiempo.
+    *   `negocio.js`: Módulo para la configuración del negocio.
+    *   `perfil.js`: Módulo para el perfil del propietario.
+    *   `servicios.js`: Módulo para el CRUD de servicios.
+    *   `ui.js`: Módulo para componentes de la interfaz de usuario (navbar, reloj).
+
+*   **SPA del Cliente (`/js/client_modules/`)**
+    *   `app_client.js` (en raíz): Orquestador principal de la SPA.
+    *   `auth.js`: Módulo de autenticación y registro de clientes.
+    *   `booking.js`: Módulo para el proceso de agendamiento de citas.
+    *   `dashboard.js`: Módulo para la pantalla principal del cliente.
+    *   `history.js`: Módulo para ver el historial de citas.
+    *   `profile.js`: Módulo para que el cliente edite su perfil.
+    *   `ui.js`: Módulo para componentes de la interfaz de usuario del cliente.
+
+
+
 ---
 
 ## 4. Diagrama de Flujo de Aplicaciones

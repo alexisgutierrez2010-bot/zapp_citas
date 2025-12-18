@@ -14,7 +14,7 @@ if ($id_servicio <= 0) {
 }
 
 // 2. Obtener los datos actuales del servicio
-$sql = "SELECT * FROM j104_servicios WHERE id_servicio = ?";
+$sql = "SELECT *, DATE_FORMAT(fecha_registro, '%d/%m/%Y %H:%i') AS fecha_registro_formateada FROM j104_servicios WHERE id_servicio = ?";
 if ($stmt = $conn->prepare($sql)) {
     $stmt->bind_param("i", $id_servicio);
     $stmt->execute();
@@ -29,11 +29,11 @@ if ($stmt = $conn->prepare($sql)) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="<?php echo $lang; ?>">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo __('services_edit_title'); ?></title>
+    <title>Editar Servicio</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -44,39 +44,43 @@ if ($stmt = $conn->prepare($sql)) {
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
-                        <h3><?php echo __('services_editing'); ?>: <?php echo htmlspecialchars($servicio['nombre_servicio']); ?></h3>
+                        <h3>Editando Servicio: <?php echo htmlspecialchars($servicio['nombre_servicio']); ?></h3>
                     </div>
                     <div class="card-body">
                         <form action="servicios_actualizar.php" method="POST">
                             <input type="hidden" name="id_servicio" value="<?php echo $servicio['id_servicio']; ?>">
 
                             <div class="mb-3">
-                                <label for="nombre_servicio" class="form-label"><?php echo __('services_form_name'); ?></label>
+                                <label for="nombre_servicio" class="form-label">Nombre del Servicio</label>
                                 <input type="text" class="form-control" id="nombre_servicio" name="nombre_servicio" value="<?php echo htmlspecialchars($servicio['nombre_servicio']); ?>" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label"><?php echo __('services_form_duration'); ?></label>
+                                <label class="form-label">Duración</label>
                                 <div class="input-group">
                                     <input type="number" class="form-control" id="duracion_valor" name="duracion_valor" value="<?php echo htmlspecialchars($servicio['duracion_valor']); ?>" required>
                                     <select class="form-select" name="duracion_unidad">
-                                        <option value="Minutos" <?php echo ($servicio['duracion_unidad'] == 'Minutos') ? 'selected' : ''; ?>><?php echo __('duration_minutes'); ?></option>
-                                        <option value="Horas" <?php echo ($servicio['duracion_unidad'] == 'Horas') ? 'selected' : ''; ?>><?php echo __('duration_hours'); ?></option>
-                                        <option value="Dias" <?php echo ($servicio['duracion_unidad'] == 'Dias') ? 'selected' : ''; ?>><?php echo __('duration_days'); ?></option>
+                                        <option value="Minutos" <?php echo ($servicio['duracion_unidad'] == 'Minutos') ? 'selected' : ''; ?>>Minutos</option>
+                                        <option value="Horas" <?php echo ($servicio['duracion_unidad'] == 'Horas') ? 'selected' : ''; ?>>Horas</option>
+                                        <option value="Dias" <?php echo ($servicio['duracion_unidad'] == 'Dias') ? 'selected' : ''; ?>>Días</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label for="precio" class="form-label"><?php echo __('services_form_price'); ?></label>
+                                <label for="precio" class="form-label">Precio (opcional)</label>
                                 <input type="number" step="0.01" class="form-control" id="precio" name="precio" value="<?php echo htmlspecialchars($servicio['precio']); ?>">
                             </div>
                             <hr>
                             <div class="mb-3">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="activo" name="activo" value="1" <?php echo ($servicio['activo'] ?? 0) ? 'checked' : ''; ?>>
-                                    <label class="form-check-label" for="activo"><?php echo __('services_form_active'); ?></label>
+                                    <label class="form-check-label" for="activo">Servicio Activo</label>
                                 </div>
                             </div>
-                            <button type="submit" class="btn btn-success w-100"><?php echo __('services_form_update'); ?></button>
+                            <div class="mb-3">
+                                <label for="fecha_registro" class="form-label">Fecha de Registro</label>
+                                <input type="text" class="form-control" id="fecha_registro" value="<?php echo $servicio['fecha_registro_formateada'] ?? 'No registrada'; ?>" readonly>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100">Actualizar Servicio</button>
                         </form>
                     </div>
                 </div>

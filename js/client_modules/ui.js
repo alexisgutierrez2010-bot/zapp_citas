@@ -43,6 +43,9 @@ export async function updateNavbar(context) {
                         <li><a class="dropdown-item" href="#" data-action="logout">Cerrar Sesión</a></li>
                     </ul>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="ayuda_spa_client.php" target="_blank">❓ Ayuda</a>
+                </li>
             `;
         } catch (error) {
             console.error("Error updating navbar with business data:", error);
@@ -57,6 +60,8 @@ export async function updateNavbar(context) {
             ${genericTitle}
             <span class="ms-2 fw-normal text-white-50" style="font-size: 0.8em;">${genericSubtitle}</span>
         `;
+        // Añadir enlace de ayuda y volver al inicio para usuarios no logueados
+        navMenu.innerHTML = `<li class="nav-item"><a class="nav-link" href="ayuda_index.php" target="_blank">❓ Ayuda</a></li>`;
     }
 }
 

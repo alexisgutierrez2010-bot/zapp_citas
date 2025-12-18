@@ -26,7 +26,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
     $stmt_check->close();
 
-    $sql = "INSERT INTO j103_categorias (nombre_categoria, descripcion, activo) VALUES (?, ?, ?)";
+    $sql = "INSERT INTO j103_categorias (nombre_categoria, descripcion, activo, fecha_registro) VALUES (?, ?, ?, NOW())";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ssi", $nombre_categoria, $descripcion, $activo);
 

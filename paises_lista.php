@@ -12,11 +12,11 @@ $timezones = DateTimeZone::listIdentifiers(DateTimeZone::ALL);
 $paises_result = $conn->query("SELECT * FROM j110_paises ORDER BY nombre_pais ASC");
 ?>
 <!DOCTYPE html>
-<html lang="<?php echo $lang; ?>">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo __('locations_countries_title'); ?></title>
+    <title>Gestión de Países</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body style="background-color: <?php echo $daily_bg_color; ?>;">
@@ -27,7 +27,7 @@ $paises_result = $conn->query("SELECT * FROM j110_paises ORDER BY nombre_pais AS
             <!-- Formulario para agregar país -->
             <div class="col-md-4">
                 <div class="card">
-                    <div class="card-header"><h3><?php echo __('locations_register_country'); ?></h3></div>
+                    <div class="card-header"><h3>Registrar País</h3></div>
                     <div class="card-body">
                         <?php
                         if (isset($_GET['status']) || isset($_GET['message_key'])) {
@@ -36,7 +36,7 @@ $paises_result = $conn->query("SELECT * FROM j110_paises ORDER BY nombre_pais AS
                             $message = '';
 
                             if (!empty($message_key)) {
-                                $message = __($message_key);
+                                $message = htmlspecialchars($message_key);
                             } elseif ($status === 'success_create') {
                                 $message = __('create_success');
                             }
@@ -48,27 +48,27 @@ $paises_result = $conn->query("SELECT * FROM j110_paises ORDER BY nombre_pais AS
                         ?>
                         <form action="paises_crear.php" method="POST">
                             <div class="mb-3">
-                                <label for="nombre_pais" class="form-label"><?php echo __('locations_form_country_name'); ?></label>
+                                <label for="nombre_pais" class="form-label">Nombre del País</label>
                                 <input type="text" class="form-control" id="nombre_pais" name="nombre_pais" required>
                             </div>
                             <div class="mb-3">
-                                <label for="codigo_pais" class="form-label"><?php echo __('locations_form_country_code'); ?></label>
+                                <label for="codigo_pais" class="form-label">Código de País (2 letras)</label>
                                 <input type="text" class="form-control" id="codigo_pais" name="codigo_pais" maxlength="2" required>
                             </div>
                             <div class="mb-3">
-                                <label for="codigo_telefono" class="form-label"><?php echo __('locations_form_phone_code'); ?></label>
+                                <label for="codigo_telefono" class="form-label">Código Telefónico</label>
                                 <input type="text" class="form-control" id="codigo_telefono" name="codigo_telefono" required>
                             </div>
                             <div class="mb-3">
-                                <label for="timezone" class="form-label"><?php echo __('locations_form_timezone'); ?></label>
+                                <label for="timezone" class="form-label">Zona Horaria</label>
                                 <select class="form-select" id="timezone" name="timezone" required>
-                                    <option value=""><?php echo __('locations_form_select_timezone'); ?></option>
+                                    <option value="">Seleccione una zona horaria...</option>
                                     <?php foreach ($timezones as $tz): ?>
                                         <option value="<?php echo $tz; ?>"><?php echo htmlspecialchars($tz); ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <button type="submit" class="btn btn-primary w-100"><?php echo __('locations_form_save_country'); ?></button>
+                            <button type="submit" class="btn btn-primary w-100">Guardar País</button>
                         </form>
                     </div>
                 </div>
@@ -76,17 +76,17 @@ $paises_result = $conn->query("SELECT * FROM j110_paises ORDER BY nombre_pais AS
 
             <!-- Lista de países -->
             <div class="col-md-8">
-                <h3><?php echo __('locations_list_countries'); ?></h3>
+                <h3>Lista de Países</h3>
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
                         <thead class="table-dark">
                             <tr>
                                 <th>#</th>
-                                <th><?php echo __('locations_col_country'); ?></th>
-                                <th><?php echo __('locations_col_code'); ?></th>
-                                <th><?php echo __('locations_col_phone'); ?></th>
-                                <th><?php echo __('locations_col_timezone'); ?></th>
-                                <th><?php echo __('actions'); ?></th>
+                                <th>País</th>
+                                <th>Código</th>
+                                <th>Teléfono</th>
+                                <th>Zona Horaria</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -102,18 +102,18 @@ $paises_result = $conn->query("SELECT * FROM j110_paises ORDER BY nombre_pais AS
                                         <td><?php echo htmlspecialchars($pais['timezone']); ?></td>
                                         <td>
                                             <div class="btn-group">
-                                                <a href="estados_lista.php?id_pais=<?php echo $pais['id_pais']; ?>&lang=<?php echo $lang; ?>" class="btn btn-sm btn-info"><?php echo __('locations_action_states'); ?></a>
-                                                <a href="paises_editar.php?id=<?php echo $pais['id_pais']; ?>&lang=<?php echo $lang; ?>" class="btn btn-sm btn-warning"><?php echo __('edit'); ?></a>
-                                                <form action="paises_eliminar.php" method="POST" class="d-inline" onsubmit="return confirm('<?php echo __('locations_confirm_delete_country'); ?>');">
+                                                <a href="estados_lista.php?id_pais=<?php echo $pais['id_pais']; ?>" class="btn btn-sm btn-info">Estados</a>
+                                                <a href="paises_editar.php?id=<?php echo $pais['id_pais']; ?>" class="btn btn-sm btn-warning">Editar</a>
+                                                <form action="paises_eliminar.php" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que quieres eliminar este país? Se borrarán también sus estados asociados.');">
                                                     <input type="hidden" name="id_pais" value="<?php echo $pais['id_pais']; ?>">
-                                                    <button type="submit" class="btn btn-sm btn-danger"><?php echo __('delete'); ?></button>
+                                                    <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
                                                 </form>
                                             </div>
                                         </td>
                                     </tr>
                                 <?php endwhile;
                             else: ?>
-                                <tr><td colspan="6" class="text-center"><?php echo __('locations_no_countries'); ?></td></tr>
+                                <tr><td colspan="6" class="text-center">No hay países registrados.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

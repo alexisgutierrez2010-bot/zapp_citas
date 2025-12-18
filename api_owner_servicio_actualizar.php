@@ -4,7 +4,7 @@
 // Update :Dec-01-2025).
 session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
 require_once 'config.php';
-require_once 'audit_log.php'; // Reactivado
+require_once 'audit_log.php';
 
 header('Content-Type: application/json');
 

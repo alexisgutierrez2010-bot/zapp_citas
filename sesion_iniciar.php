@@ -12,26 +12,43 @@ if (isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true) {
     exit;
 }
 
-// Cargar sistema de internacionalización (i18n) DESPUÉS de la posible redirección.
-require_once __DIR__ . '/languages.php';
+// Eliminado sistema de internacionalización (i18n).
+// require_once __DIR__ . '/languages.php';
 
 // Si se recibe un mensaje de error desde procesar_login.php, se mostrará.
 $error_msg = "";
-if (isset($_GET['error_key'])) {
-    // Usamos la clave para obtener el mensaje traducido
-    $error_msg = __($_GET['error_key']);
-} elseif (isset($_GET['error'])) {
+if (isset($_GET['error'])) {
     $error_msg = htmlspecialchars($_GET['error']);
+} elseif (isset($_GET['error_key'])) {
+    $error_key = $_GET['error_key'];
+    // CORRECCIÓN: Mapear las claves de error a mensajes claros en español.
+    switch ($error_key) {
+        case 'login_error_session_expired':
+            $error_msg = 'Su sesión ha expirado por inactividad. Por favor, inicie sesión de nuevo.';
+            break;
+        case 'login_error_user_not_found':
+            $error_msg = 'El nombre de usuario no existe.';
+            break;
+        case 'login_error_invalid_password':
+            $error_msg = 'La contraseña es incorrecta.';
+            break;
+        case 'login_error_user_inactive':
+            $error_msg = 'Este usuario se encuentra inactivo.';
+            break;
+        default:
+            $error_msg = 'Ha ocurrido un error inesperado. Por favor, intente de nuevo.';
+            break;
+    }
 }
 
 ?>
 
 
 <!DOCTYPE html>
-<html lang="<?php echo $lang; ?>">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title><?php echo __('login_title'); ?></title>
+    <title>Iniciar Sesión</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -48,31 +65,16 @@ if (isset($_GET['error_key'])) {
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="index.php?lang=<?php echo $lang; ?>" style="padding-top: 0; padding-bottom: 0;">
+            <a class="navbar-brand d-flex align-items-center" href="index.php" style="padding-top: 0; padding-bottom: 0;">
                 <img src="logo_zapp_citas.png" alt="Logo ZApp Citas" style="height: 1.5em; margin-right: 10px; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.5));">
                 <span style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">
-                    <?php echo __('zapp_citas'); ?>
-                    <span class="ms-2 fw-normal text-white-50" style="font-size: 0.8em;"><?php echo __('login_app_admin'); ?></span>
+                    ZApp Citas
+                    <span class="ms-2 fw-normal text-white-50" style="font-size: 0.8em;">Panel de Administración</span>
                 </span>
             </a>
             <ul class="navbar-nav ms-auto">
-                <?php
-                    // Lógica para construir los enlaces del selector de idioma
-                    $queryParams = $_GET;
-                    $currentPage = basename($_SERVER['PHP_SELF']);
-
-                    $queryParams['lang'] = 'es';
-                    $es_link = $currentPage . '?' . http_build_query($queryParams);
-
-                    $queryParams['lang'] = 'en';
-                    $en_link = $currentPage . '?' . http_build_query($queryParams);
-                ?>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">🌐</a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
-                        <li><a class="dropdown-item <?php echo ($lang === 'es') ? 'active' : ''; ?>" href="<?php echo $es_link; ?>">Español</a></li>
-                        <li><a class="dropdown-item <?php echo ($lang === 'en') ? 'active' : ''; ?>" href="<?php echo $en_link; ?>">English</a></li>
-                    </ul>
+                <li class="nav-item">
+                    <a class="nav-link" href="ayuda_zapp_citas.php" target="_blank">❓ Ayuda</a>
                 </li>
             </ul>
         </div>
@@ -80,8 +82,8 @@ if (isset($_GET['error_key'])) {
 
     <div class="container main-container d-flex justify-content-center align-items-center">
         <div class="card" style="width: 22rem;">
-            <div class="card-header text-center">
-                <h3><?php echo __('login_title'); ?></h3>
+            <div class="card-header text-center bg-primary text-white">
+                <h3>Acceso al Panel Administrador</h3>
             </div>
             <div class="card-body">
                 <?php 
@@ -92,11 +94,11 @@ if (isset($_GET['error_key'])) {
                 ?>
                 <form action="procesar_login.php" method="post">
                     <div class="mb-3">
-                        <label class="form-label"><?php echo __('login_user'); ?></label>
+                        <label class="form-label">Usuario</label>
                         <input type="text" name="nombre_usuario" class="form-control" autocomplete="username">
                     </div>    
                     <div class="mb-3">
-                        <label class="form-label"><?php echo __('login_password'); ?></label>
+                        <label class="form-label">Contraseña</label>
                         <input type="password" name="password" class="form-control" autocomplete="current-password">
                     </div>
                     <!-- SECCIÓN DE CAPTCHA DESACTIVADA PARA DESARROLLO -->
@@ -111,14 +113,14 @@ if (isset($_GET['error_key'])) {
                     </div>
                     -->
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary"><?php echo __('login_button'); ?></button>
+                        <button type="submit" class="btn btn-primary">Entrar</button>
                     </div>
                     <hr>
                     <div class="text-center mt-3">
-                        <a href="olvide_clave.php?lang=<?php echo $lang; ?>"><?php echo __('login_forgot_password'); ?></a>
+                        <a href="olvide_clave.php">¿Olvidó su contraseña?</a>
                     </div>
                     <div class="text-center mt-2">
-                        <a href="index.php?lang=<?php echo $lang; ?>" class="text-muted"><small><?php echo __('login_back_to_home'); ?></small></a>
+                        <a href="index.php" class="text-muted"><small>Volver al Inicio</small></a>
                     </div>
                 </form>
             </div>

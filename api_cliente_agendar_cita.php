@@ -1,20 +1,28 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-27-2025).
-session_start();
-require_once 'api_cliente_session_check.php'; // 1. Guardián de sesión y timeout
-header('Content-Type: application/json'); // 2. Establecer cabecera
-require_once 'config.php'; // 3. Configuración de BD
+// Update :Dec-14-2025). VERSIÓN UNIFICADA Y CORREGIDA
+
+session_start(); // Iniciar la sesión para poder verificar al cliente.
+
+header('Content-Type: application/json');
+require_once 'config.php';
 require_once 'audit_log.php';
 require 'vendor/autoload.php'; // Para PHPMailer
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+// Guardián de sesión: Verificar que el cliente haya iniciado sesión.
+if (!isset($_SESSION['client_id'])) {
+    http_response_code(401); // Unauthorized
+    echo json_encode(['error' => 'Acceso no autorizado. Por favor, inicie sesión de nuevo.']);
+    exit;
+}
 
 $input = json_decode(file_get_contents('php://input'), true);
 
+// Validar datos de entrada
 $id_cliente = (int)($input['id_cliente'] ?? 0);
 $id_negocio = (int)($input['id_negocio'] ?? 0);
 $id_servicio = (int)($input['id_servicio'] ?? 0);
@@ -27,8 +35,12 @@ if ($id_cliente <= 0 || $id_negocio <= 0 || $id_servicio <= 0 || empty($fecha_ho
     exit;
 }
 
-// Seguridad: Podríamos verificar si el cliente que agenda es el que está en sesión, si tuviéramos sesión de cliente.
-// Por ahora, confiamos en el ID enviado desde el frontend.
+// Verificación de seguridad: el ID del cliente en la sesión debe coincidir con el que se envía.
+if ($id_cliente !== (int)$_SESSION['client_id']) {
+    http_response_code(403); // Forbidden
+    echo json_encode(['error' => 'Intento de agendar cita para otro cliente.']);
+    exit;
+}
 
 // Obtener datos del servicio, cliente y negocio para la cita y el correo
 $sql_servicio = "SELECT duracion_valor, duracion_unidad FROM j104_servicios WHERE id_servicio = ? AND id_negocio = ? AND activo = 1";
@@ -41,7 +53,7 @@ $stmt_servicio->close();
 
 if (!$servicio) {
     http_response_code(404);
-    echo json_encode(['error' => 'Servicio no encontrado o no pertenece a este negocio.']);
+    echo json_encode(['error' => 'El servicio seleccionado no está disponible o no pertenece a este negocio.']);
     exit;
 }
 
@@ -58,13 +70,13 @@ $fecha_hora_fin->add(new DateInterval($interval_spec));
 // Si la descripción viene vacía, ponemos un texto por defecto.
 $descripcion_final = !empty($descripcion_trabajo) ? $descripcion_trabajo : 'Cita agendada por el cliente.';
 
-$sql = "INSERT INTO j108_citas (id_negocio, id_cliente, id_servicio, fecha_hora_inicio, fecha_hora_fin, estado_cita, descripcion_trabajo) VALUES (?, ?, ?, ?, ?, 'Pendiente', ?)";
+$sql = "INSERT INTO j108_citas (id_negocio, id_cliente, id_servicio, fecha_hora_inicio, fecha_hora_fin, estado_cita, descripcion_trabajo, tipo_cita) VALUES (?, ?, ?, ?, ?, 'Pendiente', ?, 'Servicio')";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("iiisss", $id_negocio, $id_cliente, $id_servicio, $fecha_hora_inicio->format('Y-m-d H:i:s'), $fecha_hora_fin->format('Y-m-d H:i:s'), $descripcion_final);
 
 if ($stmt->execute()) {
     $id_nueva_cita = $stmt->insert_id;
-    registrar_auditoria($conn, null, $id_negocio, 'CLIENT_SELF_BOOKING', "Cliente ID {$id_cliente} agendó nueva cita ID {$id_nueva_cita}.");
+    registrar_auditoria($conn, $id_cliente, $id_negocio, 'CLIENT_SELF_BOOKING', "Cliente ID {$id_cliente} agendó nueva cita ID {$id_nueva_cita}.");
 
     // --- INICIO: LÓGICA DE ENVÍO DE CORREO REACTIVADA Y MEJORADA ---
     try {
@@ -74,7 +86,7 @@ if ($stmt->execute()) {
                                 n.nombre_negocio, n.email AS email_negocio,
                                 s.nombre_servicio
                              FROM j106_clientes c
-                             JOIN j102_negocios n ON c.id_negocio = n.id_negocio
+                             JOIN j102_negocios n ON n.id_negocio = ?
                              JOIN j104_servicios s ON n.id_negocio = s.id_negocio
                              WHERE c.id_cliente = ? AND n.id_negocio = ? AND s.id_servicio = ?";
         $stmt_datos = $conn->prepare($sql_datos_correo);

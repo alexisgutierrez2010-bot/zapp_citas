@@ -24,7 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $notas = trim($_POST['notas_adicionales']);
     $in_sms = isset($_POST['in_sms']) ? 1 : 0;
     $in_email = isset($_POST['in_email']) ? 1 : 0;
-    $in_whatsapp = isset($_POST['in_whatsapp']) ? 1 : 0;
+    $in_whatsapp = isset($_POST['in_whatsapp']) ? 1 : 0; // Ya estaba, se confirma.
     $celular = ''; // Inicializar
 
     // --- NUEVA VALIDACIÓN ---

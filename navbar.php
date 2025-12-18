@@ -6,9 +6,9 @@
 ?>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container-fluid">
-    <a class="navbar-brand d-flex align-items-center" href="dashboard.php?lang=<?php echo $lang; ?>" style="padding-top: 0; padding-bottom: 0;">
+    <a class="navbar-brand d-flex align-items-center" href="dashboard.php" style="padding-top: 0; padding-bottom: 0;">
         <img src="logo_zapp_citas.png" alt="Logo ZApp Citas" style="height: 1.5em; margin-right: 10px; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.5));">
-        <span style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"><?php echo __('zapp_citas'); ?></span>
+        <span style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">ZApp Citas</span>
     </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
@@ -17,34 +17,31 @@
       <ul class="navbar-nav">
         <?php if (isset($rol_session)): ?>
             <li class="nav-item">
-              <a class="nav-link" href="negocios_configuracion.php?lang=<?php echo $lang; ?>"><?php echo __('businesses'); ?></a>
+              <a class="nav-link" href="negocios_configuracion.php">Negocios</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="servicios_lista.php?lang=<?php echo $lang; ?>"><?php echo __('services'); ?></a>
+              <a class="nav-link" href="servicios_lista.php">Servicios</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="clientes_lista.php?lang=<?php echo $lang; ?>"><?php echo __('clients'); ?></a>
+              <a class="nav-link" href="clientes_lista.php">Clientes</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="citas_lista.php?lang=<?php echo $lang; ?>"><?php echo __('appointments'); ?></a>
+              <a class="nav-link" href="citas_lista.php">Citas</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="calendario_ver.php?lang=<?php echo $lang; ?>"><?php echo __('calendar'); ?></a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="citas_cerrar_vencidas.php?lang=<?php echo $lang; ?>"><?php echo __('close_appointments'); ?></a>
+              <a class="nav-link" href="calendario_ver.php">Calendario</a>
             </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownConfig" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                <?php echo __('configuration'); ?>
+                Configuración
               </a>
               <ul class="dropdown-menu" aria-labelledby="navbarDropdownConfig">
-                <li><a class="dropdown-item" href="usuarios_lista.php?lang=<?php echo $lang; ?>"><?php echo __('users'); ?></a></li>
-                <li><a class="dropdown-item" href="categorias_lista.php?lang=<?php echo $lang; ?>"><?php echo __('categories'); ?></a></li>
-                <li><a class="dropdown-item" href="paises_lista.php?lang=<?php echo $lang; ?>"><?php echo __('locations'); ?></a></li>
+                <li><a class="dropdown-item" href="usuarios_lista.php">Usuarios</a></li>
+                <li><a class="dropdown-item" href="categorias_lista.php">Categorías</a></li>
+                <li><a class="dropdown-item" href="paises_lista.php">Localizaciones</a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="auditoria_reporte.php?lang=<?php echo $lang; ?>"><?php echo __('audit'); ?></a></li>
-                <li><a class="dropdown-item" href="seleccionar_resumen.php?lang=<?php echo $lang; ?>"><?php echo __('documents'); ?></a></li>
+                <li><a class="dropdown-item" href="auditoria_reporte.php">Auditoría</a></li>
+                <li><a class="dropdown-item" href="seleccionar_resumen.php">Documentos</a></li>
               </ul>
             </li>
       <?php endif; ?>
@@ -52,34 +49,14 @@
       <!-- Opciones de usuario a la derecha -->
       <?php if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true): ?>
         <ul class="navbar-nav ms-auto">
-            <?php
-                // Lógica para construir los enlaces del selector de idioma
-                $queryParams = $_GET;
-                $currentPage = basename($_SERVER['PHP_SELF']);
-
-                $queryParams['lang'] = 'es';
-                $es_link = $currentPage . '?' . http_build_query($queryParams);
-
-                $queryParams['lang'] = 'en';
-                $en_link = $currentPage . '?' . http_build_query($queryParams);
-            ?>
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    🌐 Idioma
-                </a>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
-                    <li><a class="dropdown-item <?php echo ($lang === 'es') ? 'active' : ''; ?>" href="<?php echo $es_link; ?>">Español</a></li>
-                    <li><a class="dropdown-item <?php echo ($lang === 'en') ? 'active' : ''; ?>" href="<?php echo $en_link; ?>">English</a></li>
-                </ul>
+            <li class="nav-item">
+                <a class="nav-link" href="ayuda_zapp_citas.php" target="_blank">❓ Ayuda</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="ayuda_zapp_citas.php?lang=<?php echo $lang; ?>" target="_blank">❓ <?php echo __('help'); ?></a>
+                <a class="nav-link" href="perfil_ver.php">👤 <?php echo htmlspecialchars($_SESSION['nombre_usuario']); ?> (Mi Perfil)</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="perfil_ver.php?lang=<?php echo $lang; ?>">👤 <?php echo htmlspecialchars($_SESSION['nombre_usuario']); ?> (<?php echo __('my_profile'); ?>)</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="logout.php"><?php echo __('logout'); ?></a>
+                <a class="nav-link" href="logout.php">Salir</a>
             </li>
         </ul>
       <?php endif; ?>

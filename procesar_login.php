@@ -49,13 +49,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit();
             } else {
                 // Contraseña incorrecta
-                header("Location: sesion_iniciar.php?error_key=login_error_password");
+                header("Location: sesion_iniciar.php?error_key=login_error_invalid_password");
                 exit();
             }
         }
     }
     // Si el bucle termina sin un login exitoso, significa que el usuario no fue encontrado.
-    header("Location: sesion_iniciar.php?error_key=login_error_not_found");
+    header("Location: sesion_iniciar.php?error_key=login_error_user_not_found");
     exit();
 }
 ?>

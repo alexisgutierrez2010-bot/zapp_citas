@@ -34,10 +34,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // --- NUEVA VALIDACIÓN ---
         if (!filter_var($email_negocio, FILTER_VALIDATE_EMAIL)) {
-            throw new Exception("error_invalid_email");
+            throw new Exception("Email de negocio inválido.");
         }
         if (!filter_var($admin_email, FILTER_VALIDATE_EMAIL)) {
-            throw new Exception("error_invalid_email");
+            throw new Exception("Email de propietario inválido.");
         }
         // No hay teléfono en el formulario de creación, se valida en la actualización.
 
@@ -48,7 +48,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt_check_negocio->execute();
         $stmt_check_negocio->store_result();
         if ($stmt_check_negocio->num_rows > 0) {
-            throw new Exception("error_duplicate_entry");
+            throw new Exception("El nombre del negocio o el email ya existen.");
         }
         $stmt_check_negocio->close();
 
@@ -78,7 +78,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt_check_user->execute();
         $stmt_check_user->store_result();
         if ($stmt_check_user->num_rows > 0) {
-            throw new Exception("error_duplicate_entry");
+            throw new Exception("El nombre de usuario o email del propietario ya existen.");
         }
         $stmt_check_user->close();
 
@@ -98,7 +98,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // 6. Si todo fue bien, confirmar la transacción
         $conn->commit();
         registrar_auditoria($conn, $_SESSION['id_usuario'], $id_nuevo_negocio, 'CREATE_BUSINESS', "Se creó el negocio '{$nombre_negocio}' (ID: {$id_nuevo_negocio}) y su usuario Propietario '{$admin_user}'.");
-        header("Location: negocios_configuracion.php?status=success&message_key=create_success");
+        header("Location: negocios_configuracion.php?status=success&message_key=" . urlencode("Negocio creado con éxito."));
 
     } catch (Exception $e) {
         $conn->rollback();

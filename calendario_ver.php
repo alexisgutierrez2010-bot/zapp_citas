@@ -3,11 +3,10 @@
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
 // Update :Dec-05-2025). Aplicada la internacionalización (i18n).
 require_once 'auth_check.php'; // Inicia la sesión, carga el idioma y verifica el login
-?><!DOCTYPE html>
-<html lang='<?php echo $lang; ?>'>
+?><!DOCTYPE html><html lang='es'>
 <head>
     <meta charset='utf-8' />
-    <title><?php echo __('calendar_title'); ?></title>
+    <title>Calendario de Citas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FullCalendar CSS y JS desde CDN -->
     <!-- SOLUCIÓN: Cargar los locales de FullCalendar para que se traduzca la interfaz del calendario -->
@@ -56,7 +55,7 @@ require_once 'auth_check.php'; // Inicia la sesión, carga el idioma y verifica 
         const calendar = new FullCalendar.Calendar(calendarEl, {
           themeSystem: 'bootstrap5',
           initialView: 'timeGridWeek', // Vista inicial: semana
-          locale: '<?php echo $lang; ?>', // Poner el calendario en el idioma seleccionado
+          locale: 'es', // Poner el calendario en español
           headerToolbar: {
             left: 'prev,next today',
             center: 'title',
@@ -79,7 +78,7 @@ require_once 'auth_check.php'; // Inicia la sesión, carga el idioma y verifica 
 
           // Hacer que los eventos sean clickables para ir a la página de edición
           eventClick: function(info) {
-            window.location.href = 'citas_editar.php?id=' + info.event.id + '&lang=<?php echo $lang; ?>';
+            window.location.href = 'citas_editar.php?id=' + info.event.id;
           }
         });
         calendar.render();

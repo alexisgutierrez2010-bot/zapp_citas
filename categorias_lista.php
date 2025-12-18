@@ -6,17 +6,17 @@ require_once 'auth_check.php';
 require_once 'config.php';
 
 $categorias = [];
-$result = $conn->query("SELECT * FROM j103_categorias ORDER BY nombre_categoria ASC");
+$result = $conn->query("SELECT *, DATE_FORMAT(fecha_registro, '%d/%m/%Y') AS fecha_registro_formateada FROM j103_categorias ORDER BY nombre_categoria ASC");
 while ($row = $result->fetch_assoc()) {
     $categorias[] = $row;
 }
 ?>
 <!DOCTYPE html>
-<html lang="<?php echo $lang; ?>">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo __('categories_title'); ?></title>
+    <title>Gestión de Categorías</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -24,8 +24,8 @@ while ($row = $result->fetch_assoc()) {
 
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h1><?php echo __('categories_list_title'); ?></h1>
-            <a href="categoria_crear.php?lang=<?php echo $lang; ?>" class="btn btn-primary"><?php echo __('categories_create_new'); ?></a>
+            <h1>Gestión de Categorías</h1>
+            <a href="categoria_crear.php" class="btn btn-primary">Crear Nueva Categoría</a>
         </div>
 
         <?php
@@ -35,9 +35,9 @@ while ($row = $result->fetch_assoc()) {
             $message = '';
 
             if (!empty($message_key)) {
-                $message = __($message_key);
+                $message = htmlspecialchars($message_key);
             } elseif ($status === 'success') {
-                $message = __('operation_success');
+                $message = 'Operación realizada con éxito.';
             }
             if (!empty($message)) {
                 $alert_type = strpos($status, 'error') === false ? 'success' : 'danger';
@@ -52,10 +52,11 @@ while ($row = $result->fetch_assoc()) {
                     <thead class="table-dark">
                         <tr>
                             <th>ID</th>
-                            <th><?php echo __('categories_col_name'); ?></th>
-                            <th><?php echo __('categories_col_desc'); ?></th>
-                            <th><?php echo __('status'); ?></th>
-                            <th><?php echo __('actions'); ?></th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Estado</th>
+                            <th>Registro</th>
+                            <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -66,14 +67,16 @@ while ($row = $result->fetch_assoc()) {
                             <td><?php echo htmlspecialchars($categoria['descripcion']); ?></td>
                             <td>
                                 <span class="badge <?php echo $categoria['activo'] ? 'bg-success' : 'bg-secondary'; ?>">
-                                    <?php echo $categoria['activo'] ? __('active') : __('inactive'); ?>
+                                    <?php echo $categoria['activo'] ? 'Activa' : 'Inactiva'; ?>
                                 </span>
                             </td>
+                            <td><?php echo $categoria['fecha_registro_formateada'] ?? 'N/A'; ?></td>
+                            </td>
                             <td>
-                                <a href="categoria_editar.php?id=<?php echo $categoria['id_categoria']; ?>&lang=<?php echo $lang; ?>" class="btn btn-sm btn-warning"><?php echo __('edit'); ?></a>
-                                <form action="categoria_eliminar.php" method="POST" class="d-inline" onsubmit="return confirm('<?php echo __('categories_confirm_delete'); ?>');">
+                                <a href="categoria_editar.php?id=<?php echo $categoria['id_categoria']; ?>" class="btn btn-sm btn-warning">Editar</a>
+                                <form action="categoria_eliminar.php" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que quieres eliminar esta categoría?');">
                                     <input type="hidden" name="id_categoria" value="<?php echo $categoria['id_categoria']; ?>">
-                                    <button type="submit" class="btn btn-sm btn-danger"><?php echo __('delete'); ?></button>
+                                    <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
                                 </form>
                             </td>
                         </tr>

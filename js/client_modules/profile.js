@@ -116,12 +116,6 @@ export async function renderProfileView(context) {
                                 Deseo recibir notificaciones y recordatorios por SMS (pueden aplicarse cargos).
                             </label>
                         </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="in_whatsapp" ${profileData.in_whatsapp == 1 ? 'checked' : ''}>
-                            <label class="form-check-label" for="in_whatsapp">
-                                Deseo recibir notificaciones y recordatorios por WhatsApp.
-                            </label>
-                        </div>
                     </div>
                 </div>
 

@@ -39,8 +39,7 @@ A continuación, se proyecta el tiempo necesario para completar el proyecto y su
 *   **Tareas:**
     1.  Reestructurar el código en módulos (similar a `/js/modules/`).
     2.  Mejorar la gestión de estado y el `context` de la aplicación.
-    3.  Implementar un borrado lógico (cancelación de citas) en lugar de físico.
-    4.  Refinar la interfaz de usuario para una mayor consistencia visual.
+    3.  Refinar la interfaz de usuario para una mayor consistencia visual.
 *   **Estimación:** **16 - 24 horas** (2-3 días de trabajo enfocado).
 
 ### Fase 2: Pruebas Finales y Despliegue en Hosting

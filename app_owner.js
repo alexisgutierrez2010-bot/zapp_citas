@@ -1,16 +1,16 @@
 // Módulo principal (Cerebro) de la SPA del Propietario
 
-import { renderLoginView, handleLogout } from './js/modules/auth.js';
-import { renderAgendaView } from './js/modules/agenda.js';
-import { renderCalendarioView } from './js/modules/calendario.js';
-import { renderDisponibilidadView } from './js/modules/disponibilidad.js';
-import { renderClientesView } from './js/modules/clientes.js';
-import { renderServiciosView } from './js/modules/servicios.js';
-import { renderNegocioView } from './js/modules/negocio.js';
-import { renderPerfilView } from './js/modules/perfil.js';
-import { renderCrearCitaView, renderEditarCitaView } from './js/modules/citas.js';
-import { renderDashboardView } from './js/modules/dashboard.js'; // <-- AÑADIDO: Importar la nueva vista
-import { updateNavbar, setActiveNavLink } from './js/modules/ui.js';
+import { renderLoginView, handleLogout } from './js/owner_modules/auth.js';
+import { renderAgendaView } from './js/owner_modules/agenda.js';
+import { renderCalendarioView } from './js/owner_modules/calendario.js';
+import { renderDisponibilidadView } from './js/owner_modules/disponibilidad.js';
+import { renderClientesView } from './js/owner_modules/clientes.js';
+import { renderServiciosView } from './js/owner_modules/servicios.js';
+import { renderNegocioView } from './js/owner_modules/negocio.js';
+import { renderPerfilView } from './js/owner_modules/perfil.js';
+import { renderCrearCitaView, renderEditarCitaView } from './js/owner_modules/citas.js';
+import { renderDashboardView } from './js/owner_modules/dashboard.js';
+import { updateNavbar, setActiveNavLink } from './js/owner_modules/ui.js';
 
 document.addEventListener('DOMContentLoaded', async function() {
 

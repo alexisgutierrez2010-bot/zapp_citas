@@ -19,11 +19,11 @@ $email_negocio = $config['email'] ?? '';
 // La imagen de fondo ahora se carga a través de un script dedicado
 ?>
 <!DOCTYPE html>
-<html lang="<?php echo $lang; ?>">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo __('welcome'); ?> a <?php echo htmlspecialchars($nombre_negocio); ?></title>
+    <title>Bienvenido a <?php echo htmlspecialchars($nombre_negocio); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
@@ -32,7 +32,7 @@ $email_negocio = $config['email'] ?? '';
             margin: 0;
         }
         body {
-            background-image: linear-gradient(to right, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.4)), url('get_image.php');
+            background-image: linear-gradient(to right, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.4)), url('get_image.php?id=<?php echo $id_negocio_session; ?>');
             background-position: center;
             background-repeat: no-repeat;
             background-size: cover;
@@ -67,24 +67,24 @@ $email_negocio = $config['email'] ?? '';
                 <div class="time display-4" id="dashboard-time"><?php echo date('h:i:s A'); ?></div>
             </div>
 
-            <h1 class="display-3 fw-bold"><?php echo __('dashboard_welcome_to'); ?> <?php echo htmlspecialchars($nombre_negocio); ?></h1>
-            <p class="lead"><?php echo __('dashboard_subtitle'); ?></p>
+            <h1 class="display-3 fw-bold">Bienvenido a <?php echo htmlspecialchars($nombre_negocio); ?></h1>
+            <p class="lead">Su asistente personal para la gestión de citas.</p>
         </div>
 
         <div class="row mt-5 g-4 justify-content-center">
             <div class="col-md-4">
-                <a href="citas_lista.php?lang=<?php echo $lang; ?>" class="text-decoration-none">
-                    <div class="card action-card text-center text-white h-100"><div class="card-body"><i class="bi bi-calendar-plus fs-1"></i><h4 class="card-title mt-2"><?php echo __('dashboard_card_schedule'); ?></h4></div></div>
+                <a href="citas_lista.php" class="text-decoration-none">
+                    <div class="card action-card text-center text-white h-100"><div class="card-body"><i class="bi bi-calendar-plus fs-1"></i><h4 class="card-title mt-2">Agendar Cita</h4></div></div>
                 </a>
             </div>
             <div class="col-md-4">
-                <a href="calendario_ver.php?lang=<?php echo $lang; ?>" class="text-decoration-none">
-                    <div class="card action-card text-center text-white h-100"><div class="card-body"><i class="bi bi-calendar-week fs-1"></i><h4 class="card-title mt-2"><?php echo __('dashboard_card_calendar'); ?></h4></div></div>
+                <a href="calendario_ver.php" class="text-decoration-none">
+                    <div class="card action-card text-center text-white h-100"><div class="card-body"><i class="bi bi-calendar-week fs-1"></i><h4 class="card-title mt-2">Ver Calendario</h4></div></div>
                 </a>
             </div>
             <div class="col-md-4">
-                <a href="clientes_lista.php?lang=<?php echo $lang; ?>" class="text-decoration-none">
-                    <div class="card action-card text-center text-white h-100"><div class="card-body"><i class="bi bi-people-fill fs-1"></i><h4 class="card-title mt-2"><?php echo __('dashboard_card_clients'); ?></h4></div></div>
+                <a href="clientes_lista.php" class="text-decoration-none">
+                    <div class="card action-card text-center text-white h-100"><div class="card-body"><i class="bi bi-people-fill fs-1"></i><h4 class="card-title mt-2">Gestionar Clientes</h4></div></div>
                 </a>
             </div>
         </div>

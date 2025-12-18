@@ -20,6 +20,12 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            /* MEJORA: El fondo se cargará dinámicamente con JS */
+            background-color: #f4f7f6;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+            transition: background-image 0.5s ease-in-out;
         }
         /* Estilos para el reloj responsivo en la barra de navegación */
         #owner-clock {

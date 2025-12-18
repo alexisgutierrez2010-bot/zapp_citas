@@ -5,9 +5,13 @@
 require_once 'auth_check.php'; // Necesitamos la sesión para saber qué imagen mostrar
 require_once 'config.php';
 
+// CORRECCIÓN: Determinar qué ID de negocio usar. Priorizar el parámetro GET.
+// Esto permite que el script muestre la imagen de CUALQUIER negocio, no solo el de la sesión.
+$id_negocio_a_mostrar = isset($_GET['id']) ? (int)$_GET['id'] : $id_negocio_session;
+
 // Obtener la imagen de la base de datos
 $stmt = $conn->prepare("SELECT background_image_data, background_image_type FROM j102_negocios WHERE id_negocio = ?");
-$stmt->bind_param("i", $id_negocio_session);
+$stmt->bind_param("i", $id_negocio_a_mostrar);
 $stmt->execute();
 $result = $stmt->get_result();
 

@@ -27,7 +27,7 @@ export async function renderLoginView(context) {
             <div class="row justify-content-center">
                 <div class="col-md-5 col-lg-4">
                     <div class="card">
-                        <div class="card-header text-center bg-primary text-white"><h3>Bienvenido</h3></div>
+                        <div class="card-header text-center bg-primary text-white"><h3>Acceso de Cliente</h3></div>
                         <div class="card-body">
                             <div id="error-container"></div>
                             <form id="login-form">
@@ -52,6 +52,10 @@ export async function renderLoginView(context) {
                                 </div>
                                 <div class="d-grid">
                                     <button type="submit" class="btn btn-primary">Ingresar</button>
+                                </div>
+                                <hr>
+                                <div class="text-center mt-2">
+                                    <a href="index.php" class="text-muted"><small>Volver al Inicio</small></a>
                                 </div>
                             </form>
                         </div>
@@ -235,10 +239,6 @@ export async function renderRegistroView(context, params) {
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="in_sms">
                                         <label class="form-check-label" for="in_sms">Recibir notificaciones por SMS.</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="in_whatsapp">
-                                        <label class="form-check-label" for="in_whatsapp">Recibir notificaciones por WhatsApp.</label>
                                     </div>
                                 </div>
 

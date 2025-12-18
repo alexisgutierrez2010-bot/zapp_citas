@@ -46,7 +46,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // 4. Encriptar contraseña y guardar en la base de datos
     $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
-    $sql = "INSERT INTO j100_usuarios (nombre_usuario, correo_electronico, password_hash, rol, id_negocio, activo) VALUES (?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO j100_usuarios (nombre_usuario, correo_electronico, password_hash, rol, id_negocio, activo, fecha_registro) VALUES (?, ?, ?, ?, ?, ?, NOW())";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("ssssii", $nombre_usuario, $correo_electronico, $password_hash, $rol, $id_negocio, $activo);
 

@@ -36,7 +36,7 @@ if (empty($nombre_servicio) || $duracion_valor <= 0) {
     exit;
 }
 
-$sql = "INSERT INTO j104_servicios (id_negocio, nombre_servicio, duracion_valor, duracion_unidad, precio, activo) VALUES (?, ?, ?, ?, ?, TRUE)";
+$sql = "INSERT INTO j104_servicios (id_negocio, nombre_servicio, duracion_valor, duracion_unidad, precio, activo, fecha_registro) VALUES (?, ?, ?, ?, ?, TRUE, NOW())";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("isiss", $id_negocio_session, $nombre_servicio, $duracion_valor, $duracion_unidad, $precio);
 

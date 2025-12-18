@@ -21,11 +21,11 @@ while ($row = $configs_result->fetch_assoc()) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="<?php echo $lang; ?>">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo __('users_title'); ?></title>
+    <title>Gestión de Usuarios</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body style="background-color: <?php echo $daily_bg_color; ?>;">
@@ -35,7 +35,7 @@ while ($row = $configs_result->fetch_assoc()) {
         <div class="row">
             <div class="col-md-4">
                 <div class="card">
-                    <div class="card-header"><h3><?php echo __('users_register_new'); ?></h3></div>
+                    <div class="card-header"><h3>Registrar Nuevo Usuario</h3></div>
                     <div class="card-body">
                         <?php
                         if (isset($_GET['status']) || isset($_GET['message_key'])) {
@@ -44,11 +44,11 @@ while ($row = $configs_result->fetch_assoc()) {
                             $message = '';
 
                             if (!empty($message_key)) {
-                                $message = __($message_key);
+                                $message = htmlspecialchars($message_key);
                             } elseif ($status === 'success_create') {
-                                $message = __('create_success');
+                                $message = 'Usuario creado con éxito.';
                             } elseif ($status === 'success_deactivate') {
-                                $message = __('deactivate_success');
+                                $message = 'Usuario desactivado con éxito.';
                             }
                             if (!empty($message)) {
                                 $alert_type = strpos($status, 'error') === false ? 'success' : 'danger';
@@ -58,25 +58,25 @@ while ($row = $configs_result->fetch_assoc()) {
                         ?>
                         <form action="usuarios_crear.php" method="POST">
                             <div class="mb-3">
-                                <label for="nombre_usuario" class="form-label"><?php echo __('users_form_username'); ?></label>
+                                <label for="nombre_usuario" class="form-label">Nombre de Usuario</label>
                                 <input type="text" class="form-control" id="nombre_usuario" name="nombre_usuario" required>
                             </div>
                             <div class="mb-3">
-                                <label for="correo_electronico" class="form-label"><?php echo __('users_form_email'); ?></label>
+                                <label for="correo_electronico" class="form-label">Correo Electrónico</label>
                                 <input type="email" class="form-control" id="correo_electronico" name="correo_electronico" required>
                             </div>
                             <div class="mb-3">
-                                <label for="password" class="form-label"><?php echo __('users_form_password'); ?></label>
+                                <label for="password" class="form-label">Contraseña</label>
                                 <input type="password" class="form-control" id="password" name="password" required>
                             </div>
                             <div class="mb-3">
-                                <label for="rol" class="form-label"><?php echo __('users_form_role'); ?></label>
+                                <label for="rol" class="form-label">Rol</label>
                                 <select class="form-select" id="rol" name="rol" required>
-                                    <option value="Propietario" selected><?php echo __('users_role_owner'); ?></option>
+                                    <option value="Propietario" selected>Propietario</option>
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label for="id_negocio" class="form-label"><?php echo __('users_form_business'); ?></label>
+                                <label for="id_negocio" class="form-label">Negocio Asignado</label>
                                 <select class="form-select" id="id_negocio" name="id_negocio" required>
                                     <?php foreach ($configs_list as $config_item): ?>
                                         <option value="<?php echo $config_item['id_negocio']; ?>"><?php echo htmlspecialchars($config_item['nombre_negocio']); ?></option>
@@ -85,31 +85,32 @@ while ($row = $configs_result->fetch_assoc()) {
                             </div>
                             <div class="form-check form-switch mb-3">
                                 <input class="form-check-input" type="checkbox" id="activo_crear" name="activo" value="1" checked>
-                                <label class="form-check-label" for="activo_crear"><?php echo __('users_form_active'); ?></label>
+                                <label class="form-check-label" for="activo_crear">Usuario Activo</label>
                             </div>
-                            <button type="submit" class="btn btn-primary w-100 mt-2"><?php echo __('users_form_save'); ?></button>
+                            <button type="submit" class="btn btn-primary w-100 mt-2">Guardar Usuario</button>
                         </form>
                     </div>
                 </div>
             </div>
             <div class="col-md-8">
-                <h3><?php echo __('users_list_title'); ?></h3>
+                <h3>Lista de Usuarios</h3>
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
                         <thead class="table-dark">
                             <tr>
                                 <th>#</th>
-                                <th><?php echo __('users_col_user'); ?></th>
-                                <th><?php echo __('clients_form_email'); ?></th>
-                                <th><?php echo __('users_form_role'); ?></th>
-                                <th><?php echo __('users_col_business'); ?></th>
-                                <th><?php echo __('status'); ?></th>
-                                <th><?php echo __('actions'); ?></th>
+                                <th>Usuario</th>
+                                <th>Email</th>
+                                <th>Rol</th>
+                                <th>Negocio</th>
+                                <th>Estado</th>
+                                <th>Fecha Registro</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php
-                            $sql = "SELECT u.id_usuario, u.nombre_usuario, u.correo_electronico, u.rol, u.activo, n.nombre_negocio 
+                            $sql = "SELECT u.id_usuario, u.nombre_usuario, u.correo_electronico, u.rol, u.activo, u.fecha_registro, n.nombre_negocio 
                                     FROM j100_usuarios u
                                     JOIN j102_negocios n ON u.id_negocio = n.id_negocio";
                             $sql .= " ORDER BY n.nombre_negocio, u.nombre_usuario";
@@ -126,8 +127,9 @@ while ($row = $configs_result->fetch_assoc()) {
                                     echo "<td>" . htmlspecialchars($row["correo_electronico"]) . "</td>";
                                     echo "<td><span class='badge bg-secondary'>" . htmlspecialchars($row["rol"]) . "</span></td>";
                                     echo "<td>" . htmlspecialchars($row["nombre_negocio"]) . "</td>";
-                                    $estado_usuario = $row['activo'] ? '<span class="badge bg-success">' . __('active') . '</span>' : '<span class="badge bg-danger">' . __('inactive') . '</span>';
+                                    $estado_usuario = $row['activo'] ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>';
                                     echo "<td>" . $estado_usuario . "</td>";
+                                    echo "<td>" . (!empty($row['fecha_registro']) ? date('d/m/Y', strtotime($row['fecha_registro'])) : 'N/A') . "</td>";
                                     echo '<td>';
                                     
                                     // Lógica para mostrar los botones de acción
@@ -139,13 +141,13 @@ while ($row = $configs_result->fetch_assoc()) {
                                     }
 
                                     if ($puede_actuar) {
-                                        echo '<a href="usuarios_editar.php?id=' . $row['id_usuario'] . '&lang=' . $lang . '" class="btn btn-sm btn-warning">' . __('edit') . '</a>
-                                              <form action="usuarios_eliminar.php" method="POST" style="display:inline-block;" onsubmit="return confirm(\'' . __('users_confirm_deactivate') . '\');">
+                                        echo '<a href="usuarios_editar.php?id=' . $row['id_usuario'] . '" class="btn btn-sm btn-warning">Editar</a>
+                                              <form action="usuarios_eliminar.php" method="POST" style="display:inline-block;" onsubmit="return confirm(\'¿Seguro que quieres desactivar este usuario?\');">
                                                   <input type="hidden" name="id_usuario" value="' . $row['id_usuario'] . '">
-                                                  <button type="submit" class="btn btn-sm btn-danger">' . __('deactivate') . '</button>
+                                                  <button type="submit" class="btn btn-sm btn-danger">Desactivar</button>
                                               </form>';
                                     } else {
-                                        echo '<span class="text-muted fst-italic"> ' . __('users_not_allowed') . ' </span>';
+                                        echo '<span class="text-muted fst-italic"> (No permitido) </span>';
                                     }
                                     echo '</td>';
                                     echo "</tr>";
@@ -154,7 +156,7 @@ while ($row = $configs_result->fetch_assoc()) {
                             $stmt->close();
                             ?>
                             <?php if ($result->num_rows === 0): ?>
-                                <tr><td colspan="7" class="text-center"><?php echo __('users_no_users'); ?></td></tr>
+                                <tr><td colspan="8" class="text-center">No hay usuarios registrados.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

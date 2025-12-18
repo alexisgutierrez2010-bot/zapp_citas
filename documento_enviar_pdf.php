@@ -8,8 +8,9 @@ require_once 'config.php';
 $nombre_archivo = isset($_GET['file']) ? basename($_GET['file']) : '';
 
 // Validaciones de seguridad
-if (empty($nombre_archivo) || strtolower(pathinfo($nombre_archivo, PATHINFO_EXTENSION)) !== 'pdf' || !file_exists(__DIR__ . '/documentos/' . $nombre_archivo)) {
-    header("Location: seleccionar_resumen.php?status=error&message=" . urlencode("Archivo PDF no válido o no encontrado."));
+$allowed_extensions = ['pdf', 'sql'];
+if (empty($nombre_archivo) || !in_array(strtolower(pathinfo($nombre_archivo, PATHINFO_EXTENSION)), $allowed_extensions) || !file_exists(__DIR__ . '/documentos/' . $nombre_archivo)) {
+    header("Location: seleccionar_resumen.php?status=error&message=" . urlencode("Archivo no válido o no encontrado."));
     exit;
 }
 ?>

@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $telefono_negocio_cleaned_input = preg_replace('/[^0-9]/', '', $telefono_negocio); 
 
 // 3. Buscar el negocio por el número de teléfono de forma directa y eficiente.
-$sql_negocio = "SELECT id_negocio, nombre_negocio, telefono, activo, fecha_desactivacion FROM j102_negocios WHERE REPLACE(REPLACE(REPLACE(telefono, '+', ''), ' ', ''), '-', '') LIKE CONCAT('%', ?, '%')";
+$sql_negocio = "SELECT id_negocio, nombre_negocio, telefono, activo, fecha_desactivacion, background_image_type FROM j102_negocios WHERE REPLACE(REPLACE(REPLACE(telefono, '+', ''), ' ', ''), '-', '') LIKE CONCAT('%', ?, '%')";
 $stmt_negocio = $conn->prepare($sql_negocio);
 $stmt_negocio->bind_param("s", $telefono_negocio_cleaned_input);
 $stmt_negocio->execute();
@@ -58,8 +58,8 @@ $found_negocio = $stmt_negocio->get_result()->fetch_assoc();
 $stmt_negocio->close();
 
 if (!$found_negocio) {
-    http_response_code(404);
-    echo json_encode(['error' => 'El negocio no fue encontrado.']);
+    http_response_code(404); // Not Found
+    echo json_encode(['error' => 'El negocio no fue encontrado.', 'error_key' => 'login_error_business_not_found']);
     exit;
 }
 
@@ -72,6 +72,11 @@ if ($found_negocio['activo'] == 2) { // 2 = Suspendido
 if ($found_negocio['activo'] == 3) { // 3 = Eliminado
     http_response_code(403); // Forbidden
     echo json_encode(['error' => 'La cuenta de este negocio ha sido eliminada.']);
+    exit;
+}
+if ($found_negocio['activo'] == 4) { // 4 = Pendiente por Aprobar
+    http_response_code(403); // Forbidden
+    echo json_encode(['error' => 'La cuenta de este negocio está pendiente de aprobación por un administrador.']);
     exit;
 }
 // --- FIN DE VALIDACIÓN ---
@@ -107,7 +112,8 @@ if ($result_user->num_rows > 0) { // Puede haber más de un propietario, validam
                 'nombre_usuario' => $usuario['nombre_usuario'],
                 'id_negocio' => $id_negocio,
                 'nombre_negocio' => $nombre_negocio,
-                'fecha_desactivacion' => $found_negocio['fecha_desactivacion'] // Enviamos la fecha de fin de prueba
+                'fecha_desactivacion' => $found_negocio['fecha_desactivacion'], // Enviamos la fecha de fin de prueba
+                'has_background' => !empty($found_negocio['background_image_type']) // Informamos si tiene imagen
             ];
             registrar_auditoria($conn, $usuario['id_usuario'], $id_negocio, 'OWNER_SPA_LOGIN_SUCCESS', "Propietario '{$usuario['nombre_usuario']}' inició sesión en la SPA."); // Reactivado
             echo json_encode($response_data);
@@ -118,7 +124,7 @@ if ($result_user->num_rows > 0) { // Puede haber más de un propietario, validam
 
 // Si llegamos aquí, no se encontró un propietario con esa contraseña o no hay propietario para el negocio
 http_response_code(401);
-echo json_encode(['error' => 'Las credenciales son incorrectas.']);
+echo json_encode(['error' => 'Las credenciales son incorrectas.', 'error_key' => 'login_error_credentials']);
 exit;
 }
 

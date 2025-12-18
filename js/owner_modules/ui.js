@@ -1,12 +1,24 @@
 // js/modules/ui.js
 
 /**
+ * Actualiza el fondo del body basado en si el negocio tiene una imagen personalizada.
+ * @param {object} ownerData - Los datos del propietario/negocio.
+ */
+function updateBodyBackground(ownerData) {
+    const imageUrl = ownerData.has_background ? `get_image.php?id=${ownerData.id_negocio}&t=${new Date().getTime()}` : '';
+    const gradient = 'linear-gradient(to right, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.3))';
+    document.body.style.backgroundImage = imageUrl ? `${gradient}, url('${imageUrl}')` : '';
+}
+
+/**
  * Actualiza los ítems dinámicos de la barra de navegación.
  * @param {object} context - El objeto de contexto de la aplicación.
  */
 export function updateNavbar(context) {
     const { dom, state } = context;
     const navMenuContainer = document.getElementById('nav-menu-items');
+
+    updateBodyBackground(state.ownerActual || {});
 
     if (state.ownerActual) {
         let trialInfoHtml = '';
@@ -52,6 +64,7 @@ export function updateNavbar(context) {
     } else {
         dom.navbarBrand.textContent = 'App Propietario';
         if (navMenuContainer) navMenuContainer.innerHTML = '';
+        document.body.style.backgroundImage = ''; // Limpiar fondo al cerrar sesión
     }
 }
 

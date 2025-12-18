@@ -7,10 +7,6 @@
 // Este archivo es el punto de entrada de seguridad para el panel de admin, es el lugar ideal para cargar las dependencias.
 require_once 'vendor/autoload.php';
 
-// --- INICIO: Cargar sistema de internacionalización (i18n) ---
-require_once __DIR__ . '/languages.php'; // Esta ruta ya es correcta, pero la confirmo.
-// --- FIN: Cargar sistema de internacionalización (i18n) ---
-
 session_start();
 
 define('SESSION_TIMEOUT', 300); // 300 segundos = 5 minutos

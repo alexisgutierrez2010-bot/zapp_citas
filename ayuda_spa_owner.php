@@ -1,8 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-?><!DOCTYPE html>
-<html lang="es">
+?><!DOCTYPE html><html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,10 +12,7 @@
         body { background-color: #f8f9fa; }
         .container { max-width: 960px; }
         .card-header { background-color: #343a40; color: white; }
-        .accordion-button:not(.collapsed) {
-            color: #0c63e4;
-            background-color: #e7f1ff;
-        }
+        .accordion-button:not(.collapsed) { color: #0c63e4; background-color: #e7f1ff; }
     </style>
 </head>
 <body>
@@ -26,13 +22,11 @@
                 <img src="logo_zapp_citas.png" alt="Logo ZApp Citas" style="height: 2.5em; margin-right: 15px;">
                 <h1 class="h2 mb-0">Ayuda de la Aplicación del Propietario</h1>
             </div>
-            <a href="javascript:window.close();" class="btn btn-secondary">Regresar</a>
+            <a href="javascript:window.close();" class="btn btn-secondary">Cerrar Ventana</a>
         </div>
 
         <div class="card">
-            <div class="card-header">
-                <h4>Guía Rápida de Uso</h4>
-            </div>
+            <div class="card-header"><h4>Guía Rápida de Uso</h4></div>
             <div class="card-body">
                 <p class="lead">Bienvenido a la guía de la aplicación de gestión para propietarios. Aquí encontrarás una explicación detallada de cada sección y funcionalidad para que puedas administrar tu negocio de manera eficiente.</p>
 
@@ -49,7 +43,7 @@
                             <div class="accordion-body">
                                 La barra de navegación superior es tu centro de control. Contiene los siguientes elementos:
                                 <ul>
-                                    <li><strong>Nombre del Negocio:</strong> Al hacer clic aquí, accederás directamente al <strong>Resumen de Gestión (Dashboard)</strong>.</li>
+                                    <li><strong>Nombre del Negocio:</strong> Al hacer clic aquí, te llevará al <strong>Resumen de Gestión (Dashboard)</strong>.</li>
                                     <li><strong>Mi Agenda:</strong> Es la vista principal. Muestra la lista de citas para el día seleccionado.</li>
                                     <li><strong>Calendario:</strong> Ofrece una vista mensual, semanal o diaria de todas tus citas.</li>
                                     <li><strong>Mis Clientes:</strong> Te permite ver, registrar, editar y desactivar a tus clientes.</li>
@@ -57,11 +51,11 @@
                                     <li><strong>Administración (Menú desplegable):</strong>
                                         <ul>
                                             <li><strong>Mi Negocio:</strong> Configura los datos generales, dirección y horario de trabajo de tu negocio.</li>
-                                            <li><strong>Dashboard:</strong> Accede al "Resumen de Gestión de mi negocio" con gráficos de rendimiento.</li>
+                                            <li><strong>Dashboard:</strong> Accede al "Resumen de Gestión" con gráficos de rendimiento.</li>
                                             <li><strong>Mi Perfil:</strong> Te permite cambiar tu contraseña de acceso.</li>
                                         </ul>
                                     </li>
-                                    <li><strong>Cerrar Sesión:</strong> Finaliza tu sesión de forma segura.</li>
+                                    <li><strong>Cerrar Sesión:</strong> Finaliza tu sesión de forma segura en la aplicación.</li>
                                 </ul>
                             </div>
                         </div>
@@ -79,7 +73,7 @@
                                 <p>Esta es la pantalla principal donde gestionas las citas del día a día.</p>
                                 <ul>
                                     <li><strong>Controles de Fecha:</strong> Usa los botones "Día Anterior", "Día Siguiente" o el selector de fecha para navegar rápidamente a cualquier día.</li>
-                                    <li><strong>Lista de Citas:</strong> Cada fila representa una cita y muestra información clave como el horario, cliente, servicio/asunto y estado.</li>
+                                    <li><strong>Lista de Citas:</strong> Cada fila representa una cita y muestra información clave como el horario, cliente, servicio/asunto y estado actual.</li>
                                     <li><strong>Menú "Acciones":</strong> Cada cita tiene un menú desplegable con opciones para gestionarla.</li>
                                 </ul>
                             </div>
@@ -98,7 +92,7 @@
                                 <p>El menú "Acciones" te permite controlar el ciclo de vida de cada cita:</p>
                                 <ul>
                                     <li><strong>Cambiar Estado:</strong> Puedes marcar una cita como <code>Confirmada</code>, <code>Completada</code>, <code>Cancelada</code>, etc. Estos cambios son lógicos y mantienen el registro en el sistema.</li>
-                                    <li><strong>Enviar Email:</strong> Permite reenviar la notificación de la cita al cliente en cualquier momento.</li>
+                                    <li><strong>Enviar Email:</strong> Permite enviar o reenviar una notificación por correo al cliente y a los invitados.</li>
                                     <li><strong><span class="text-danger">🔥 Eliminar</span>:</strong> Esta es una <strong>acción irreversible</strong>. Elimina la cita y todos sus datos asociados (incluyendo invitados) de la base de datos. Úsala con precaución, por ejemplo, para citas creadas por error.</li>
                                     <li><strong>✏️ Editar:</strong> Abre el formulario para modificar los detalles de la cita o reunión.</li>
                                 </ul>
@@ -128,7 +122,7 @@
                                     <li><strong>Editar:</strong> Haz clic en el botón "Editar" de un invitado en la lista, modifica sus datos y haz clic en "Actualizar".</li>
                                     <li><strong>Eliminar:</strong> Haz clic en la "X" junto a un invitado para quitarlo de la lista.</li>
                                 </ul>
-                                <p>Al guardar, si la opción "Notificar" está marcada, se enviará un correo de confirmación tanto al cliente principal como a todos los invitados.</p>
+                                <p>Al guardar, si la opción "Notificar al cliente" está marcada, se enviará un correo de confirmación tanto al cliente principal como a todos los invitados de la reunión.</p>
                             </div>
                         </div>
                     </div>
@@ -149,7 +143,7 @@
                                     <li><strong>Ingresos por Servicios Completados:</strong> Suma los precios de todas las citas de servicios marcadas como "Completada" cada mes.</li>
                                     <li><strong>Cantidad de Reuniones Registradas por Mes:</strong> Muestra cuántas citas de tipo "Reunión" has agendado.</li>
                                 </ol>
-                                <p>Los números sobre cada barra te dan el valor exacto para una lectura más rápida.</p>
+                                <p>Los números que aparecen sobre cada barra te dan el valor exacto para una lectura más rápida.</p>
                             </div>
                         </div>
                     </div>
@@ -185,7 +179,7 @@
 
             </div>
             <div class="card-footer text-center text-muted">
-                <p class="mb-0 small">©2025. Software development and Authorized by WWW.ACTICVEN.COM All rights reserved. Version 1.12.14</p>
+                <p class="mb-0 small">©2025. Software development and Authorized by WWW.ACTICVEN.COM All rights reserved. Versión 1.12.14</p>
             </div>
         </div>
     </div>
