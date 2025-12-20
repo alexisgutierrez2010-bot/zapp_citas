@@ -32,4 +32,3 @@ if (!$usuario) {
 }
 
 echo json_encode($usuario);
-?>

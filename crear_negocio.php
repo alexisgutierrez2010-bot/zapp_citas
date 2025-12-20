@@ -9,8 +9,6 @@ require 'vendor/autoload.php'; // Para PHPMailer
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-require_once 'config.php';
-require_once 'audit_log.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // --- LÓGICA DE PROCESAMIENTO ---
@@ -177,7 +175,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 <div class="col-md-6 mb-3">
                                     <label for="telefono_local" class="form-label">Teléfono del Negocio</label>
                                     <div class="input-group">
-                                        <select class="form-select" id="country_code" name="country_code" style="max-width: 150px;" required><?php foreach ($paises as $pais_option): ?><option value="<?php echo htmlspecialchars($pais_option['codigo_telefono']); ?>" <?php echo ($pais_option['id_pais'] == 1) ? 'selected' : ''; ?>><?php echo htmlspecialchars($pais_option['nombre_pais'] . ' (' . $pais_option['codigo_telefono'] . ')'); ?></option><?php endforeach; ?></select>
+                                        <select class="form-select" id="country_code" name="country_code" style="max-width: 150px;" required>
+                                            <option>Cargando...</option>
+                                        </select>
                                         <input type="tel" class="form-control" id="telefono_local" name="telefono_local" placeholder="Número local" required>
                                     </div>
                                 </div>

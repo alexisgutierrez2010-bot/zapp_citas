@@ -147,4 +147,3 @@ while ($current_slot_start < $hora_cierre_dt) {
 }
 
 echo json_encode($response_data);
-?>

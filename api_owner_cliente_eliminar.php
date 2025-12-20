@@ -48,4 +48,3 @@ if ($stmt->execute() && $stmt->affected_rows > 0) {
     http_response_code(500);
     echo json_encode(['error' => 'No se pudo eliminar el cliente o no se encontró.']);
 }
-?>

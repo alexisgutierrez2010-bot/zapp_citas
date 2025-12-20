@@ -18,4 +18,3 @@ unset($_SESSION['owner_id_negocio']);
 unset($_SESSION['owner_nombre_negocio']);
 
 echo json_encode(['success' => true, 'message' => 'Sesión cerrada.']);
-?>

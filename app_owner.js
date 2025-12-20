@@ -13,6 +13,7 @@ import { renderDashboardView } from './js/owner_modules/dashboard.js';
 import { updateNavbar, setActiveNavLink } from './js/owner_modules/ui.js';
 
 document.addEventListener('DOMContentLoaded', async function() {
+    console.log(">>> [Sentinel 1] DOMContentLoaded: Iniciando app_owner.js");
 
     const context = {
         state: {
@@ -28,8 +29,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             navbarBrand: document.getElementById('navbar-brand-title'),
             globalErrorContainer: document.getElementById('global-error-container'),
         },
-        // SOLUCIÓN: Usar una ruta absoluta para evitar problemas de resolución de URL.
-        API_URL: '/zapp_citas/',
+        // CORRECCIÓN: Usar ruta relativa vacía (igual que en app_client.js) para evitar errores 404 si la carpeta cambia.
+        API_URL: '',
         renderView: null,
     };
 
@@ -50,6 +51,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     };
 
     context.renderView = (viewName, params = {}) => {
+        console.log(`>>> [Sentinel 2] renderView llamado para: ${viewName}`, params);
         console.log(`Rendering view: ${viewName}`, params);
         const renderFn = routes[viewName];
 
@@ -83,28 +85,35 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 
     try {
-        // 1. Verificar si hay una sesión activa.
-        const sessionResponse = await fetch(`${context.API_URL}api_owner_session_check.php`);
-        if (!sessionResponse.ok) {
-            // Si no hay sesión (error 401), lanzamos un error para ir directamente al bloque catch.
-            throw new Error('No active session');
+        console.log(`>>> [Sentinel 3] Intentando fetch a: ${context.API_URL}api_owner_get_current_user.php`);
+        
+        // SOLUCIÓN: Se unifican las llamadas de arranque en una sola.
+        // El script `api_owner_get_current_user.php` ya incluye la verificación de sesión.
+        // Si no hay sesión, devolverá un error 401 que será capturado por el `catch`.
+        // Si hay sesión, devolverá los datos del usuario.
+        // Esto es más eficiente (una llamada de red en lugar de dos) y soluciona el bloqueo.
+        const userResponse = await fetch(`${context.API_URL}api_owner_get_current_user.php`);
+        
+        console.log(`>>> [Sentinel 4] Respuesta recibida. Status: ${userResponse.status}`);
+        
+        if (!userResponse.ok) {
+            throw new Error(`Error en fetch: ${userResponse.status} ${userResponse.statusText}`);
         }
 
-        // 2. Si la sesión es válida, obtener los datos del usuario desde su propia API.
-        const userResponse = await fetch(`${context.API_URL}api_owner_get_current_user.php`);
-        if (!userResponse.ok) throw new Error('Session is valid, but failed to fetch user data.');
-
-        // 3. Si todo está bien, guardar los datos del usuario y mostrar la agenda.
+        // Si la llamada fue exitosa, guardar los datos del usuario y mostrar la agenda.
         const userData = await userResponse.json();
+        console.log(">>> [Sentinel 5] Datos de usuario parseados:", userData);
+        
         context.state.ownerActual = userData;
         updateNavbar(context); // SOLUCIÓN: Se revierte a la llamada original, la nueva lógica de ui.js no necesita el contenedor.
         
+        console.log(">>> [Sentinel 6] Renderizando vista inicial (agenda)");
         context.renderView('agenda'); // VISTA INICIAL: Se restaura la agenda como vista principal.
 
     } catch (error) {
         // Si CUALQUIER paso del 'try' falla (no hay sesión, no se encuentran datos de usuario, etc.), se llega aquí.
         // Mostramos el login de forma segura.
-        console.error("Error checking session, defaulting to login view.", error);
+        console.error(">>> [Sentinel 7] Error capturado (probablemente sin sesión), mostrando Login:", error);
         context.renderView('login');
     }
 });

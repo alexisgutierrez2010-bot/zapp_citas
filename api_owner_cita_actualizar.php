@@ -67,4 +67,3 @@ if ($stmt->execute() && $stmt->affected_rows > 0) {
         echo json_encode(['error' => 'No se pudo actualizar la cita. Error: ' . $stmt->error]);
     }
 }
-?>

@@ -1,61 +1,90 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
-// ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025).
-session_start(); // CORRECCIÓN: Iniciar la sesión al principio del script.
+// ©2025. Software development and Authorized by WWW.ACTICVEN.COM All rights reserved.
 
+session_start();
+
+// Incluir archivos de configuración y auditoría
 require_once 'config.php';
-require_once 'audit_log.php'; // CORRECCIÓN: Incluir antes de usar la función
+require_once 'audit_log.php';
 
+// Verificar si el formulario fue enviado
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $nombre_usuario = $_POST['nombre_usuario'];
-    $password = $_POST['password'];
 
-    $sql = "SELECT id_usuario, password_hash, id_negocio, rol, activo FROM j100_usuarios WHERE nombre_usuario = ?";
-    
-    if ($stmt = $conn->prepare($sql)) {
-        $stmt->bind_param("s", $nombre_usuario);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        if ($result->num_rows === 1) {
-            $usuario = $result->fetch_assoc();
-
-            // ¡VALIDACIÓN DE SEGURIDAD! Verificar si el usuario está activo.
-            if ($usuario['activo'] != 1) {
-                header("Location: sesion_iniciar.php?error_key=login_error_inactive");
-                exit();
-            }
-
-            // Verificar la contraseña
-            if (password_verify($password, $usuario['password_hash'])) {
-                // Contraseña correcta, iniciar sesión
-                $_SESSION['loggedin'] = true;
-                $_SESSION['id_usuario'] = $usuario['id_usuario'];
-                $_SESSION['nombre_usuario'] = $nombre_usuario; // ¡La clave para multiempresa!
-                
-                // --- SOLUCIÓN DEFINITIVA PARA EL USUARIO MASTER ---
-                // Si el usuario es 'Master', su id_negocio en la BD es NULL. Le asignamos el negocio 1 por defecto para que pueda operar.
-                $_SESSION['id_negocio'] = ($usuario['rol'] === 'Master') ? 1 : $usuario['id_negocio'];
-
-                $_SESSION['rol'] = $usuario['rol'];
-                $_SESSION['last_activity'] = time(); // Iniciar el contador de inactividad
-
-                // Registrar auditoría de inicio de sesión
-                registrar_auditoria($conn, $usuario['id_usuario'], $usuario['id_negocio'], 'LOGIN_SUCCESS', "El usuario '{$nombre_usuario}' ha iniciado sesión.");
-
-                // Redirigir a la página de inicio
-                header("Location: dashboard.php"); // CORRECCIÓN: Redirigir directamente al dashboard
-                exit();
-            } else {
-                // Contraseña incorrecta
-                header("Location: sesion_iniciar.php?error_key=login_error_invalid_password");
-                exit();
-            }
-        }
+    // Validar que los campos no estén vacíos
+    if (empty(trim($_POST["nombre_usuario"])) || empty(trim($_POST["password"]))) {
+        header("location: sesion_iniciar.php?error_key=login_error_empty_fields");
+        exit;
     }
-    // Si el bucle termina sin un login exitoso, significa que el usuario no fue encontrado.
-    header("Location: sesion_iniciar.php?error_key=login_error_user_not_found");
-    exit();
+
+    $username = trim($_POST["nombre_usuario"]);
+    $password = trim($_POST["password"]);
+
+    // Preparar la consulta SQL para buscar el usuario
+    // Se busca por nombre de usuario O correo electrónico
+    $sql = "SELECT id_usuario, id_negocio, nombre_usuario, password_hash, rol, activo FROM j100_usuarios WHERE nombre_usuario = ? OR correo_electronico = ?";
+
+    if ($stmt = $conn->prepare($sql)) {
+        $stmt->bind_param("ss", $username, $username);
+        
+        if ($stmt->execute()) {
+            $stmt->store_result();
+
+            // Verificar si el usuario existe
+            if ($stmt->num_rows == 1) {
+                $stmt->bind_result($id_usuario, $id_negocio, $nombre_usuario, $password_hash, $rol, $activo);
+                if ($stmt->fetch()) {
+                    // Verificar si la cuenta está activa
+                    if ($activo == 1) {
+                        // Verificar la contraseña
+                        if (password_verify($password, $password_hash)) {
+                            // Contraseña correcta: Iniciar sesión
+                            session_regenerate_id();
+                            $_SESSION["loggedin"] = true;
+                            $_SESSION["id_usuario"] = $id_usuario;
+                            $_SESSION["id_negocio"] = $id_negocio;
+                            $_SESSION["nombre_usuario"] = $nombre_usuario;
+                            $_SESSION["rol"] = $rol;
+                            $_SESSION["last_activity"] = time();
+
+                            // Registrar auditoría de éxito
+                            registrar_auditoria($conn, $id_usuario, $id_negocio, 'LOGIN_SUCCESS', "Inicio de sesión exitoso para usuario: $nombre_usuario");
+
+                            // Redirigir al dashboard
+                            header("location: dashboard.php");
+                            exit;
+                        } else {
+                            // Contraseña incorrecta
+                            registrar_auditoria($conn, $id_usuario, $id_negocio, 'LOGIN_FAILED', "Password incorrecto para: $username");
+                            header("location: sesion_iniciar.php?error_key=login_error_invalid_password");
+                            exit;
+                        }
+                    } else {
+                        // Cuenta inactiva
+                        header("location: sesion_iniciar.php?error_key=login_error_account_inactive");
+                        exit;
+                    }
+                }
+            } else {
+                // Usuario no encontrado
+                header("location: sesion_iniciar.php?error_key=login_error_user_not_found");
+                exit;
+            }
+        } else {
+            // Error de ejecución SQL
+            header("location: sesion_iniciar.php?error_key=login_error_system");
+            exit;
+        }
+        $stmt->close();
+    } else {
+        // Error de preparación SQL
+        header("location: sesion_iniciar.php?error_key=login_error_system");
+        exit;
+    }
+    $conn->close();
+} else {
+    // Acceso directo al script sin POST
+    header("location: sesion_iniciar.php");
+    exit;
 }
 ?>

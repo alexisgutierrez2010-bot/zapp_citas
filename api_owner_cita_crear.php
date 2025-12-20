@@ -237,4 +237,3 @@ try {
     http_response_code($codigo_error);
     echo json_encode(['error' => $e->getMessage()]);
 }
-?>

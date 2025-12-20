@@ -47,4 +47,3 @@ if ($stmt->execute() && $stmt->affected_rows > 0) {
     http_response_code(404);
     echo json_encode(['error' => 'No se pudo cancelar la cita. Es posible que no exista o no pertenezca a tu negocio.']);
 }
-?>

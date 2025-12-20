@@ -67,4 +67,3 @@ if ($stmt->execute()) {
     http_response_code(500);
     echo json_encode(['error' => 'No se pudo guardar la configuración del negocio.']);
 }
-?>

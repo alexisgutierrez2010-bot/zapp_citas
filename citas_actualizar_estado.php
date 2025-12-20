@@ -59,4 +59,3 @@ if ($stmt = $conn->prepare($sql)) {
 }
 
 exit();
-?>

@@ -131,4 +131,3 @@ exit;
 // Si no es GET ni POST, es un método no permitido.
 http_response_code(405);
 echo json_encode(['error' => 'Método no permitido.']);
-?>

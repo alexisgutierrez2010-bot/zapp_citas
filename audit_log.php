@@ -41,4 +41,3 @@ function registrar_auditoria($conn, $id_usuario, $id_negocio, $tipo_evento, $des
         $stmt->close();
     }
 }
-?>

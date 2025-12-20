@@ -75,4 +75,3 @@ if ($update_stmt->execute()) {
 
 $update_stmt->close();
 $conn->close();
-?>

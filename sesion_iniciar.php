@@ -23,6 +23,9 @@ if (isset($_GET['error'])) {
     $error_key = $_GET['error_key'];
     // CORRECCIÓN: Mapear las claves de error a mensajes claros en español.
     switch ($error_key) {
+        case 'login_error_empty_fields':
+            $error_msg = 'Por favor, complete todos los campos.';
+            break;
         case 'login_error_session_expired':
             $error_msg = 'Su sesión ha expirado por inactividad. Por favor, inicie sesión de nuevo.';
             break;
@@ -34,6 +37,9 @@ if (isset($_GET['error'])) {
             break;
         case 'login_error_user_inactive':
             $error_msg = 'Este usuario se encuentra inactivo.';
+            break;
+        case 'login_error_system':
+            $error_msg = 'Error del sistema. Por favor intente más tarde.';
             break;
         default:
             $error_msg = 'Ha ocurrido un error inesperado. Por favor, intente de nuevo.';

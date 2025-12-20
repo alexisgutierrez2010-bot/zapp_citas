@@ -82,4 +82,3 @@ if ($stmt->execute()) {
     http_response_code(500);
     echo json_encode(['error' => 'Error al actualizar el cliente: ' . $stmt->error]);
 }
-?>

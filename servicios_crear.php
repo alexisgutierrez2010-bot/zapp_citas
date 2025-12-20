@@ -55,4 +55,3 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     exit(); // Es buena práctica terminar el script después de una redirección
 }
-?>
