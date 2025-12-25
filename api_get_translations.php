@@ -6,7 +6,6 @@
 // Este endpoint devuelve las traducciones para las SPAs (Single Page Applications).
 
 header('Content-Type: application/json');
-
 // Determinar el idioma solicitado, por defecto 'es'
 $lang = isset($_GET['lang']) && in_array($_GET['lang'], ['es', 'en']) ? $_GET['lang'] : 'es';
 

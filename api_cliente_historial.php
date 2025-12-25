@@ -1,38 +1,39 @@
 <?php
-// Revisado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM en fecha Dec/01/2025 //
-// Update :Dec-01-2025).
-header('Content-Type: application/json');
-// session_start(); // ELIMINADO: El guardián ya inicia la sesión.
+// Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
+// ©2025. Software development and Authorized by WWW.ACTICVEN.COM All rights reserved.
+
 require_once 'config.php';
 
-$id_cliente = isset($_GET['id_cliente']) ? (int)$_GET['id_cliente'] : 0;
-
-if ($id_cliente <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'ID de cliente no válido.']);
+session_start();
+if (!isset($_SESSION['client_loggedin']) || $_SESSION['client_loggedin'] !== true) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Acceso no autorizado.']);
     exit;
 }
 
-$historial = [];
+header('Content-Type: application/json');
+
+$id_cliente = (int)($_GET['id_cliente'] ?? 0);
+
+if ($id_cliente !== (int)$_SESSION['client_id']) {
+    http_response_code(403);
+    echo json_encode(['error' => 'No tienes permiso para ver este historial.']);
+    exit;
+}
+
 $sql = "SELECT 
-            c.id_cita,
-            c.fecha_hora_inicio,
-            c.estado_cita,
-            s.nombre_servicio,
-            c.descripcion_trabajo
-        FROM j108_citas c
-        JOIN j104_servicios s ON c.id_servicio = s.id_servicio
-        WHERE c.id_cliente = ?
-        ORDER BY c.fecha_hora_inicio DESC";
+            ci.id_cita, ci.fecha_hora_inicio, ci.estado_cita, 
+            s.nombre_servicio, s.precio
+        FROM j108_citas ci
+        LEFT JOIN j104_servicios s ON ci.id_servicio = s.id_servicio
+        WHERE ci.id_cliente = ?
+        ORDER BY ci.fecha_hora_inicio DESC";
 
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $id_cliente);
 $stmt->execute();
 $result = $stmt->get_result();
-
-while ($row = $result->fetch_assoc()) {
-    $historial[] = $row;
-}
+$historial = $result->fetch_all(MYSQLI_ASSOC);
 
 echo json_encode($historial);
 ?>

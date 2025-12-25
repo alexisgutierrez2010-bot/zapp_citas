@@ -21,13 +21,21 @@ if (!isset($_SESSION['owner_id_negocio']) || empty($_SESSION['owner_id_negocio']
 $id_negocio_session = (int)$_SESSION['owner_id_negocio'];
 $servicios = [];
 
-$sql = "SELECT id_servicio, nombre_servicio, duracion_valor, duracion_unidad, precio, activo FROM j104_servicios WHERE id_negocio = ? ORDER BY nombre_servicio ASC";
+$sql = "SELECT id_servicio, nombre_servicio, duracion_valor, duracion_unidad, precio, activo, foto_servicio FROM j104_servicios WHERE id_negocio = ? ORDER BY nombre_servicio ASC";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $id_negocio_session);
 $stmt->execute();
 $result = $stmt->get_result();
 
 while ($row = $result->fetch_assoc()) {
+    // Convertir BLOB a Base64 para JSON
+    if (!empty($row['foto_servicio'])) {
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->buffer($row['foto_servicio']);
+        $row['foto_servicio'] = 'data:' . $mimeType . ';base64,' . base64_encode($row['foto_servicio']);
+    } else {
+        $row['foto_servicio'] = null;
+    }
     $servicios[] = $row;
 }
 

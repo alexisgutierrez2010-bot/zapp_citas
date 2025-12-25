@@ -34,11 +34,6 @@ export async function renderAgendaView(context) {
                             </div>
                             <p class="mb-1"><strong>Cliente:</strong> ${slot.cita.nombre_cliente}</p>
                             <small><strong>Servicio:</strong> ${slot.cita.nombre_servicio || 'Reunión'}</small>
-                            <div class="mt-2">
-                                <button class="btn btn-sm btn-outline-primary btn-cambiar-estado" data-id-cita="${slot.cita.id_cita}" data-nuevo-estado="Completada">Completar</button>
-                                <button class="btn btn-sm btn-outline-danger btn-cambiar-estado" data-id-cita="${slot.cita.id_cita}" data-nuevo-estado="Cancelada">Cancelar</button>
-                                <button class="btn btn-sm btn-outline-secondary btn-cambiar-estado" data-id-cita="${slot.cita.id_cita}" data-nuevo-estado="No Asistió">No Asistió</button>
-                            </div>
                         </div>`;
                 } else {
                     return `
@@ -82,12 +77,6 @@ export async function renderAgendaView(context) {
         document.getElementById('selector-fecha').addEventListener('change', (e) => {
             state.currentDate = e.target.value;
             context.renderView('agenda');
-        });
-
-        document.querySelectorAll('.btn-cambiar-estado').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                handleUpdateCitaStatus(context, e.target.dataset.idCita, e.target.dataset.nuevoEstado);
-            });
         });
 
     } catch (error) {
@@ -154,6 +143,7 @@ async function openAgendarCitaModal(context) {
                                     <label for="asunto" class="form-label">Asunto de la Reunión</label>
                                     <input type="text" class="form-control" id="asunto">
                                 </div>
+                                <!-- Aquí iría la gestión de invitados si se implementa en el futuro -->
                             </div>
 
                             <div class="mb-3">
@@ -219,7 +209,7 @@ async function openAgendarCitaModal(context) {
             fecha_hora_inicio: document.getElementById('fecha_hora_inicio').value,
             descripcion: document.getElementById('descripcion').value,
             notificar_cliente: document.getElementById('notificar_cliente').checked,
-            invitados: [] 
+            invitados: [] // Placeholder para futuros invitados
         };
 
         const saveBtn = document.getElementById('save-cita-btn');
@@ -243,6 +233,7 @@ async function openAgendarCitaModal(context) {
             alert(data.message);
             renderView('agenda');
 
+            // **NUEVA LÓGICA DE NOTIFICACIÓN**
             if (data.notification_payload) {
                 handlePostCreationNotifications(data.notification_payload);
             }
@@ -273,12 +264,16 @@ function handlePostCreationNotifications(payload) {
     const linkCliente = 'https://appcitas.acticven.com/zapp_citas/spa_client.php';
     const numeroLimpio = telefono_cliente.replace(/[^\d+]/g, '').replace('+', '');
 
+    // Mensaje para WhatsApp
     const whatsappMessage = `¡Hola ${nombre_cliente}! Te confirmamos tu cita en ${nombre_negocio} para "${asunto_evento}" el ${fecha_hora_inicio}. Puedes gestionar tu cita aquí: ${linkCliente}`;
     const whatsappUrl = `https://wa.me/${numeroLimpio}?text=${encodeURIComponent(whatsappMessage)}`;
 
+    // Mensaje para SMS
     const smsMessage = `Cita confirmada en ${nombre_negocio} para ${asunto_evento} el ${fecha_hora_inicio}. Gestiona tu cita: ${linkCliente}`;
     const smsUrl = `sms:${numeroLimpio}?body=${encodeURIComponent(smsMessage)}`;
 
+    // Preguntar al propietario si desea enviar las notificaciones
+    // Usamos un pequeño timeout para que no se solape con la alerta de "Cita creada".
     setTimeout(() => {
         if (confirm(`Cita creada con éxito.\n\n¿Deseas enviar una notificación por WhatsApp al cliente ${nombre_cliente}?`)) {
             window.open(whatsappUrl, '_blank');
@@ -288,9 +283,32 @@ function handlePostCreationNotifications(payload) {
             if (confirm(`¿Deseas enviar también una notificación por SMS?`)) {
                 window.open(smsUrl, '_blank');
             }
-        }, 500);
+        }, 500); // Pequeña pausa entre una pregunta y otra
 
     }, 500);
+}
+
+/**
+ * Abre el modal de acciones para una cita.
+ * @param {object} context - El contexto de la aplicación.
+ * @param {object} cita - El objeto de la cita.
+ */
+async function openCitaActionsModal(context, cita) {
+    const { API_URL, renderView } = context;
+    const modalId = 'citaActionsModal';
+    // ... (Implementación futura para editar, cancelar, etc. desde la agenda)
+    alert(`Funcionalidad de acciones para la cita ID ${cita.id_cita} pendiente de implementar.`);
+}
+
+/**
+ * Abre el modal de acciones para un slot disponible.
+ * @param {object} context - El contexto de la aplicación.
+ * @param {string} startTime - La hora de inicio del slot.
+ */
+function openSlotActionsModal(context, startTime) {
+    const modalId = 'slotActionsModal';
+    // ... (Implementación futura para bloquear horario, etc.)
+    alert(`Funcionalidad de acciones para el slot de las ${startTime} pendiente de implementar.`);
 }
 
 /**
@@ -306,10 +324,10 @@ async function handleUpdateCitaStatus(context, id_cita, nuevoEstado) {
     }
 
     try {
-        const response = await fetch(`${API_URL}api_owner_cita_actualizar.php`, {
+        const response = await fetch(`${API_URL}api_owner_cita_actualizar_estado.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_cita: id_cita, estado_cita: nuevoEstado })
+            body: JSON.stringify({ id_cita, estado: nuevoEstado })
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
@@ -317,63 +335,16 @@ async function handleUpdateCitaStatus(context, id_cita, nuevoEstado) {
         alert(data.message);
         renderView('agenda');
 
-        if (data.notification_payload) {
-            handleStatusChangeNotifications(data.notification_payload, data.nuevo_estado);
+        // Si se cancela, preguntar si se quiere notificar
+        if (nuevoEstado === 'Cancelada' && data.notification_payload) {
+            if (confirm('¿Deseas notificar al cliente por correo sobre la cancelación?')) {
+                // Aquí iría la lógica para llamar a un endpoint que envíe el correo de cancelación
+            }
         }
 
     } catch (error) {
         alert(`Error al actualizar estado: ${error.message}`);
     }
-}
-
-/**
- * Gestiona el envío de notificaciones tras un cambio de estado.
- * @param {object} payload - Datos de la cita y cliente.
- * @param {string} nuevoEstado - El nuevo estado asignado.
- */
-function handleStatusChangeNotifications(payload, nuevoEstado) {
-    const { telefono_cliente, nombre_cliente, nombre_negocio, nombre_servicio, tipo_cita, descripcion_trabajo, fecha_hora_inicio } = payload;
-    
-    if (!telefono_cliente) return;
-
-    const numeroLimpio = telefono_cliente.replace(/[^\d+]/g, '').replace('+', '');
-    const servicio = tipo_cita === 'Reunion' ? descripcion_trabajo : nombre_servicio;
-    const fecha = new Date(fecha_hora_inicio).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit' });
-    const linkCliente = 'https://appcitas.acticven.com/zapp_citas/spa_client.php';
-
-    let mensaje = '';
-
-    switch (nuevoEstado) {
-        case 'Completada':
-            mensaje = `Hola ${nombre_cliente}, gracias por visitarnos en ${nombre_negocio}. Tu cita de "${servicio}" ha sido completada. ¡Esperamos verte pronto!`;
-            break;
-        case 'Cancelada':
-            mensaje = `Hola ${nombre_cliente}, te informamos que tu cita en ${nombre_negocio} para "${servicio}" el ${fecha} ha sido cancelada. Para reagendar, visita: ${linkCliente}`;
-            break;
-        case 'No Asistió':
-            mensaje = `Hola ${nombre_cliente}, te extrañamos hoy en tu cita de "${servicio}" en ${nombre_negocio}. Por favor contáctanos para reagendar: ${linkCliente}`;
-            break;
-        case 'Pospuesta':
-            mensaje = `Hola ${nombre_cliente}, tu cita en ${nombre_negocio} para "${servicio}" ha sido pospuesta. Por favor revisa tu nueva fecha aquí: ${linkCliente}`;
-            break;
-        default:
-            return; 
-    }
-
-    const whatsappUrl = `https://wa.me/${numeroLimpio}?text=${encodeURIComponent(mensaje)}`;
-    const smsUrl = `sms:${numeroLimpio}?body=${encodeURIComponent(mensaje)}`;
-
-    setTimeout(() => {
-        if (confirm(`El estado cambió a "${nuevoEstado}".\n\n¿Deseas notificar al cliente por WhatsApp?`)) {
-            window.open(whatsappUrl, '_blank');
-        }
-        
-        setTimeout(() => {
-            if (confirm(`¿Deseas enviar también una notificación por SMS?`)) {
-                window.open(smsUrl, '_blank');
-            }
-        }, 500);
-    }, 500);
 }
 
 /**
@@ -402,10 +373,3 @@ async function handleDeleteCita(context, id_cita) {
         alert(`Error al eliminar la cita: ${error.message}`);
     }
 }
-```
-
-¡Listo! Con estos cambios, la estructura de archivos está corregida y el sistema está listo para las pruebas.
-
-<!--
-[PROMPT_SUGGESTION]Probemos cambiar el estado de una cita a "Completada" desde el panel del propietario y verifiquemos la notificación de WhatsApp.[/PROMPT_SUGGESTION]
-[PROMPT_SUGGESTION]Verifiquemos que el dashboard del cliente cargue correctamente las citas usando la API en la raíz.[/PROMPT_SUGGESTION]

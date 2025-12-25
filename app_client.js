@@ -8,6 +8,7 @@ import { renderDashboardView } from './js/client_modules/dashboard.js';
 import { renderProfileView } from './js/client_modules/profile.js';
 import { renderHistoryView } from './js/client_modules/history.js';
 import { renderBookingView, handleConfirmarCita, handleCancelarCita } from './js/client_modules/booking.js';
+import { renderReviewsView } from './js/client_modules/reviews.js'; // NUEVO
 import { updateNavbar, setActiveNavLink } from './js/client_modules/ui.js';
 
 // --- 2. INICIALIZACIÓN DE LA APLICACIÓN ---
@@ -39,6 +40,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         'booking': renderBookingView,
         'confirm-register': renderConfirmacionRegistroView,
         'register': renderRegistroView,
+        'reviews': renderReviewsView, // NUEVO
     };
 
     // --- D. FUNCIÓN CENTRAL DE RENDERIZADO ---

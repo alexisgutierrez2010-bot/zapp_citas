@@ -17,15 +17,25 @@ export async function renderBookingView(context) {
             return;
         }
 
-        const serviciosHtml = servicios.map(s => `
+        const serviciosHtml = servicios.map(s => {
+            const imgHtml = s.foto_servicio 
+                ? `<img src="${s.foto_servicio}" class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;">`
+                : `<div class="rounded me-3 bg-light d-flex align-items-center justify-content-center text-secondary" style="width: 60px; height: 60px;"><i class="bi bi-scissors"></i></div>`;
+
+            return `
             <a href="#" class="list-group-item list-group-item-action btn-seleccionar-servicio" data-id-servicio="${s.id_servicio}" data-nombre-servicio="${s.nombre_servicio}">
-                <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1">${s.nombre_servicio}</h5>
-                    <small>Duración: ${s.duracion_valor} ${s.duracion_unidad}</small>
+                <div class="d-flex align-items-center">
+                    ${imgHtml}
+                    <div class="flex-grow-1">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">${s.nombre_servicio}</h5>
+                            <small>Duración: ${s.duracion_valor} ${s.duracion_unidad}</small>
+                        </div>
+                    </div>
                 </div>
                 <p class="mb-1">Precio: ${s.precio ? `$${parseFloat(s.precio).toFixed(2)}` : 'Consultar'}</p>
             </a>
-        `).join('');
+        `}).join('');
 
         context.dom.appContainer.innerHTML = `
             <h3>Agendar Nueva Cita: <span class="text-muted fw-normal fs-5">¿Qué servicio quieres?</span></h3>
@@ -213,6 +223,11 @@ export async function handleCancelarCita(context, idCita, button) {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
 
+        // Notificar al propietario sobre la cancelación
+        if (data.notification_payload) {
+            handleClientCancellationNotification(data.notification_payload);
+        }
+
         // Recargar la vista para mostrar el estado actualizado.
         context.renderView('dashboard');
     } catch (error) {
@@ -220,6 +235,32 @@ export async function handleCancelarCita(context, idCita, button) {
         button.disabled = false;
         button.innerHTML = originalText;
     }
+}
+
+/**
+ * Gestiona el envío de notificaciones al propietario cuando un cliente cancela.
+ * @param {object} payload - Datos para la notificación (teléfono del propietario, etc.).
+ */
+function handleClientCancellationNotification(payload) {
+    const { telefono_propietario, nombre_cliente, nombre_servicio, fecha_hora_inicio } = payload;
+
+    if (!telefono_propietario) return;
+
+    const numeroLimpio = telefono_propietario.replace(/[^\d+]/g, '').replace('+', '');
+    const fecha = new Date(fecha_hora_inicio).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+
+    const mensaje = `ZApp Citas: El cliente ${nombre_cliente} ha CANCELADO su cita para "${nombre_servicio}" del ${fecha}.`;
+
+    const whatsappUrl = `https://wa.me/${numeroLimpio}?text=${encodeURIComponent(mensaje)}`;
+    const smsUrl = `sms:${numeroLimpio}?body=${encodeURIComponent(mensaje)}`;
+
+    setTimeout(() => {
+        if (confirm('Cita cancelada. ¿Deseas notificar al propietario por WhatsApp?')) {
+            window.open(whatsappUrl, '_blank');
+        } else if (confirm('¿Deseas notificar al propietario por SMS?')) {
+            window.open(smsUrl, '_blank');
+        }
+    }, 500);
 }
 
 /**

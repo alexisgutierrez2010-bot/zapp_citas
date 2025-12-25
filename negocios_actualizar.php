@@ -5,6 +5,7 @@
 require_once 'auth_check.php';
 require_once 'audit_log.php';
 require_once 'config.php';
+require_once 'image_utils.php'; // Incluir el nuevo script
 
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -80,7 +81,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // 2. Si se subió una nueva imagen, actualizarla en una consulta separada
         if (isset($_FILES['background_image']) && $_FILES['background_image']['error'] == UPLOAD_ERR_OK) {
-            $image_data = file_get_contents($_FILES['background_image']['tmp_name']);
+            $image_data = resize_image_to_blob($_FILES['background_image']['tmp_name'], 1920, 1080, 85); // Mayor calidad y tamaño para fondos
             $image_type = $_FILES['background_image']['type'];
 
             $sql_imagen = "UPDATE j102_negocios SET background_image_data = ?, background_image_type = ? WHERE id_negocio = ?";

@@ -8,36 +8,10 @@ require_once 'audit_log.php'; // Reactivado
 
 header('Content-Type: application/json');
 
-/**
- * Genera un nuevo código CAPTCHA, lo guarda en la sesión y lo devuelve.
- */
-function generarYDevolverCaptcha() {
-    $_SESSION['captcha_time'] = time();
-    $_SESSION['captcha_hash'] = strtoupper(substr(sha1(session_id() . $_SESSION['captcha_time']), 0, 6));
-    echo json_encode(['captcha_hash' => $_SESSION['captcha_hash']]);
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    generarYDevolverCaptcha();
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
     $telefono_negocio = trim($input['telefono'] ?? '');
     $password = $input['password'] ?? '';
-    $captcha_ingresado = $input['captcha'] ?? '';
-    // --- BLOQUE DE VALIDACIÓN DE CAPTCHA DESACTIVADO PARA DESARROLLO ---
-    /*
-    if (empty($captcha_ingresado) || !isset($_SESSION['captcha_hash']) || !isset($_SESSION['captcha_time']) || (time() - $_SESSION['captcha_time']) >= 120 || strcasecmp($captcha_ingresado, $_SESSION['captcha_hash']) !== 0) {
-        http_response_code(401);
-        echo json_encode(['error' => 'El código de seguridad es incorrecto o ha expirado.']);
-        exit;
-    }
-    */
-    // Limpiar el captcha de la sesión después del intento para forzar uno nuevo
-    unset($_SESSION['captcha_hash']);
-    unset($_SESSION['captcha_time']);
 
     // 2. Validar campos obligatorios
     if (empty($telefono_negocio) || empty($password)) {
@@ -102,12 +76,14 @@ if ($result_user->num_rows > 0) { // Puede haber más de un propietario, validam
             // Almacenar datos del propietario en la sesión
             $_SESSION['owner_loggedin'] = true;
             $_SESSION['owner_id_usuario'] = $usuario['id_usuario'];
+            $_SESSION['owner_id_usuario'] = $usuario['id_usuario'];
             $_SESSION['owner_nombre_usuario'] = $usuario['nombre_usuario'];
             $_SESSION['owner_id_negocio'] = (int)$id_negocio;
             $_SESSION['owner_nombre_negocio'] = $nombre_negocio;
 
             $_SESSION['owner_last_activity'] = time(); // Iniciar el contador de inactividad para la SPA
             $response_data = [
+                'success' => true,
                 'id_usuario' => $usuario['id_usuario'],
                 'nombre_usuario' => $usuario['nombre_usuario'],
                 'id_negocio' => $id_negocio,

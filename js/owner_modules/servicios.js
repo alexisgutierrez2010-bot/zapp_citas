@@ -22,9 +22,16 @@ export async function renderServiciosView(context) {
         if (servicios && servicios.length > 0) {
             const serviciosRows = servicios.map((servicio, index) => {
                 const precioFormateado = servicio.precio ? `$${parseFloat(servicio.precio).toFixed(2)}` : 'N/A';
+                
+                // Lógica de visualización de imagen
+                const imgHtml = servicio.foto_servicio 
+                    ? `<img src="${servicio.foto_servicio}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">`
+                    : `<div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" style="width: 40px; height: 40px;"><i class="bi bi-camera"></i></div>`;
+
                 return `
                     <tr class="${servicio.activo == 1 ? '' : 'table-secondary text-muted'}">
                         <td>${index + 1}</td>
+                        <td>${imgHtml}</td>
                         <td>${servicio.nombre_servicio}</td>
                         <td>${servicio.duracion_valor} ${servicio.duracion_unidad}</td>
                         <td>${precioFormateado}</td>
@@ -34,11 +41,9 @@ export async function renderServiciosView(context) {
                             </span>
                         </td>
                         <td>
-                            <button class="btn btn-sm btn-warning btn-edit-servicio" data-servicio-json='${JSON.stringify(servicio)}' ${servicio.activo == 0 ? 'disabled' : ''}>Editar</button>
-                            ${servicio.activo == 1
-                                ? `<button class="btn btn-sm btn-danger btn-delete-servicio" data-id-servicio="${servicio.id_servicio}">Desactivar</button>`
-                                : `<button class="btn btn-sm btn-success btn-activate-servicio" data-id-servicio="${servicio.id_servicio}">Activar</button>`
-                            }
+                            <button class="btn btn-primary btn-sm btn-acciones" data-servicio-json='${JSON.stringify(servicio)}'>
+                                Acciones
+                            </button>
                         </td>
                     </tr>
                 `;
@@ -46,7 +51,7 @@ export async function renderServiciosView(context) {
 
             serviciosHtml = `
                 <table class="table table-striped table-hover">
-                    <thead class="table-dark"><tr><th>#</th><th>Servicio</th><th>Duración</th><th>Precio</th><th>Estado</th><th>Acciones</th></tr></thead>
+                    <thead class="table-dark"><tr><th>#</th><th>Foto</th><th>Servicio</th><th>Duración</th><th>Precio</th><th>Estado</th><th>Acciones</th></tr></thead>
                     <tbody>${serviciosRows}</tbody>
                 </table>`;
         } else {
@@ -62,17 +67,12 @@ export async function renderServiciosView(context) {
         `;
 
         document.getElementById('btn-crear-servicio').addEventListener('click', () => openServicioModal(context));
-        document.querySelectorAll('.btn-edit-servicio').forEach(btn => {
+        
+        document.querySelectorAll('.btn-acciones').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const servicioData = JSON.parse(e.currentTarget.dataset.servicioJson);
-                openServicioModal(context, servicioData);
+                openActionsModal(context, servicioData);
             });
-        });
-        document.querySelectorAll('.btn-delete-servicio').forEach(btn => {
-            btn.addEventListener('click', (e) => handleDeleteServicio(context, e.target.dataset.idServicio));
-        });
-        document.querySelectorAll('.btn-activate-servicio').forEach(btn => {
-            btn.addEventListener('click', (e) => handleActivateServicio(context, e.target.dataset.idServicio));
         });
 
     } catch (error) {
@@ -116,6 +116,71 @@ async function handleActivateServicio(context, id_servicio) {
     }
 }
 
+/**
+ * Abre el modal de acciones para un servicio.
+ * @param {object} context - El contexto de la aplicación.
+ * @param {object} servicio - El objeto del servicio.
+ */
+function openActionsModal(context, servicio) {
+    const modalId = 'actionsModalServicio';
+    const existingModal = document.getElementById(modalId);
+    if (existingModal) existingModal.remove();
+
+    const modalHtml = `
+        <div class="modal fade" id="${modalId}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Acciones: ${servicio.nombre_servicio}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body d-grid gap-2">
+                        <button class="btn btn-outline-primary btn-lg btn-action-edit" ${servicio.activo == 0 ? 'disabled' : ''}>
+                            <i class="bi bi-pencil-fill"></i> Editar Servicio
+                        </button>
+                        <hr>
+                        ${servicio.activo == 1 
+                            ? `<button class="btn btn-outline-danger btn-lg btn-action-deactivate"><i class="bi bi-x-circle-fill"></i> Desactivar Servicio</button>`
+                            : `<button class="btn btn-outline-success btn-lg btn-action-activate"><i class="bi bi-check-circle-fill"></i> Activar Servicio</button>`
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modalElement = document.getElementById(modalId);
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+
+    modalElement.querySelector('.btn-action-edit').addEventListener('click', () => {
+        modal.hide();
+        openServicioModal(context, servicio);
+    });
+
+    const btnDeactivate = modalElement.querySelector('.btn-action-deactivate');
+    if (btnDeactivate) {
+        btnDeactivate.addEventListener('click', () => {
+            modal.hide();
+            handleDeleteServicio(context, servicio.id_servicio);
+        });
+    }
+
+    const btnActivate = modalElement.querySelector('.btn-action-activate');
+    if (btnActivate) {
+        btnActivate.addEventListener('click', () => {
+            modal.hide();
+            handleActivateServicio(context, servicio.id_servicio);
+        });
+    }
+
+    modalElement.addEventListener('hidden.bs.modal', () => modalElement.remove());
+}
+
 function openServicioModal(context, servicio = null) {
     const { API_URL, renderView } = context;
     const isNew = !servicio;
@@ -133,6 +198,10 @@ function openServicioModal(context, servicio = null) {
                         <form id="servicio-form">
                             <input type="hidden" id="id_servicio" value="${servicio?.id_servicio || ''}">
                             <div class="mb-3"><label for="nombre_servicio" class="form-label">Nombre del Servicio</label><input type="text" class="form-control" id="nombre_servicio" value="${servicio?.nombre_servicio || ''}" required></div>
+                            <div class="mb-3">
+                                <label for="foto_servicio" class="form-label">Foto del Servicio</label>
+                                <input type="file" class="form-control" id="foto_servicio" accept="image/*">
+                            </div>
                             <div class="mb-3"><label class="form-label">Duración</label><div class="input-group"><input type="number" class="form-control" id="duracion_valor" value="${servicio?.duracion_valor || 30}" required><select class="form-select" id="duracion_unidad">${unidadesOptions}</select></div></div>
                             <div class="mb-3"><label for="precio" class="form-label">Precio (opcional)</label><input type="number" step="0.01" class="form-control" id="precio" value="${servicio?.precio || ''}"></div>
                         </form>
@@ -149,15 +218,22 @@ function openServicioModal(context, servicio = null) {
 
     document.getElementById('save-servicio-btn').addEventListener('click', async () => {
         const endpoint = isNew ? `${API_URL}api_owner_servicio_crear.php` : `${API_URL}api_owner_servicio_actualizar.php`;
-        const payload = { 
-            id_servicio: document.getElementById('id_servicio').value, 
-            nombre_servicio: document.getElementById('nombre_servicio').value, 
-            duracion_valor: document.getElementById('duracion_valor').value, 
-            duracion_unidad: document.getElementById('duracion_unidad').value, 
-            precio: document.getElementById('precio').value 
-        };
+        
+        // Usar FormData para enviar archivos
+        const formData = new FormData();
+        formData.append('id_servicio', document.getElementById('id_servicio').value);
+        formData.append('nombre_servicio', document.getElementById('nombre_servicio').value);
+        formData.append('duracion_valor', document.getElementById('duracion_valor').value);
+        formData.append('duracion_unidad', document.getElementById('duracion_unidad').value);
+        formData.append('precio', document.getElementById('precio').value);
+        
+        const fileInput = document.getElementById('foto_servicio');
+        if (fileInput.files[0]) {
+            formData.append('foto_servicio', fileInput.files[0]);
+        }
+
         try {
-            const saveResponse = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const saveResponse = await fetch(endpoint, { method: 'POST', body: formData });
             const saveData = await saveResponse.json();
             if (!saveResponse.ok) throw new Error(saveData.error);
             modal.hide();

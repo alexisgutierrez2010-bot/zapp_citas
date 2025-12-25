@@ -5,6 +5,7 @@
 session_start(); // RESTAURADO: El script principal es responsable de iniciar la sesión.
 require_once 'config.php';
 require_once 'audit_log.php'; // Reactivado
+require_once 'image_utils.php'; // Incluir el nuevo script
 
 header('Content-Type: application/json');
 
@@ -23,7 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $id_negocio_session = $_SESSION['owner_id_negocio'];
-$input = json_decode(file_get_contents('php://input'), true);
+// Al usar FormData, los datos vienen en $_POST y los archivos en $_FILES
+$input = $_POST;
 
 $nombre_servicio = trim($input['nombre_servicio'] ?? '');
 $duracion_valor = (int)($input['duracion_valor'] ?? 0);
@@ -36,9 +38,21 @@ if (empty($nombre_servicio) || $duracion_valor <= 0) {
     exit;
 }
 
-$sql = "INSERT INTO j104_servicios (id_negocio, nombre_servicio, duracion_valor, duracion_unidad, precio, activo, fecha_registro) VALUES (?, ?, ?, ?, ?, TRUE, NOW())";
+// Procesar Imagen a BLOB
+$foto_blob = null;
+if (isset($_FILES['foto_servicio']) && $_FILES['foto_servicio']['error'] === UPLOAD_ERR_OK) {
+    $foto_blob = resize_image_to_blob($_FILES['foto_servicio']['tmp_name'], 300, 300);
+}
+
+$sql = "INSERT INTO j104_servicios (id_negocio, nombre_servicio, duracion_valor, duracion_unidad, precio, activo, foto_servicio, fecha_registro) VALUES (?, ?, ?, ?, ?, TRUE, ?, NOW())";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("isiss", $id_negocio_session, $nombre_servicio, $duracion_valor, $duracion_unidad, $precio);
+
+$null_val = NULL;
+$stmt->bind_param("isidsb", $id_negocio_session, $nombre_servicio, $duracion_valor, $duracion_unidad, $precio, $null_val);
+
+if ($foto_blob !== null) {
+    $stmt->send_long_data(5, $foto_blob);
+}
 
 if ($stmt->execute()) {
     $id_nuevo_servicio = $stmt->insert_id;

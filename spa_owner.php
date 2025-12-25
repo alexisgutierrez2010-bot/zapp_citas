@@ -89,6 +89,7 @@
     <?php 
         include 'spa_owner_footer.php'; 
     ?>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <!-- MEJORA: Se usa filemtime para el versionado automático del script, evitando problemas de caché de forma dinámica. -->
     <script type="module" src="app_owner.js?v=<?php echo filemtime('app_owner.js'); ?>"></script>
 </body>

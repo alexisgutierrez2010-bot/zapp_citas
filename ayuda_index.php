@@ -10,7 +10,12 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body { background-color: #f8f9fa; }
+        body { 
+            background-color: #f8f9fa; 
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
         .card-header { background-color: #343a40; color: white; }
     </style>
 </head>
@@ -98,6 +103,11 @@
         </div>
     </div>
 
+    <footer class="footer mt-auto py-1 bg-dark text-white-50">
+        <div class="container text-center">
+            <small style="font-size: 0.8rem;">©2025. Authorized by <a href="http://www.acticven.com" target="_blank" class="text-white">www.acticven.com</a> All rights reserved. Version 1.12.24</small>
+        </div>
+    </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

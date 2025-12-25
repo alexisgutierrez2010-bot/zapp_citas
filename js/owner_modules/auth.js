@@ -4,6 +4,7 @@ import { updateNavbar } from './ui.js'; // CORRECCIÓN: La ruta relativa './ui.j
 export async function renderLoginView(context) {
     const { dom, API_URL } = context;
 
+
     document.title = `Acceso Propietario - ZApp Citas`;
     dom.navbarBrand.innerHTML = `App Propietario <span class="ms-2 fw-normal text-white-50" style="font-size: 0.8em;">Gestión de Citas</span>`;
     updateNavbar(context);
@@ -11,6 +12,7 @@ export async function renderLoginView(context) {
     dom.appContainer.innerHTML = `
         <div class="row justify-content-center mt-5">
             <div class="col-md-5 col-lg-4">
+
                 <div class="card shadow-lg">
                     <div class="card-header text-center bg-primary text-white">
                         <h3>Acceso Propietario</h3>
@@ -28,6 +30,7 @@ export async function renderLoginView(context) {
                             <div class="mb-3">
                                 <label for="password" class="form-label">Contraseña</label>
                                 <input type="password" class="form-control" id="password" required>
+
                             </div>
                             <div class="d-grid mt-4">
                                 <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
@@ -35,6 +38,10 @@ export async function renderLoginView(context) {
                             <div class="text-center mt-3">
                                 <a href="#" id="forgot-password-link">¿Olvidó su contraseña?</a>
                             </div>
+                            <div class="text-center mt-3">
+                                <a href="#" data-view="start-register">¿No tienes cuenta? Registra tu negocio</a>
+                            </div>
+
                             <hr>
                             <div class="text-center mt-2">
                                 <a href="index.php" class="text-muted"><small>Volver al Inicio</small></a>
@@ -53,6 +60,7 @@ export async function renderLoginView(context) {
         const paisesOptions = paises.map(pais => `<option value="${pais.codigo_telefono}" ${pais.id_pais == 1 ? 'selected' : ''}>${pais.codigo_telefono}</option>`).join('');
         document.getElementById('country_code').innerHTML = paisesOptions;
     } catch (error) {
+
         console.error("Error cargando códigos de país:", error);
         document.getElementById('error-container').innerHTML = `<div class="alert alert-warning">No se pudieron cargar los códigos de país.</div>`;
     }
@@ -61,6 +69,57 @@ export async function renderLoginView(context) {
     document.getElementById('forgot-password-link').addEventListener('click', (e) => {
         e.preventDefault();
         renderForgotPasswordView(context);
+    });
+}
+
+export async function renderStartRegistrationView(context) {
+    const { dom, API_URL } = context;
+    dom.appContainer.innerHTML = `
+        <div class="row justify-content-center mt-5">
+            <div class="col-md-5 col-lg-4">
+                <div class="card shadow-lg">
+                    <div class="card-header text-center bg-primary text-white">
+                        <h3>Registrar Nuevo Negocio</h3>
+                    </div>
+                    <div class="card-body p-4">
+                        <div id="error-container-start-reg"></div>
+                        <p class="text-muted">Para comenzar, ingrese el número de teléfono principal de su negocio.</p>
+                        <form id="start-registration-form">
+                            <div class="mb-3">
+                                <label for="telefono-reg" class="form-label">Teléfono del Negocio</label>
+                                <div class="input-group">
+                                    <select class="form-select" id="country_code_reg" style="max-width: 120px;" required></select>
+                                    <input type="tel" class="form-control" id="telefono-reg" placeholder="Ej: 4121234567" required>
+                                </div>
+                            </div>
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn btn-primary">Continuar Registro</button>
+                            </div>
+                        </form>
+                        <div class="text-center mt-3">
+                            <a href="#" data-view="login">Volver al inicio de sesión</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Cargar y poblar el selector de países
+    try {
+        const response = await fetch(`${API_URL}api_paises.php`);
+        const paises = await response.json();
+        const paisesOptions = paises.map(pais => `<option value="${pais.codigo_telefono}" ${pais.id_pais == 1 ? 'selected' : ''}>${pais.codigo_telefono}</option>`).join('');
+        document.getElementById('country_code_reg').innerHTML = paisesOptions;
+    } catch (error) {
+        document.getElementById('error-container-start-reg').innerHTML = `<div class="alert alert-warning">No se pudieron cargar los códigos de país.</div>`;
+    }
+
+    document.getElementById('start-registration-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const telefono = `${document.getElementById('country_code_reg').value} ${document.getElementById('telefono-reg').value.trim()}`;
+        // La API de registro ya valida si el teléfono existe, así que podemos ir directo al formulario completo.
+        renderOwnerRegistrationView(context, telefono);
     });
 }
 
@@ -90,6 +149,7 @@ function renderBusinessNotFoundView(context, telefono) {
     `;
     document.getElementById('btn-show-register-form').addEventListener('click', (e) => {
         renderOwnerRegistrationView(context, e.currentTarget.dataset.telefono);
+
     });
 }
 
@@ -100,6 +160,7 @@ function renderBusinessNotFoundView(context, telefono) {
 async function renderForgotPasswordView(context) {
     const { dom, API_URL } = context;
 
+
     dom.appContainer.innerHTML = `
         <div class="row justify-content-center mt-5">
             <div class="col-md-5 col-lg-4">
@@ -109,6 +170,7 @@ async function renderForgotPasswordView(context) {
                     </div>
                     <div class="card-body p-4">
                         <div id="recovery-message-container" class="mb-3"></div>
+
                         <p class="text-muted">Ingrese el teléfono de su negocio. Si existe una cuenta, se enviarán las instrucciones de recuperación al correo del propietario.</p>
                         <form id="recovery-form">
                             <div class="mb-3">
@@ -119,6 +181,7 @@ async function renderForgotPasswordView(context) {
                                 </div>
                             </div>
                             <div class="d-grid mt-4">
+
                                 <button type="submit" class="btn btn-primary">Enviar Instrucciones</button>
                             </div>
                         </form>
@@ -132,6 +195,7 @@ async function renderForgotPasswordView(context) {
     `;
 
     // Cargar y poblar el selector de países
+
     try {
         const response = await fetch(`${API_URL}api_paises.php`);
         const paises = await response.json();
@@ -146,6 +210,7 @@ async function renderForgotPasswordView(context) {
     document.getElementById('back-to-login-link').addEventListener('click', (e) => {
         e.preventDefault();
         renderLoginView(context);
+
     });
 }
 
@@ -156,6 +221,7 @@ async function renderForgotPasswordView(context) {
  */
 async function renderOwnerRegistrationView(context, telefono) {
     const { dom, API_URL, renderView } = context;
+
     dom.appContainer.innerHTML = `<div class="text-center mt-5"><div class="spinner-border" role="status"></div><p>Cargando formulario de registro...</p></div>`;
 
     try {
@@ -166,11 +232,14 @@ async function renderOwnerRegistrationView(context, telefono) {
         const paises = await paisesResponse.json();
         const categorias = await categoriasResponse.json();
 
+        // Generar un código de seguridad aleatorio de 5 caracteres
+        const securityCode = Math.random().toString(36).substring(2, 7).toUpperCase();
+
         const paisesOptions = '<option value="" disabled selected>Seleccione un país...</option>' + paises.map(p => `<option value="${p.id_pais}">${p.nombre_pais}</option>`).join('');
         const categoriasOptions = '<option value="" disabled selected>Seleccione una categoría...</option>' + categorias.map(c => `<option value="${c.id_categoria}">${c.nombre_categoria}</option>`).join('');
 
         dom.appContainer.innerHTML = `
-            <div class="row justify-content-center">
+            <div class="row justify-content-center" >
                 <div class="col-md-10 col-lg-8">
                     <div class="card">
                         <div class="card-header text-center bg-primary text-white"><h3>Registro de Nuevo Negocio</h3></div>
@@ -219,6 +288,15 @@ async function renderOwnerRegistrationView(context, telefono) {
                                     <div class="col-md-6 mb-3"><label for="confirm_password" class="form-label">Confirmar Contraseña</label><input type="password" class="form-control" id="confirm_password" required></div>
                                 </div>
 
+                                <!-- Campo de Seguridad -->
+                                <div class="mb-3">
+                                    <label class="form-label">Código de Verificación</label>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-light border rounded p-2 fw-bold text-center me-3 text-primary" style="letter-spacing: 3px; min-width: 100px; user-select: none; font-size: 1.1em;">${securityCode}</div>
+                                        <input type="text" class="form-control" id="input_security_code" placeholder="Repite el código aquí" required>
+                                    </div>
+                                </div>
+
                                 <div class="d-flex justify-content-between mt-4">
                                     <button type="button" class="btn btn-secondary" data-view="login">Cancelar</button>
                                     <button type="submit" class="btn btn-success">Completar Registro</button>
@@ -234,6 +312,7 @@ async function renderOwnerRegistrationView(context, telefono) {
         const estadoSelect = document.getElementById('id_estado');
         paisSelect.addEventListener('change', async () => {
             const idPais = paisSelect.value;
+
             estadoSelect.disabled = true;
             estadoSelect.innerHTML = '<option value="">Cargando...</option>';
             if (idPais) {
@@ -242,9 +321,18 @@ async function renderOwnerRegistrationView(context, telefono) {
                 estadoSelect.innerHTML = '<option value="" disabled selected>Seleccione un estado...</option>' + estados.map(e => `<option value="${e.id_estado}">${e.nombre_estado}</option>`).join('');
                 estadoSelect.disabled = false;
             }
+
         });
 
-        document.getElementById('registro-owner-form').addEventListener('submit', (e) => handleOwnerRegistration(e, context));
+        document.getElementById('registro-owner-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const userCode = document.getElementById('input_security_code').value.trim().toUpperCase();
+            if (userCode !== securityCode) {
+                alert('El código de verificación es incorrecto. Por favor verifícalo.');
+                return;
+            }
+            handleOwnerRegistration(e, context);
+        });
 
     } catch (error) {
         dom.appContainer.innerHTML = `<div class="alert alert-danger">Error al cargar el formulario de registro: ${error.message}</div>`;
@@ -316,6 +404,7 @@ async function handlePasswordRecovery(e, context) {
     const { API_URL } = context;
     const messageContainer = document.getElementById('recovery-message-container');
     const submitButton = e.target.querySelector('button[type="submit"]');
+
     const telefono = `${document.getElementById('country_code_recovery').value} ${document.getElementById('telefono-recovery').value.trim()}`;
 
     messageContainer.innerHTML = '';
@@ -352,6 +441,7 @@ async function handleLogin(e, context) {
     const errorContainer = document.getElementById('error-container');
     errorContainer.innerHTML = '';
     const submitButton = e.target.querySelector('button[type="submit"]');
+
 
     const payload = {
         telefono: `${document.getElementById('country_code').value} ${document.getElementById('telefono').value.trim()}`,
@@ -414,4 +504,5 @@ export async function handleLogout(context) {
         updateNavbar(context);
         renderLoginView(context);
     }
+
 }

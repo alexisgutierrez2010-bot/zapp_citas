@@ -43,6 +43,7 @@ export function updateNavbar(context) {
             <a class="nav-link" href="#" data-view="calendario">Calendario</a>
             <a class="nav-link" href="#" data-view="clientes">Mis Clientes</a>
             <a class="nav-link" href="#" data-view="servicios">Mis Servicios</a>
+            <a class="nav-link" href="#" data-view="reviews">Reseñas</a>
             <div class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownAdmin" role="button" data-bs-toggle="dropdown" aria-expanded="false">Administración</a>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownAdmin">

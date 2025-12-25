@@ -1,6 +1,6 @@
 // Módulo principal (Cerebro) de la SPA del Propietario
 
-import { renderLoginView, handleLogout } from './js/owner_modules/auth.js';
+import { renderLoginView, handleLogout, renderStartRegistrationView } from './js/owner_modules/auth.js';
 import { renderAgendaView } from './js/owner_modules/agenda.js';
 import { renderCalendarioView } from './js/owner_modules/calendario.js';
 import { renderDisponibilidadView } from './js/owner_modules/disponibilidad.js';
@@ -9,6 +9,7 @@ import { renderServiciosView } from './js/owner_modules/servicios.js';
 import { renderNegocioView } from './js/owner_modules/negocio.js';
 import { renderPerfilView } from './js/owner_modules/perfil.js';
 import { renderCrearCitaView, renderEditarCitaView } from './js/owner_modules/citas.js';
+import { renderReviewsView } from './js/owner_modules/reviews.js'; // NUEVO
 import { renderDashboardView } from './js/owner_modules/dashboard.js';
 import { updateNavbar, setActiveNavLink } from './js/owner_modules/ui.js';
 
@@ -39,6 +40,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const routes = {
         'login': renderLoginView,
         'agenda': renderAgendaView,
+        'start-register': renderStartRegistrationView,
         'calendario': renderCalendarioView,
         'disponibilidad': renderDisponibilidadView,
         'clientes': renderClientesView,
@@ -48,6 +50,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         'crear-cita': renderCrearCitaView,
         'editar-cita': renderEditarCitaView,
         'dashboard': renderDashboardView, // <-- AÑADIDO: Registrar la nueva ruta
+        'reviews': renderReviewsView, // NUEVO
     };
 
     context.renderView = (viewName, params = {}) => {

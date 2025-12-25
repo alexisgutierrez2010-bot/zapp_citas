@@ -31,6 +31,9 @@
             <li class="nav-item">
               <a class="nav-link" href="calendario_ver.php">Calendario</a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link" href="resenas_lista.php">Reseñas</a>
+            </li>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownConfig" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                 Configuración

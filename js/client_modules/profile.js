@@ -1,5 +1,5 @@
-// c:/xampp/htdocs/zapp_citas/js/client_modules/profile.js
-
+// js/client_modules/profile.js
+// Módulo de perfil para la App del Cliente
 /**
  * Renderiza la vista del perfil del cliente.
  * @param {object} context - El contexto global de la aplicación.
@@ -54,7 +54,7 @@ export async function renderProfileView(context) {
                             <div class="col-md-6 mb-3">
                                 <label for="numero_celular" class="form-label">Número de Celular (para Login y Notificaciones)</label>
                                 <div class="input-group">
-                                    <select class="form-select" id="country_code_profile" style="max-width: 120px;">${paises.map(p => `<option value="${p.codigo_telefono}" ${currentCountryCode === p.codigo_telefono ? 'selected' : ''}>${p.codigo_telefono}</option>`).join('')}</select>
+                                    <select class="form-select" id="country_code_profile" style="max-width: 120px;">${paises.map(p => `<option value="${p.codigo_telefono}" ${p.codigo_telefono == currentCountryCode ? 'selected' : ''}>${p.codigo_telefono}</option>`).join('')}</select>
                                     <input type="tel" class="form-control" id="numero_celular" value="${currentPhoneNumber}" required>
                                 </div>
                             </div>
@@ -114,6 +114,12 @@ export async function renderProfileView(context) {
                             <input class="form-check-input" type="checkbox" id="in_sms" ${profileData.in_sms == 1 ? 'checked' : ''}>
                             <label class="form-check-label" for="in_sms">
                                 Deseo recibir notificaciones y recordatorios por SMS (pueden aplicarse cargos).
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="in_whatsapp" ${profileData.in_whatsapp == 1 ? 'checked' : ''}>
+                            <label class="form-check-label" for="in_whatsapp">
+                                Deseo recibir notificaciones por WhatsApp.
                             </label>
                         </div>
                     </div>

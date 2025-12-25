@@ -8,6 +8,7 @@ session_start(); // Iniciar la sesión para poder verificar al cliente.
 header('Content-Type: application/json');
 require_once 'config.php';
 require_once 'audit_log.php';
+require_once 'ical_generator.php';
 require 'vendor/autoload.php'; // Para PHPMailer
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -81,72 +82,106 @@ if ($stmt->execute()) {
     // --- INICIO: LÓGICA DE ENVÍO DE CORREO REACTIVADA Y MEJORADA ---
     try {
         // Obtener datos para el correo
-        $sql_datos_correo = "SELECT 
-                                c.nombre_completo AS nombre_cliente, c.correo_electronico AS email_cliente,
+        $sql_datos_correo = "SELECT
+                                cl.nombre_completo AS nombre_cliente, cl.correo_electronico AS email_cliente,
                                 n.nombre_negocio, n.email AS email_negocio,
+                                u.correo_electronico AS email_propietario,
                                 s.nombre_servicio
-                             FROM j106_clientes c
-                             JOIN j102_negocios n ON n.id_negocio = ?
-                             JOIN j104_servicios s ON n.id_negocio = s.id_negocio
-                             WHERE c.id_cliente = ? AND n.id_negocio = ? AND s.id_servicio = ?";
+                             FROM j108_citas ci
+                             JOIN j106_clientes cl ON ci.id_cliente = cl.id_cliente
+                             JOIN j102_negocios n ON ci.id_negocio = n.id_negocio
+                             JOIN j104_servicios s ON ci.id_servicio = s.id_servicio
+                             LEFT JOIN j100_usuarios u ON n.id_negocio = u.id_negocio AND u.rol = 'Propietario'
+                             WHERE ci.id_cita = ? LIMIT 1";
         $stmt_datos = $conn->prepare($sql_datos_correo);
-        $stmt_datos->bind_param("iii", $id_cliente, $id_negocio, $id_servicio);
+        $stmt_datos->bind_param("i", $id_nueva_cita);
         $stmt_datos->execute();
         $datos_correo = $stmt_datos->get_result()->fetch_assoc();
         $stmt_datos->close();
 
         if ($datos_correo) {
-            $mail = new PHPMailer(true);
-            // Configuración del servidor (tomada de config.php)
-            $mail->isSMTP();
-            $mail->Host = SMTP_HOST;
-            $mail->SMTPAuth = SMTP_AUTH;
-            $mail->Username = SMTP_USERNAME;
-            $mail->Password = SMTP_PASSWORD;
-            $mail->SMTPSecure = SMTP_SECURE;
-            $mail->Port = SMTP_PORT;
-            $mail->setFrom(SMTP_FROM_EMAIL, SMTP_FROM_NAME);
-            $mail->CharSet = 'UTF-8';
-
-            // Contenido del correo
             $fecha_formateada = $fecha_hora_inicio->format('d/m/Y');
             $hora_formateada = $fecha_hora_inicio->format('h:i A');
-            $asunto = "Nueva Cita Agendada: {$datos_correo['nombre_servicio']} para {$datos_correo['nombre_cliente']}";
-            $cuerpoHTML = "
-                <h2>Nueva Cita Agendada</h2>
-                <p>Se ha registrado una nueva cita a través del portal de clientes.</p>
-                <ul>
-                    <li><strong>Negocio:</strong> {$datos_correo['nombre_negocio']}</li>
-                    <li><strong>Cliente:</strong> {$datos_correo['nombre_cliente']}</li>
-                    <li><strong>Servicio:</strong> {$datos_correo['nombre_servicio']}</li>
-                    <li><strong>Fecha:</strong> {$fecha_formateada}</li>
-                    <li><strong>Hora:</strong> {$hora_formateada}</li>
-                    <li><strong>Notas del cliente:</strong> " . htmlspecialchars($descripcion_final) . "</li>
-                </ul>
-            ";
+
+            // Generar contenido iCal
+            $ical_details = [
+                'start_time' => $fecha_hora_inicio->format('Y-m-d H:i:s'),
+                'end_time' => $fecha_hora_fin->format('Y-m-d H:i:s'),
+                'summary' => $datos_correo['nombre_servicio'],
+                'description' => "Cita para el servicio: {$datos_correo['nombre_servicio']}",
+                'location' => $datos_correo['direccion_negocio'] ?? '',
+                'organizer_email' => $datos_correo['email_negocio'],
+                'organizer_name' => $datos_correo['nombre_negocio'],
+                'attendee_email' => $datos_correo['email_cliente'],
+                'attendee_name' => $datos_correo['nombre_cliente'],
+                'uid' => "ZAPPCITAS-{$id_nueva_cita}-" . time() . "@acticven.com",
+                'guests' => []
+            ];
+            $ical_content = generate_ical_content($ical_details);
 
             // Enviar al propietario del negocio
-            if (!empty($datos_correo['email_negocio'])) {
-                $mail->addAddress($datos_correo['email_negocio']);
-                $mail->Subject = $asunto;
-                $mail->Body    = $cuerpoHTML;
-                $mail->isHTML(true);
-                $mail->send();
-                $mail->clearAddresses();
+            if (!empty($datos_correo['email_propietario'])) {
+                $mail_owner = new PHPMailer(true);
+                $mail_owner->isSMTP();
+                $mail_owner->Host = SMTP_HOST;
+                $mail_owner->SMTPAuth = true;
+                $mail_owner->Username = SMTP_USERNAME;
+                $mail_owner->Password = SMTP_PASSWORD;
+                $mail_owner->SMTPSecure = defined('SMTP_SECURE') ? SMTP_SECURE : PHPMailer::ENCRYPTION_STARTTLS;
+                $mail_owner->Port = defined('SMTP_PORT') ? SMTP_PORT : 587;
+                $mail_owner->CharSet = 'UTF-8';
+
+                $mail_owner->SMTPOptions = array(
+                    'ssl' => array(
+                        'verify_peer' => false,
+                        'verify_peer_name' => false,
+                        'allow_self_signed' => true
+                    )
+                );
+
+                $mail_owner->setFrom(SMTP_USERNAME, 'ZApp Citas - Notificaciones');
+                $mail_owner->addAddress($datos_correo['email_propietario']);
+                $mail_owner->addReplyTo($datos_correo['email_cliente'], $datos_correo['nombre_cliente']);
+                $mail_owner->isHTML(true);
+                $mail_owner->Subject = "Nueva Cita Agendada: {$datos_correo['nombre_servicio']} para {$datos_correo['nombre_cliente']}";
+                $mail_owner->addStringAttachment($ical_content, 'cita.ics', 'base64', 'text/calendar');
+                $mail_owner->Body = "<h2>Nueva Cita Agendada</h2><p>Se ha registrado una nueva cita a través del portal de clientes.</p><ul><li><strong>Cliente:</strong> {$datos_correo['nombre_cliente']}</li><li><strong>Servicio:</strong> {$datos_correo['nombre_servicio']}</li><li><strong>Fecha:</strong> {$fecha_formateada}</li><li><strong>Hora:</strong> {$hora_formateada}</li><li><strong>Notas del cliente:</strong> " . htmlspecialchars($descripcion_final) . "</li></ul>";
+                $mail_owner->send();
             }
 
             // Enviar al cliente
             if (!empty($datos_correo['email_cliente'])) {
-                $mail->addAddress($datos_correo['email_cliente']);
-                $mail->Subject = "Confirmación de Cita: {$datos_correo['nombre_servicio']}";
-                $mail->Body    = $cuerpoHTML;
-                $mail->isHTML(true);
-                $mail->send();
+                $mail_client = new PHPMailer(true);
+                $mail_client->isSMTP();
+                $mail_client->Host = SMTP_HOST;
+                $mail_client->SMTPAuth = true;
+                $mail_client->Username = SMTP_USERNAME;
+                $mail_client->Password = SMTP_PASSWORD;
+                $mail_client->SMTPSecure = defined('SMTP_SECURE') ? SMTP_SECURE : PHPMailer::ENCRYPTION_STARTTLS;
+                $mail_client->Port = defined('SMTP_PORT') ? SMTP_PORT : 587;
+                $mail_client->CharSet = 'UTF-8';
+
+                $mail_client->SMTPOptions = array(
+                    'ssl' => array(
+                        'verify_peer' => false,
+                        'verify_peer_name' => false,
+                        'allow_self_signed' => true
+                    )
+                );
+
+                $mail_client->setFrom(SMTP_USERNAME, $datos_correo['nombre_negocio']); // From: admin_appcitas@acticven.com (Nombre del Negocio)
+                $mail_client->addAddress($datos_correo['email_cliente'], $datos_correo['nombre_cliente']);
+                $mail_client->addReplyTo($datos_correo['email_negocio'], $datos_correo['nombre_negocio']); // Reply-To: el_negocio@email.com
+                $mail_client->isHTML(true);
+                $mail_client->Subject = "Confirmación de Cita: {$datos_correo['nombre_servicio']}";
+                $mail_client->addStringAttachment($ical_content, 'cita.ics', 'base64', 'text/calendar');
+                $mail_client->Body = "<h2>Confirmación de Cita</h2><p>Hola {$datos_correo['nombre_cliente']}, tu cita ha sido agendada con éxito.</p><ul><li><strong>Negocio:</strong> {$datos_correo['nombre_negocio']}</li><li><strong>Servicio:</strong> {$datos_correo['nombre_servicio']}</li><li><strong>Fecha:</strong> {$fecha_formateada}</li><li><strong>Hora:</strong> {$hora_formateada}</li></ul><p>¡Te esperamos!</p>";
+                $mail_client->send();
             }
         }
     } catch (Exception $e) {
         // No detener la ejecución si el correo falla, pero registrarlo.
-        registrar_auditoria($conn, null, $id_negocio, 'EMAIL_FAIL', "Fallo al enviar correo para cita ID {$id_nueva_cita}. Error: {$mail->ErrorInfo}");
+        registrar_auditoria($conn, null, $id_negocio, 'EMAIL_FAIL', "Fallo al enviar correo para cita ID {$id_nueva_cita}. Error: {$e->getMessage()}");
     }
     // --- FIN: LÓGICA DE ENVÍO DE CORREO ---
 

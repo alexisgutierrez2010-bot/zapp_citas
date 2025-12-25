@@ -36,7 +36,8 @@ export async function renderPerfilView(context) {
                                     <input type="password" class="form-control" id="confirmar_password" required>
                                 </div>
                             </div>
-                            <div class="d-flex justify-content-end mt-3">
+                            <div class="d-flex justify-content-end mt-3 gap-2">
+                                <button type="button" class="btn btn-secondary" id="btn-cancelar-perfil">Cancelar</button>
                                 <button type="submit" class="btn btn-primary">Guardar Cambios</button>
                             </div>
                         </form>
@@ -46,6 +47,7 @@ export async function renderPerfilView(context) {
         </div>`;
 
     document.getElementById('perfil-form').addEventListener('submit', (e) => handleUpdatePerfil(e, context));
+    document.getElementById('btn-cancelar-perfil').addEventListener('click', () => context.renderView('agenda'));
 }
 
 async function handleUpdatePerfil(e, context) {

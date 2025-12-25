@@ -1,5 +1,7 @@
 // c:/xampp/htdocs/zapp_citas/js/client_modules/history.js
 
+import { handleCancelarCita, handleConfirmarCita } from './booking.js';
+
 /**
  * Muestra el historial completo de citas del cliente.
  * @param {object} context - El contexto global de la aplicación.
@@ -29,27 +31,54 @@ export async function renderHistoryView(context) {
                 const fecha = new Date(cita.fecha_hora_inicio);
                 const estado = cita.estado_cita;
                 const color_clase = status_colors[estado] ?? 'bg-light text-dark';
+                const precioFormateado = cita.precio ? `$${parseFloat(cita.precio).toFixed(2)}` : '-';
+
+                let accionesHtml = '';
+                const esFutura = new Date(cita.fecha_hora_inicio) > new Date();
+
+                if (esFutura) {
+                    if (estado === 'Pendiente') {
+                        accionesHtml += `<button class="btn btn-sm btn-success me-1 btn-confirmar-historial" data-id-cita="${cita.id_cita}">Confirmar</button>`;
+                    }
+                    if (estado === 'Pendiente' || estado === 'Confirmada') {
+                        accionesHtml += `<button class="btn btn-sm btn-danger btn-cancelar-historial" data-id-cita="${cita.id_cita}">Cancelar</button>`;
+                    }
+                }
+
                 return `
                     <tr>
                         <td>${index + 1}</td>
                         <td>${fecha.toLocaleDateString('es-ES')}</td>
                         <td>${fecha.toLocaleTimeString('es-ES', { hour: 'numeric', minute: 'numeric' })}</td>
                         <td>${cita.nombre_servicio}</td>
-                        <td><span class="badge ${color_clase}">${estado}</span></td>
-                        <td><small class="text-muted">${cita.descripcion_trabajo || 'Sin notas'}</small></td>
+                        <td>${precioFormateado}</td>
+                        <td><span class="badge rounded-pill ${color_clase}">${estado}</span></td>
+                        <td>${accionesHtml || '-'}</td>
                     </tr>
                 `;
             }).join('');
 
             historialHtml = `
                 <table class="table table-striped table-hover">
-                    <thead class="table-dark"><tr><th>#</th><th>Fecha</th><th>Hora</th><th>Servicio</th><th>Estado</th><th>Notas</th></tr></thead>
+                    <thead class="table-dark"><tr><th>#</th><th>Fecha</th><th>Hora</th><th>Servicio</th><th>Precio</th><th>Estado</th><th>Acciones</th></tr></thead>
                     <tbody>${citasRows}</tbody>
                 </table>`;
         } else {
             historialHtml = `<div class="alert alert-info">No tienes citas en tu historial.</div>`;
         }
         context.dom.appContainer.innerHTML = `<h3>Mi Historial de Citas</h3>${historialHtml}`;
+
+        // Listeners para los nuevos botones de acción
+        document.querySelectorAll('.btn-cancelar-historial').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                handleCancelarCita(context, e.target.dataset.idCita, e.target);
+            });
+        });
+        document.querySelectorAll('.btn-confirmar-historial').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                handleConfirmarCita(context, e.target.dataset.idCita, e.target);
+            });
+        });
 
     } catch (error) {
         context.dom.appContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;

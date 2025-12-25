@@ -10,6 +10,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Citas por Clientes</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         body { 
             background-color: #f4f7f6; 
@@ -45,6 +46,7 @@
     </nav>
     <main id="app-container" class="container mt-4"></main>
     <?php include 'spa_client_footer.php'; ?>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module" src="app_client.js?v=<?php echo filemtime('app_client.js') . '&t=' . time(); ?>"></script>
 </body>
 </html>

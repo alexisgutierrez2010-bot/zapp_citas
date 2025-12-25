@@ -22,6 +22,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $stmt_check->execute();
     if ($stmt_check->get_result()->num_rows > 0) {
         header("Location: categorias_lista.php?status=error&message=" . urlencode("Ya existe una categoría con ese nombre."));
+
         exit();
     }
     $stmt_check->close();

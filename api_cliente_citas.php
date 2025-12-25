@@ -1,42 +1,41 @@
 <?php
-// Revisado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM en fecha Dec/01/2025 //
-// Update :Dec-01-2025).
-header('Content-Type: application/json');
-// session_start(); // ELIMINADO: El guardián ya inicia la sesión.
+// Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
+// ©2025. Software development and Authorized by WWW.ACTICVEN.COM All rights reserved.
+
 require_once 'config.php';
 
-$id_cliente = isset($_GET['id_cliente']) ? (int)$_GET['id_cliente'] : 0;
-
-if ($id_cliente <= 0) {
-    http_response_code(400);
-    echo json_encode(['error' => 'ID de cliente no válido.']);
+session_start();
+if (!isset($_SESSION['client_loggedin']) || $_SESSION['client_loggedin'] !== true) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Acceso no autorizado.']);
     exit;
 }
 
-$response = ['cita_reciente' => null];
+header('Content-Type: application/json');
 
-// Buscamos la cita más reciente (futura o pasada)
+$id_cliente = (int)($_GET['id_cliente'] ?? 0);
+
+if ($id_cliente !== (int)$_SESSION['client_id']) {
+    http_response_code(403);
+    echo json_encode(['error' => 'No tienes permiso para ver estas citas.']);
+    exit;
+}
+
 $sql = "SELECT 
-            c.id_cita,
-            c.fecha_hora_inicio,
-            c.estado_cita,
-            c.descripcion_trabajo,
-            s.nombre_servicio
-        FROM j108_citas c
-        JOIN j104_servicios s ON c.id_servicio = s.id_servicio
-        WHERE c.id_cliente = ?
-        ORDER BY c.fecha_hora_inicio DESC
-        LIMIT 1";
+            ci.id_cita, ci.fecha_hora_inicio, ci.estado_cita, ci.descripcion_trabajo,
+            s.nombre_servicio, s.precio
+        FROM j108_citas ci
+        JOIN j104_servicios s ON ci.id_servicio = s.id_servicio
+        WHERE ci.id_cliente = ? 
+          AND ci.fecha_hora_inicio >= NOW()
+          AND ci.estado_cita NOT IN ('Cancelada', 'Completada', 'No Asistió')
+        ORDER BY ci.fecha_hora_inicio ASC";
 
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $id_cliente);
 $stmt->execute();
 $result = $stmt->get_result();
+$citas_proximas = $result->fetch_all(MYSQLI_ASSOC);
 
-if ($result->num_rows > 0) {
-    $response['cita_reciente'] = $result->fetch_assoc();
-}
-
-$stmt->close();
-echo json_encode($response);
+echo json_encode(['citas_proximas' => $citas_proximas]);
 ?>
