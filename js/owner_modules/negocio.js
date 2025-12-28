@@ -1,3 +1,6 @@
+// Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
+// ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
+// Update :Dec-25-2025).
 // js/modules/negocio.js
 
 /**

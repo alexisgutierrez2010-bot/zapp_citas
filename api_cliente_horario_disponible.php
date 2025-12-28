@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-14-2025). REESCRITO DESDE CERO para usar la lógica robusta del SPA_OWNER.
+// Update :Dec-25-2025).
 header('Content-Type: application/json');
 require_once 'config.php';
 

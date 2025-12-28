@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-05-2025). Aplicada la internacionalización (i18n).
+// Update :Dec-25-2025).
 require_once 'auth_check.php'; // Inicia la sesión, carga el idioma y verifica el login
 ?><!DOCTYPE html><html lang='es'>
 <head>

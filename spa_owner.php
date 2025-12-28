@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025).
+// Update :Dec-25-2025).
 ?><!DOCTYPE html>
 <html lang="es">
 <head>
@@ -87,10 +87,19 @@
     </div>
 
     <?php 
-        include 'spa_owner_footer.php'; 
+        include 'footer.php'; 
     ?>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <!-- MEJORA: Se usa filemtime para el versionado automático del script, evitando problemas de caché de forma dinámica. -->
     <script type="module" src="app_owner.js?v=<?php echo filemtime('app_owner.js'); ?>"></script>
+    <script>
+        // Fallback de seguridad: Si la app no carga en 4 segundos, mostrar error.
+        setTimeout(function() {
+            var spinner = document.querySelector('.spinner-border');
+            if (spinner) {
+                var container = document.getElementById('app-container');
+                container.innerHTML = '<div class="alert alert-danger"><h4>Error de Arranque</h4><p>La aplicación tardó demasiado en iniciar.</p><hr><p><strong>Posibles causas:</strong><br>1. Faltan archivos en la carpeta <code>/js/owner_modules/</code>.<br>2. Error de sintaxis en JavaScript (Presiona F12 y mira la Consola).<br>3. La API devolvió datos inválidos.</p></div>';
+            }
+        }, 4000);
+    </script>
 </body>
 </html>

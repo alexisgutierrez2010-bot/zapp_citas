@@ -1,4 +1,7 @@
 <?php
+// Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
+// ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
+// Update :Dec-25-2025).
 session_start(); // CORRECCIÓN: Iniciar la sesión para que el guardián funcione.
 require_once 'api_admin_session_check.php'; // CORRECCIÓN: Usar el guardián de API correcto.
 require_once 'config.php';

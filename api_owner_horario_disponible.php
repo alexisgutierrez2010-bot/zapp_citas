@@ -1,14 +1,12 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025).
+// Update :Dec-25-2025).
 session_start();
-// --- SOLUCIÓN ---
-// Se elimina la llamada a 'api_owner_session_check.php' porque este script termina la ejecución (exit;)
-// e impide que se devuelva la lista de horarios disponibles. La seguridad ya está cubierta por la
-// comprobación de sesión inicial en app_owner.js.
-header('Content-Type: application/json'); // CORRECCIÓN: La cabecera se establece ANTES de cualquier lógica.
-require_once 'config.php';
+// SOLUCIÓN: Se restaura el guardián de sesión. Es indispensable para validar al usuario
+// y para crear la conexión a la base de datos ($conn) que este script necesita.
+require_once 'api_owner_session_check.php';
+header('Content-Type: application/json');
 
 $id_negocio_session = $_SESSION['owner_id_negocio'];
 $fecha_str = isset($_GET['fecha']) ? $_GET['fecha'] : date('Y-m-d');

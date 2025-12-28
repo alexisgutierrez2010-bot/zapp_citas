@@ -18,10 +18,12 @@ export async function renderDashboardView(context) {
                 <div class="list-group">
                     ${citas.map(cita => {
                         const fecha = new Date(cita.fecha_hora_inicio);
-                        const opcionesFecha = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                        const opcionesHora = { hour: 'numeric', minute: 'numeric', hour12: true };
+                        // HOMOLOGACIÓN: Formato dd/mm/yyyy para consistencia con el historial.
+                        const fechaStr = fecha.toLocaleDateString('es-ES');
+                        const horaStr = fecha.toLocaleTimeString('es-ES', { hour: 'numeric', minute: 'numeric', hour12: true });
                         const status_colors = { 'Pendiente': 'bg-info text-dark', 'Confirmada': 'bg-primary' };
                         const color_clase = status_colors[cita.estado_cita] ?? 'bg-secondary';
+                        const precio = parseFloat(cita.precio || 0).toFixed(2);
                         
                         return `
                             <div class="list-group-item list-group-item-action flex-column align-items-start">
@@ -30,10 +32,13 @@ export async function renderDashboardView(context) {
                                     <small><span class="badge ${color_clase}">${cita.estado_cita}</span></small>
                                 </div>
                                 <p class="mb-1">
-                                    ${fecha.toLocaleDateString('es-ES', opcionesFecha)} a las ${fecha.toLocaleTimeString('es-ES', opcionesHora)}
+                                    ${fechaStr} a las ${horaStr}
                                 </p>
+                                <p class="mb-1"><strong>Costo:</strong> $${precio}</p>
+                                ${cita.descripcion_trabajo ? `<p class="mb-1 text-muted"><small><strong>Nota:</strong> ${cita.descripcion_trabajo}</small></p>` : ''}
                                 <div class="mt-2">
                                     ${cita.estado_cita === 'Pendiente' ? `<button class="btn btn-sm btn-success" data-action="confirm-appointment" data-id-cita="${cita.id_cita}">Confirmar</button>` : ''}
+                                    ${cita.estado_cita === 'Pendiente' ? `<button class="btn btn-sm btn-info ms-2" data-action="reschedule-appointment" data-id-cita="${cita.id_cita}" data-id-servicio="${cita.id_servicio}" data-nombre-servicio="${cita.nombre_servicio}" data-fecha-hora-inicio="${cita.fecha_hora_inicio}">Editar</button>` : ''}
                                     ${cita.estado_cita === 'Pendiente' || cita.estado_cita === 'Confirmada' ? `<button class="btn btn-sm btn-danger ms-2" data-action="cancel-appointment" data-id-cita="${cita.id_cita}">Cancelar</button>` : ''}
                                 </div>
                             </div>

@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMINI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update: Nov-29-2025.
+// Update :Dec-25-2025).
 
 // --- VERSIÓN SIMPLIFICADA ---
 

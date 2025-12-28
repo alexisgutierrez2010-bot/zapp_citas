@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-27-2025).
+// Update :Dec-25-2025).
 // 1. Incluir configuración y establecer la cabecera para que la respuesta sea JSON
 require_once 'auth_check.php';
 require_once 'config.php';

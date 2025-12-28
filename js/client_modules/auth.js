@@ -39,6 +39,9 @@ export async function renderLoginView(context) {
                         <div class="text-center mt-2">
                             <a href="index.php" class="text-muted"><small>Volver al Inicio</small></a>
                         </div>
+                        <div class="text-center mt-2">
+                            <a href="javascript:window.location.reload()" class="text-muted"><small>Recargar Aplicación</small></a>
+                        </div>
                     </div>
                 </div>
             </div>

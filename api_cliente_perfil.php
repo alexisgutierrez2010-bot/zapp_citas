@@ -1,5 +1,7 @@
 <?php
-// Revisado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM en fecha Dec/01/2025 //
+// Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
+// ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
+// Update :Dec-25-2025).
 session_start();
 require_once 'config.php';
 require_once 'audit_log.php';
@@ -12,14 +14,12 @@ header('Content-Type: application/json');
 
 // --- Lógica para obtener datos del perfil (GET) ---
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $id_cliente = isset($_GET['id_cliente']) ? (int)$_GET['id_cliente'] : 0;
+    // SOLUCIÓN: Aplicar el guardián de sesión para proteger la lectura de datos y establecer la conexión a la BD.
+    require_once 'api_cliente_session_check.php';
+    // Usar el ID de la sesión por seguridad, no un parámetro GET.
+    $id_cliente = (int)($_SESSION['client_id']);
 
-    if ($id_cliente <= 0) {
-        http_response_code(400);
-        echo json_encode(['error' => 'ID de cliente no válido.']);
-        exit;
-    }
-
+    // La conexión $conn ya está disponible desde el guardián.
     $sql = "SELECT 
                 nombre_completo, correo_electronico, numero_celular, id_pais, id_estado,
                 direccion1, direccion2, ciudad, zip_code,
@@ -44,9 +44,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 // --- Lógica para actualizar datos del perfil (POST) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // SOLUCIÓN: Aplicar el guardián de sesión para proteger la actualización.
+    require_once 'api_cliente_session_check.php';
+
     $input = json_decode(file_get_contents('php://input'), true);
 
-    $id_cliente = (int)($input['id_cliente'] ?? 0);
+    // SOLUCIÓN: Usar el ID de la sesión por seguridad, no el del input.
+    $id_cliente = (int)($_SESSION['client_id']);
     $nombre = trim($input['nombre_completo'] ?? '');
     $email = trim($input['correo_electronico'] ?? '');
     $celular = trim($input['numero_celular'] ?? ''); // AÑADIDO
@@ -60,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $in_sms = isset($input['in_sms']) ? 1 : 0;     // AÑADIDO
     $in_whatsapp = isset($input['in_whatsapp']) ? 1 : 0; // AÑADIDO
 
-    if ($id_cliente <= 0 || empty($nombre) || empty($email) || $id_pais <= 0 || $id_estado <= 0) {
+    if (empty($nombre) || empty($email) || $id_pais <= 0 || $id_estado <= 0) {
         http_response_code(400);
         echo json_encode(['error' => 'Todos los campos son obligatorios.']);
         exit;

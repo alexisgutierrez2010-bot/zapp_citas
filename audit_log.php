@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025).
+// Update :Dec-25-2025).
 
 /**
  * Registra un evento en la tabla de auditoría.
@@ -21,7 +21,8 @@ function registrar_auditoria($conn, $id_usuario, $id_negocio, $tipo_evento, $des
     // Si el parámetro $id_negocio viene como nulo, la función debe ser capaz de
     // encontrar el ID de negocio correcto desde la sesión que esté activa.
     if ($id_negocio === null) {
-        $id_negocio = $_SESSION['id_negocio'] ?? $_SESSION['owner_id_negocio'] ?? null;
+        // SOLUCIÓN: Se añade la variable de sesión del cliente para unificar la lógica.
+        $id_negocio = $_SESSION['id_negocio'] ?? $_SESSION['owner_id_negocio'] ?? $_SESSION['client_id_negocio'] ?? null;
     }
 
     $sql = "INSERT IGNORE INTO j099_auditorias (id_usuario, id_negocio, accion, descripcion, ip_address) VALUES (?, ?, ?, ?, ?)";
@@ -36,7 +37,9 @@ function registrar_auditoria($conn, $id_usuario, $id_negocio, $tipo_evento, $des
         $tipo_evento_ref = $tipo_evento;
         $descripcion_ref = $descripcion;
         $ip_address_ref = $ip_address;
-        $stmt->bind_param("iisss", $id_usuario_ref, $id_negocio_ref, $tipo_evento_ref, $descripcion_ref, $ip_address_ref);
+        // SOLUCIÓN: Se cambian los tipos de 'id_usuario' e 'id_negocio' de 'i' (integer) a 's' (string).
+        // Esto permite que los valores NULL (que se pasan cuando no aplica, como en acciones de clientes) se enlacen correctamente sin generar un error.
+        $stmt->bind_param("sssss", $id_usuario_ref, $id_negocio_ref, $tipo_evento_ref, $descripcion_ref, $ip_address_ref);
         $stmt->execute();
         $stmt->close();
     }

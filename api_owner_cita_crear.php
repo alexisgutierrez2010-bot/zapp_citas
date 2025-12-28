@@ -1,6 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development and Authorized by WWW.ACTICVEN.COM All rights reserved.
+// Update :Dec-25-2025).
 
 session_start();
 require_once 'api_owner_session_check.php';
@@ -55,14 +56,23 @@ try {
 
     $fecha_hora_inicio = new DateTime($fecha_hora_inicio_str);
     $fecha_hora_fin = clone $fecha_hora_inicio;
-    $interval_spec = 'PT' . $duracion_valor . ($duracion_unidad === 'Horas' ? 'H' : 'M');
+    
+    // MEJORA: Lógica de intervalo robusta para manejar Minutos, Horas y Días.
+    $interval_unit = 'M'; // Default a Minutos
+    if ($duracion_unidad === 'Horas') $interval_unit = 'H';
+    else if ($duracion_unidad === 'Dias') $interval_unit = 'D';
+    $interval_spec = 'PT' . $duracion_valor . $interval_unit;
+
     $fecha_hora_fin->add(new DateInterval($interval_spec));
 
     // --- 3. Insertar Cita Principal ---
     $descripcion_final = $tipo_cita === 'Reunion' ? $asunto : $descripcion;
     $sql_cita = "INSERT INTO j108_citas (id_negocio, id_cliente, id_servicio, fecha_hora_inicio, fecha_hora_fin, estado_cita, descripcion_trabajo, tipo_cita) VALUES (?, ?, ?, ?, ?, 'Confirmada', ?, ?)";
     $stmt_cita = $conn->prepare($sql_cita);
-    $stmt_cita->bind_param("iiissss", $id_negocio, $id_cliente, $id_servicio, $fecha_hora_inicio->format('Y-m-d H:i:s'), $fecha_hora_fin->format('Y-m-d H:i:s'), $descripcion_final, $tipo_cita);
+    // SOLUCIÓN: Asignar los resultados de las funciones a variables antes de pasarlas a bind_param.
+    $fecha_inicio_sql = $fecha_hora_inicio->format('Y-m-d H:i:s');
+    $fecha_fin_sql = $fecha_hora_fin->format('Y-m-d H:i:s');
+    $stmt_cita->bind_param("iiissss", $id_negocio, $id_cliente, $id_servicio, $fecha_inicio_sql, $fecha_fin_sql, $descripcion_final, $tipo_cita);
     if (!$stmt_cita->execute()) throw new Exception("Error al crear la cita: " . $stmt_cita->error);
     $id_nueva_cita = $stmt_cita->insert_id;
     $stmt_cita->close();
@@ -81,6 +91,10 @@ try {
     }
 
     // --- 5. Enviar Notificaciones por Correo (si está activado) ---
+    // SOLUCIÓN: Inicializar variables para evitar errores de "variable no definida" si no se entra en los condicionales.
+    $datos_correo = null;
+    $asunto_evento = null;
+
     if ($notificar_cliente) {
         // Obtener todos los datos para el correo y el iCal
         $sql_datos = "SELECT 
@@ -100,18 +114,24 @@ try {
         $datos_correo = $stmt_datos->get_result()->fetch_assoc();
         $stmt_datos->close();
 
+        // SOLUCIÓN: Definir el asunto del evento aquí, para que esté disponible para email y SMS/WhatsApp.
+        if ($datos_correo) {
+            $asunto_evento = ($tipo_cita === 'Reunion') ? $asunto : ($datos_correo['nombre_servicio'] ?? 'Servicio');
+        }
+
         if ($datos_correo && !empty($datos_correo['email_cliente'])) {
-            $asunto_evento = $tipo_cita === 'Reunion' ? $asunto : $datos_correo['nombre_servicio'];
+            // La variable $asunto_evento ya está definida.
             
             // Preparar detalles para el iCal
+            // MEJORA: Se añaden fallbacks para evitar notices si algún dato del negocio es nulo.
             $ical_details = [
                 'start_time' => $fecha_hora_inicio->format('Y-m-d H:i:s'),
                 'end_time' => $fecha_hora_fin->format('Y-m-d H:i:s'),
                 'summary' => $asunto_evento,
                 'description' => $descripcion,
                 'location' => $datos_correo['direccion_negocio'] ?? '',
-                'organizer_email' => $datos_correo['email_negocio'],
-                'organizer_name' => $datos_correo['nombre_negocio'],
+                'organizer_email' => $datos_correo['email_negocio'] ?? SMTP_USERNAME,
+                'organizer_name' => $datos_correo['nombre_negocio'] ?? 'ZApp Citas',
                 'attendee_email' => $datos_correo['email_cliente'],
                 'attendee_name' => $datos_correo['nombre_cliente'],
                 'uid' => "ZAPPCITAS-{$id_nueva_cita}-" . time() . "@acticven.com",
@@ -158,7 +178,7 @@ try {
 
     // --- 6. Preparar datos para notificaciones adicionales (SMS/WhatsApp) ---
     $notification_payload = null;
-    if ($notificar_cliente && isset($datos_correo) && !empty($datos_correo['telefono_cliente'])) {
+    if ($notificar_cliente && $datos_correo && !empty($datos_correo['telefono_cliente'])) {
         $notification_payload = [
             'telefono_cliente' => $datos_correo['telefono_cliente'],
             'nombre_cliente' => $datos_correo['nombre_cliente'],

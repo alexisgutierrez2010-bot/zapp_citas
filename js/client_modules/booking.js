@@ -60,22 +60,44 @@ export async function renderBookingView(context) {
 }
 
 /**
+ * Inicia el proceso de reagendar (editar) una cita existente.
+ */
+export async function handleRescheduleCita(context, idCita, idServicio, nombreServicio, fechaHoraInicio) {
+    if (!idServicio || idServicio === 'null') {
+        alert('No se puede editar esta cita porque no tiene un servicio asociado válido.');
+        return;
+    }
+    renderTimeSlotSelection(context, idServicio, nombreServicio, idCita, fechaHoraInicio);
+}
+
+/**
  * Muestra el selector de fecha y los horarios disponibles para un servicio.
  * @param {object} context - El contexto global de la aplicación.
  * @param {string} idServicio - El ID del servicio seleccionado.
  * @param {string} nombreServicio - El nombre del servicio seleccionado.
+ * @param {string|null} idCita - (Opcional) ID de la cita si se está editando.
+ * @param {string|null} fechaHoraInicio - (Opcional) Fecha original si se está editando.
  */
-function renderTimeSlotSelection(context, idServicio, nombreServicio) {
-    const hoy = new Date().toISOString().split('T')[0];
+function renderTimeSlotSelection(context, idServicio, nombreServicio, idCita = null, fechaHoraInicio = null) {
+    // CORRECCIÓN: Usar fecha local para 'hoy' y evitar bloqueo por zona horaria.
+    const now = new Date();
+    const hoy = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    
+    // CORRECCIÓN: Asegurar formato YYYY-MM-DD para el input date, manejando separadores 'T' o espacio.
+    const fechaOriginal = fechaHoraInicio ? fechaHoraInicio.replace(' ', 'T').split('T')[0] : '';
+
+    const title = idCita ? `Reprogramar Cita: "${nombreServicio}"` : `Agendar: <span class="text-muted fw-normal fs-5">¿Cuándo lo quieres?</span>`;
+    const stepTitle = idCita ? `Elige nueva fecha y hora` : `Paso 2: Elige fecha y hora para "${nombreServicio}"`;
+
     context.dom.appContainer.innerHTML = `
-        <h3>Agendar: <span class="text-muted fw-normal fs-5">¿Cuándo lo quieres?</span></h3>
+        <h3>${title}</h3>
         <div class="card">
-            <div class="card-header">Paso 2: Elige fecha y hora para "${nombreServicio}"</div>
+            <div class="card-header">${stepTitle}</div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-5 mb-3">
                         <label for="fecha-cita" class="form-label">Selecciona una fecha</label>
-                        <input type="date" id="fecha-cita" class="form-control" min="${hoy}">
+                        <input type="date" id="fecha-cita" class="form-control" min="${hoy}" value="${fechaOriginal}">
                     </div>
                     <div class="col-md-7">
                         <label class="form-label">Horarios disponibles</label>
@@ -86,7 +108,7 @@ function renderTimeSlotSelection(context, idServicio, nombreServicio) {
                 </div>
             </div>
             <div class="card-footer">
-                <button class="btn btn-secondary" data-view="booking">« Volver a Servicios</button>
+                ${idCita ? `<button class="btn btn-secondary" data-view="dashboard">« Cancelar Edición</button>` : `<button class="btn btn-secondary" data-view="booking">« Volver a Servicios</button>`}
             </div>
         </div>
     `;
@@ -116,7 +138,7 @@ function renderTimeSlotSelection(context, idServicio, nombreServicio) {
                 document.querySelectorAll('.btn-seleccionar-slot').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const fechaHora = e.target.dataset.fechaHora;
-                        renderBookingConfirmationView(context, idServicio, fechaHora, nombreServicio);
+                        renderBookingConfirmationView(context, idServicio, fechaHora, nombreServicio, idCita);
                     });
                 });
             }
@@ -126,6 +148,11 @@ function renderTimeSlotSelection(context, idServicio, nombreServicio) {
             console.error("Error al llamar a la API de horarios:", error);
         }
     });
+
+    // CORRECCIÓN CRÍTICA: Disparar el evento DESPUÉS de agregar el listener para que carguen los horarios al editar.
+    if (fechaOriginal) {
+        fechaInput.dispatchEvent(new Event('change'));
+    }
 }
 
 /**
@@ -134,16 +161,20 @@ function renderTimeSlotSelection(context, idServicio, nombreServicio) {
  * @param {string} idServicio - El ID del servicio.
  * @param {string} fechaHora - La fecha y hora seleccionadas.
  * @param {string} nombreServicio - El nombre del servicio.
+ * @param {string|null} idCita - (Opcional) ID de la cita si se está editando.
  */
-function renderBookingConfirmationView(context, idServicio, fechaHora, nombreServicio) {
+function renderBookingConfirmationView(context, idServicio, fechaHora, nombreServicio, idCita = null) {
     const fechaObj = new Date(fechaHora);
     const fechaFormateada = fechaObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
     const horaFormateada = fechaObj.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
+    const title = idCita ? `Confirmar Cambio de Cita` : `Confirmar Cita`;
+    const btnText = idCita ? `Confirmar Cambios` : `Confirmar y Agendar Cita`;
+
     context.dom.appContainer.innerHTML = `
-        <h3>Confirmar Cita</h3>
+        <h3>${title}</h3>
         <div class="card">
-            <div class="card-header">Paso 3: Revisa y confirma los detalles</div>
+            <div class="card-header">${idCita ? 'Revisa los nuevos detalles' : 'Paso 3: Revisa y confirma los detalles'}</div>
             <div class="card-body">
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item"><strong>Servicio:</strong> ${nombreServicio}</li>
@@ -157,18 +188,18 @@ function renderBookingConfirmationView(context, idServicio, fechaHora, nombreSer
             </div>
             <div class="card-footer d-flex justify-content-between">
                 <button id="btn-volver-slots" class="btn btn-secondary">« Volver</button>
-                <button id="btn-confirmar-reserva" class="btn btn-primary">Confirmar y Agendar Cita</button>
+                <button id="btn-confirmar-reserva" class="btn btn-primary">${btnText}</button>
             </div>
         </div>
     `;
 
     document.getElementById('btn-confirmar-reserva').addEventListener('click', () => {
         const notas = document.getElementById('cita-notas').value;
-        processBooking(context, idServicio, fechaHora, notas);
+        processBooking(context, idServicio, fechaHora, notas, idCita);
     });
 
     document.getElementById('btn-volver-slots').addEventListener('click', () => {
-        renderTimeSlotSelection(context, idServicio, nombreServicio);
+        renderTimeSlotSelection(context, idServicio, nombreServicio, idCita);
     });
 }
 
@@ -178,8 +209,9 @@ function renderBookingConfirmationView(context, idServicio, fechaHora, nombreSer
  * @param {string} idServicio - El ID del servicio.
  * @param {string} fechaHora - La fecha y hora seleccionadas.
  * @param {string} notas - Las notas opcionales del cliente.
+ * @param {string|null} idCita - (Opcional) ID de la cita si se está editando.
  */
-async function processBooking(context, idServicio, fechaHora, notas) {
+async function processBooking(context, idServicio, fechaHora, notas, idCita = null) {
     const btnConfirmar = document.getElementById('btn-confirmar-reserva');
     btnConfirmar.disabled = true;
     btnConfirmar.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Agendando...`;
@@ -190,18 +222,23 @@ async function processBooking(context, idServicio, fechaHora, notas) {
             id_negocio: context.state.clienteActual.id_negocio, 
             id_servicio: idServicio, 
             fecha_hora_inicio: fechaHora,
-            descripcion_trabajo: notas // <-- AÑADIDO: Enviamos las notas
+            descripcion_trabajo: notas,
+            id_cita: idCita // Se envía si existe
         };
-        const response = await fetch(`${context.API_URL}api_cliente_agendar_cita.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        
+        // Seleccionar endpoint según si es nueva o edición
+        const endpoint = idCita ? 'api_cliente_cita_editar.php' : 'api_cliente_agendar_cita.php';
+        
+        const response = await fetch(`${context.API_URL}${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
 
         alert(data.message);
-        context.renderView('dashboard');
+        context.renderView(idCita ? 'dashboard' : 'history'); // Si editamos, volvemos al dashboard para ver el cambio
     } catch (error) {
         alert(`Error al agendar la cita: ${error.message}`);
         btnConfirmar.disabled = false;
-        btnConfirmar.textContent = 'Confirmar y Agendar Cita';
+        btnConfirmar.textContent = 'Intentar de nuevo';
     }
 }
 
@@ -229,7 +266,7 @@ export async function handleCancelarCita(context, idCita, button) {
         }
 
         // Recargar la vista para mostrar el estado actualizado.
-        context.renderView('dashboard');
+        context.renderView('history');
     } catch (error) {
         alert(`Error al cancelar la cita: ${error.message}`);
         button.disabled = false;
@@ -282,7 +319,7 @@ export async function handleConfirmarCita(context, idCita, button) {
         if (!response.ok) throw new Error(data.error);
 
         // Recargar la vista para mostrar el estado actualizado.
-        context.renderView('dashboard');
+        context.renderView('history');
     } catch (error) {
         alert(`Error al confirmar la cita: ${error.message}`);
         button.disabled = false;

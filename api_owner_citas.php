@@ -1,6 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
+// Update :Dec-25-2025).
 session_start(); // El script principal es responsable de iniciar la sesión.
 require_once 'api_owner_session_check.php'; // 1. Guardián de sesión y timeout
 header('Content-Type: application/json'); // 2. Establecer cabecera

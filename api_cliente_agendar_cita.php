@@ -1,25 +1,19 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-14-2025). VERSIÓN UNIFICADA Y CORREGIDA
+// Update :Dec-25-2025).
 
-session_start(); // Iniciar la sesión para poder verificar al cliente.
+// SOLUCIÓN: Aplicar el guardián de sesión del cliente para unificar la seguridad y la conexión a BD.
+require_once 'api_cliente_session_check.php';
 
 header('Content-Type: application/json');
-require_once 'config.php';
+// config.php es cargado por el guardián. $conn ya está disponible.
 require_once 'audit_log.php';
 require_once 'ical_generator.php';
 require 'vendor/autoload.php'; // Para PHPMailer
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-
-// Guardián de sesión: Verificar que el cliente haya iniciado sesión.
-if (!isset($_SESSION['client_id'])) {
-    http_response_code(401); // Unauthorized
-    echo json_encode(['error' => 'Acceso no autorizado. Por favor, inicie sesión de nuevo.']);
-    exit;
-}
 
 $input = json_decode(file_get_contents('php://input'), true);
 
@@ -43,6 +37,7 @@ if ($id_cliente !== (int)$_SESSION['client_id']) {
     exit;
 }
 
+try {
 // Obtener datos del servicio, cliente y negocio para la cita y el correo
 $sql_servicio = "SELECT duracion_valor, duracion_unidad FROM j104_servicios WHERE id_servicio = ? AND id_negocio = ? AND activo = 1";
 $stmt_servicio = $conn->prepare($sql_servicio);
@@ -73,7 +68,11 @@ $descripcion_final = !empty($descripcion_trabajo) ? $descripcion_trabajo : 'Cita
 
 $sql = "INSERT INTO j108_citas (id_negocio, id_cliente, id_servicio, fecha_hora_inicio, fecha_hora_fin, estado_cita, descripcion_trabajo, tipo_cita) VALUES (?, ?, ?, ?, ?, 'Pendiente', ?, 'Servicio')";
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("iiisss", $id_negocio, $id_cliente, $id_servicio, $fecha_hora_inicio->format('Y-m-d H:i:s'), $fecha_hora_fin->format('Y-m-d H:i:s'), $descripcion_final);
+// SOLUCIÓN: Asignar el resultado de ->format() a variables antes de pasarlas a bind_param
+// para evitar errores de "pass-by-reference" en algunas versiones de PHP.
+$fecha_inicio_sql = $fecha_hora_inicio->format('Y-m-d H:i:s');
+$fecha_fin_sql = $fecha_hora_fin->format('Y-m-d H:i:s');
+$stmt->bind_param("iiisss", $id_negocio, $id_cliente, $id_servicio, $fecha_inicio_sql, $fecha_fin_sql, $descripcion_final);
 
 if ($stmt->execute()) {
     $id_nueva_cita = $stmt->insert_id;
@@ -108,7 +107,7 @@ if ($stmt->execute()) {
                 'start_time' => $fecha_hora_inicio->format('Y-m-d H:i:s'),
                 'end_time' => $fecha_hora_fin->format('Y-m-d H:i:s'),
                 'summary' => $datos_correo['nombre_servicio'],
-                'description' => "Cita para el servicio: {$datos_correo['nombre_servicio']}",
+                'description' => "Servicio: {$datos_correo['nombre_servicio']}. Notas: " . $descripcion_final,
                 'location' => $datos_correo['direccion_negocio'] ?? '',
                 'organizer_email' => $datos_correo['email_negocio'],
                 'organizer_name' => $datos_correo['nombre_negocio'],
@@ -175,7 +174,7 @@ if ($stmt->execute()) {
                 $mail_client->isHTML(true);
                 $mail_client->Subject = "Confirmación de Cita: {$datos_correo['nombre_servicio']}";
                 $mail_client->addStringAttachment($ical_content, 'cita.ics', 'base64', 'text/calendar');
-                $mail_client->Body = "<h2>Confirmación de Cita</h2><p>Hola {$datos_correo['nombre_cliente']}, tu cita ha sido agendada con éxito.</p><ul><li><strong>Negocio:</strong> {$datos_correo['nombre_negocio']}</li><li><strong>Servicio:</strong> {$datos_correo['nombre_servicio']}</li><li><strong>Fecha:</strong> {$fecha_formateada}</li><li><strong>Hora:</strong> {$hora_formateada}</li></ul><p>¡Te esperamos!</p>";
+                $mail_client->Body = "<h2>Confirmación de Cita</h2><p>Hola {$datos_correo['nombre_cliente']}, tu cita ha sido agendada con éxito.</p><ul><li><strong>Negocio:</strong> {$datos_correo['nombre_negocio']}</li><li><strong>Servicio:</strong> {$datos_correo['nombre_servicio']}</li><li><strong>Fecha:</strong> {$fecha_formateada}</li><li><strong>Hora:</strong> {$hora_formateada}</li><li><strong>Notas:</strong> " . htmlspecialchars($descripcion_final) . "</li></ul><p>¡Te esperamos!</p>";
                 $mail_client->send();
             }
         }
@@ -189,4 +188,8 @@ if ($stmt->execute()) {
 } else {
     http_response_code(500);
     echo json_encode(['error' => 'Error al agendar la cita: ' . $stmt->error]);
+}
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Error al procesar la cita: ' . $e->getMessage()]);
 }

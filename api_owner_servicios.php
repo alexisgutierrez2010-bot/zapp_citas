@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-08-2025). SOLUCIÓN FINAL: Estandarización de la carga de dependencias y seguridad.
+// Update :Dec-25-2025).
 session_start();
 require_once 'config.php'; // Cargar la conexión a la BD.
 header('Content-Type: application/json');

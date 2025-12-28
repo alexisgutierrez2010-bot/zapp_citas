@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-27-2025). CORRECCIÓN: Se estandariza el guardián de sesión.
+// Update :Dec-25-2025).
 session_start();
 require_once 'api_owner_session_check.php'; // Guardián de sesión que valida y carga config.
 header('Content-Type: application/json');

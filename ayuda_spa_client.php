@@ -1,6 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
+// Update :Dec-25-2025).
 ?><!DOCTYPE html><html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -108,7 +109,7 @@
 
                 </div>
             </div>
-            <div class="card-footer text-center text-muted"><p class="mb-0 small">©2025. Software development and Authorized by WWW.ACTICVEN.COM All rights reserved.</p></div>
+            <div class="card-footer text-center text-muted"><p class="mb-0 small">©2025. Authorized by www.acticven.com All rights reserved. Version 1.12.27</p></div>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

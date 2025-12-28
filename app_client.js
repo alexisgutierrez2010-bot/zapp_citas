@@ -3,12 +3,12 @@
 
 // --- 1. IMPORTACIÓN DE MÓDULOS ---
 // Importamos toda la lógica desde la carpeta /js/client_modules/
-import { renderLoginView, handleLogout, renderConfirmacionRegistroView, renderRegistroView } from './js/client_modules/auth.js';
 import { renderDashboardView } from './js/client_modules/dashboard.js';
+import { renderLoginView, handleLogout, renderConfirmacionRegistroView, renderRegistroView } from './js/client_modules/auth.js';
 import { renderProfileView } from './js/client_modules/profile.js';
 import { renderHistoryView } from './js/client_modules/history.js';
-import { renderBookingView, handleConfirmarCita, handleCancelarCita } from './js/client_modules/booking.js';
-import { renderReviewsView } from './js/client_modules/reviews.js'; // NUEVO
+import { renderBookingView, handleConfirmarCita, handleCancelarCita, handleRescheduleCita } from './js/client_modules/booking.js';
+import { renderReviewsView } from './js/client_modules/reviews.js';
 import { updateNavbar, setActiveNavLink } from './js/client_modules/ui.js';
 
 // --- 2. INICIALIZACIÓN DE LA APLICACIÓN ---
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         'booking': renderBookingView,
         'confirm-register': renderConfirmacionRegistroView,
         'register': renderRegistroView,
-        'reviews': renderReviewsView, // NUEVO
+        'reviews': renderReviewsView,
     };
 
     // --- D. FUNCIÓN CENTRAL DE RENDERIZADO ---
@@ -79,6 +79,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else if (action === 'cancel-appointment') {
                 const idCita = target.dataset.idCita;
                 handleCancelarCita(context, idCita, target); // Pasamos el botón para dar feedback
+            } else if (action === 'reschedule-appointment') {
+                const { idCita, idServicio, nombreServicio, fechaHoraInicio } = target.dataset;
+                handleRescheduleCita(context, idCita, idServicio, nombreServicio, fechaHoraInicio);
             }
         }
     });
@@ -96,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const sessionData = await sessionResponse.json();
         context.state.clienteActual = sessionData.client;
         
-        // 3. Si todo está bien, actualizar la UI y mostrar el dashboard.
+        // 3. Si todo está bien, actualizar la UI y mostrar el dashboard (próxima cita).
         await updateNavbar(context);
         context.renderView('dashboard');
 

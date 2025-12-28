@@ -3,6 +3,7 @@
 
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development and Authorized by WWW.ACTICVEN.COM All rights reserved.
+// Update :Dec-25-2025).
 
 require_once 'config.php';
 require_once 'audit_log.php';

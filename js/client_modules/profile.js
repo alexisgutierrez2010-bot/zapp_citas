@@ -184,7 +184,7 @@ export async function renderProfileView(context) {
                 if (!response.ok) throw new Error(result.error);
 
                 alert(result.message);
-                context.renderView('dashboard'); // Volver al dashboard
+                context.renderView('history'); // Volver al historial
             } catch (error) {
                 alert(`Error al actualizar el perfil: ${error.message}`);
                 btn.disabled = false;

@@ -1,6 +1,7 @@
 // js/owner_modules/reviews.js
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
+// Update :Dec-25-2025).
 
 export async function renderReviewsView(context) {
     const { dom, API_URL } = context;

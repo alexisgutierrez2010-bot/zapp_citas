@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Nov-27-2025).
+// Update :Dec-25-2025).
 require_once 'config.php';
 
 $id_negocio = isset($_GET['id_negocio']) ? (int)$_GET['id_negocio'] : 0;

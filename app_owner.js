@@ -1,20 +1,57 @@
+// Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
+// ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
+// Update :Dec-25-2025).
 // Módulo principal (Cerebro) de la SPA del Propietario
 
 import { renderLoginView, handleLogout, renderStartRegistrationView } from './js/owner_modules/auth.js';
 import { renderAgendaView } from './js/owner_modules/agenda.js';
 import { renderCalendarioView } from './js/owner_modules/calendario.js';
-import { renderDisponibilidadView } from './js/owner_modules/disponibilidad.js';
 import { renderClientesView } from './js/owner_modules/clientes.js';
 import { renderServiciosView } from './js/owner_modules/servicios.js';
 import { renderNegocioView } from './js/owner_modules/negocio.js';
 import { renderPerfilView } from './js/owner_modules/perfil.js';
 import { renderCrearCitaView, renderEditarCitaView } from './js/owner_modules/citas.js';
-import { renderReviewsView } from './js/owner_modules/reviews.js'; // NUEVO
 import { renderDashboardView } from './js/owner_modules/dashboard.js';
+import { renderReviewsView } from './js/owner_modules/reviews.js';
 import { updateNavbar, setActiveNavLink } from './js/owner_modules/ui.js';
 
+/**
+ * Maneja la acción de cerrar citas vencidas.
+ * @param {object} context - El objeto de contexto de la aplicación.
+ */
+async function handleCloseOverdueAppointments(context) {
+    const { API_URL, renderView, state, dom } = context;
+
+    if (!confirm('¿Estás seguro de que quieres marcar como "Vencidas" todas las citas pasadas que aún están "Pendientes"?\n\nEsta acción es útil para limpiar la agenda, pero no se puede deshacer.')) {
+        return;
+    }
+
+    // Indicador de carga simple
+    const originalAppHtml = dom.appContainer.innerHTML;
+    dom.appContainer.innerHTML = `<div class="text-center mt-5"><div class="spinner-border" role="status"></div><p class="mt-2">Procesando, por favor espere...</p></div>`;
+
+    try {
+        const response = await fetch(`${API_URL}api_owner_citas_cerrar_vencidas.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Error al procesar la solicitud.');
+        }
+
+        alert(`Proceso completado. Se actualizaron ${data.citas_actualizadas} citas.`);
+
+        // Refresca la vista actual para mostrar los cambios.
+        renderView(state.currentView || 'agenda');
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+        dom.appContainer.innerHTML = originalAppHtml; // Restaurar vista en caso de error
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log(">>> [Sentinel 1] DOMContentLoaded: Iniciando app_owner.js");
 
     const context = {
         state: {
@@ -35,14 +72,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         renderView: null,
     };
 
-    // SOLUCIÓN: Restaurar el objeto de rutas que fue eliminado por error.
-    // Este objeto es el "mapa" que le dice a la aplicación qué función ejecutar para cada vista.
     const routes = {
         'login': renderLoginView,
         'agenda': renderAgendaView,
         'start-register': renderStartRegistrationView,
         'calendario': renderCalendarioView,
-        'disponibilidad': renderDisponibilidadView,
         'clientes': renderClientesView,
         'servicios': renderServiciosView,
         'negocio': renderNegocioView,
@@ -50,12 +84,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         'crear-cita': renderCrearCitaView,
         'editar-cita': renderEditarCitaView,
         'dashboard': renderDashboardView, // <-- AÑADIDO: Registrar la nueva ruta
-        'reviews': renderReviewsView, // NUEVO
+        'reviews': renderReviewsView,
     };
 
     context.renderView = (viewName, params = {}) => {
-        console.log(`>>> [Sentinel 2] renderView llamado para: ${viewName}`, params);
-        console.log(`Rendering view: ${viewName}`, params);
         const renderFn = routes[viewName];
 
         if (typeof renderFn === 'function') {
@@ -64,7 +96,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             renderFn(context, params);
         } else {
             console.error(`Error: View "${viewName}" not found.`);
-            context.dom.appContainer.innerHTML = `<div class="alert alert-danger">Error: La página solicitada no existe.</div>`;
+            context.dom.appContainer.innerHTML = `<div class="alert alert-danger">Error Crítico: No se pudo cargar la vista "<b>${viewName}</b>".<br>Verifique que los módulos JS (auth.js, agenda.js, etc.) estén presentes y cargados correctamente.</div>`;
         }
     };
 
@@ -83,40 +115,30 @@ document.addEventListener('DOMContentLoaded', async function() {
         } else if (action) {
             if (action === 'logout') {
                 handleLogout(context);
+            } else if (action === 'close-overdue-appointments') {
+                handleCloseOverdueAppointments(context);
             }
         }
     });
 
     try {
-        console.log(`>>> [Sentinel 3] Intentando fetch a: ${context.API_URL}api_owner_get_current_user.php`);
-        
-        // SOLUCIÓN: Se unifican las llamadas de arranque en una sola.
-        // El script `api_owner_get_current_user.php` ya incluye la verificación de sesión.
-        // Si no hay sesión, devolverá un error 401 que será capturado por el `catch`.
-        // Si hay sesión, devolverá los datos del usuario.
-        // Esto es más eficiente (una llamada de red en lugar de dos) y soluciona el bloqueo.
+        // Intentamos obtener el usuario actual. Si no hay sesión, la API devolverá un error 401
+        // y la ejecución saltará directamente al bloque catch.
         const userResponse = await fetch(`${context.API_URL}api_owner_get_current_user.php`);
-        
-        console.log(`>>> [Sentinel 4] Respuesta recibida. Status: ${userResponse.status}`);
         
         if (!userResponse.ok) {
             throw new Error(`Error en fetch: ${userResponse.status} ${userResponse.statusText}`);
         }
 
-        // Si la llamada fue exitosa, guardar los datos del usuario y mostrar la agenda.
         const userData = await userResponse.json();
-        console.log(">>> [Sentinel 5] Datos de usuario parseados:", userData);
         
         context.state.ownerActual = userData;
-        updateNavbar(context); // SOLUCIÓN: Se revierte a la llamada original, la nueva lógica de ui.js no necesita el contenedor.
-        
-        console.log(">>> [Sentinel 6] Renderizando vista inicial (agenda)");
-        context.renderView('agenda'); // VISTA INICIAL: Se restaura la agenda como vista principal.
+        updateNavbar(context);
+        context.renderView('agenda'); // Vista inicial si hay sesión
 
     } catch (error) {
-        // Si CUALQUIER paso del 'try' falla (no hay sesión, no se encuentran datos de usuario, etc.), se llega aquí.
-        // Mostramos el login de forma segura.
-        console.error(">>> [Sentinel 7] Error capturado (probablemente sin sesión), mostrando Login:", error);
+        // Si el fetch falla (ej. 401 Unauthorized), mostramos la vista de login.
+        console.warn("No se encontró sesión activa, mostrando login.", error.message);
         context.renderView('login');
     }
 });

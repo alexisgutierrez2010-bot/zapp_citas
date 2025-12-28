@@ -1,7 +1,7 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-05-2025). Añadido el cargador del sistema de idiomas.
+// Update :Dec-25-2025).
 
 // --- SOLUCIÓN DEFINITIVA: Cargar el autoloader de Composer ANTES de iniciar la sesión. ---
 // Este archivo es el punto de entrada de seguridad para el panel de admin, es el lugar ideal para cargar las dependencias.

@@ -1,3 +1,6 @@
+// Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
+// ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
+// Update :Dec-25-2025).
 // js/owner_modules/auth.js
 import { updateNavbar } from './ui.js'; // CORRECCIÓN: La ruta relativa './ui.js' es correcta dentro del mismo directorio. No se necesita cambio aquí, mi análisis anterior fue incorrecto.
 
@@ -45,6 +48,9 @@ export async function renderLoginView(context) {
                             <hr>
                             <div class="text-center mt-2">
                                 <a href="index.php" class="text-muted"><small>Volver al Inicio</small></a>
+                            </div>
+                            <div class="text-center mt-2">
+                                <a href="javascript:window.location.reload()" class="text-muted"><small>Recargar Aplicación</small></a>
                             </div>
                         </form>
                     </div>
