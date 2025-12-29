@@ -1,6 +1,6 @@
 # Informe de Estado del Proyecto y Estimación de Tiempos - ZApp Citas
 
-**Fecha del Informe:** 14 de Diciembre de 2025
+**Fecha del Informe:** 27 de Diciembre de 2025
 
 ---
 
@@ -8,7 +8,7 @@
 
 El proyecto ZApp Citas ha concluido una fase de desarrollo intensivo, resultando en la estabilización completa del **Panel de Administración (`zapp_citas`)** y la **SPA del Propietario (`spa_owner`)**. Durante el último sprint de 10 días, se invirtió un total de **78 horas** en el desarrollo de nuevas funcionalidades, la corrección de errores y la consolidación de la documentación técnica.
 
-Las plataformas de gestión están validadas y listas para su despliegue. El siguiente y último paso antes del lanzamiento es la refactorización de la **SPA del Cliente (`spa_client`)** para alinearla con los estándares de calidad del resto del ecosistema.
+Las plataformas de gestión están validadas y listas para su despliegue. Se ha completado la mejora de la interfaz móvil y la actualización integral de la documentación. El siguiente paso crítico es la implementación del login con OTP.
 
 ---
 
@@ -26,7 +26,10 @@ Las plataformas de gestión están validadas y listas para su despliegue. El sig
 | 8 | 11/12 | 8h | - **Decisión estratégica:** Se analiza la internacionalización (i18n) de las SPAs y se decide posponerla para la v2.0 para no retrasar el lanzamiento.<br>- Reversión de los cambios de i18n en `app_owner.js`. | - **Desafío:** El análisis de la implementación de i18n en las SPAs consumió tiempo, pero llevó a una decisión pragmática que evita futuras frustraciones. |
 | 9 | 12/12 | 8h | - Creación del inventario completo de archivos del proyecto.<br>- Actualización y corrección de todas las secciones del archivo `leeme.txt`. | - **Sin retrasos significativos.** |
 | 10 | 13/12 | 10h | - Pruebas de regresión completas en `spa_owner` y `zapp_citas`.<br>- Preparación de este informe ejecutivo y revisión final de toda la documentación. | - **Sin retrasos significativos.** |
-| **Total** | | **78h** | | |
+| 11 | 25/12 | 6h | - Implementación de UI Responsiva y Menú Flotante (FAB) en `spa_owner` y `spa_client`. | - **Sin retrasos significativos.** |
+| 12 | 26/12 | 5h | - Actualización integral de documentación (`manual_tecnico.md`, `plan_de_pruebas.md`).<br>- Definición de arquitectura para Login OTP. | - **Sin retrasos significativos.** |
+| 13 | 27/12 | 2h | - Cierre de versión 1.12.28.<br>- Actualización de footers y archivos de estado. | - **Sin retrasos significativos.** |
+| **Total** | | **91h** | | |
 
 ---
 

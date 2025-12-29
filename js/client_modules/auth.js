@@ -75,20 +75,24 @@ export async function renderLoginView(context) {
  */
 async function handleLogin(e, context) {
     e.preventDefault();
-    const { state, API_URL, renderView, updateNavbar } = context;
     const errorContainer = document.getElementById('error-container');
     errorContainer.innerHTML = '';
     const submitButton = e.target.querySelector('button[type="submit"]');
     submitButton.disabled = true;
 
     const telefono = `${document.getElementById('country_code').value} ${document.getElementById('telefono').value.trim()}`;
+    
+    await performLogin(context, telefono, null, submitButton, errorContainer);
+}
 
+async function performLogin(context, telefono, idNegocio = null, submitButton = null, errorContainer = null) {
+    const { state, API_URL, renderView, updateNavbar } = context;
+    
     try {
-        const response = await fetch(`${API_URL}api_cliente_login.php`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ numero_celular: telefono })
-        });
+        const payload = { numero_celular: telefono };
+        if (idNegocio) payload.id_negocio = idNegocio;
+
+        const response = await fetch(`${API_URL}api_cliente_login.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
 
         const data = await response.json();
         if (!response.ok) {
@@ -99,15 +103,66 @@ async function handleLogin(e, context) {
             throw new Error(data.error || 'Error desconocido');
         }
 
-        state.clienteActual = data.client;
-        await updateNavbar(context);
-        renderView('dashboard');
+        if (data.multiple_accounts) {
+            // Si hay múltiples cuentas, mostramos la pantalla de selección
+            renderAccountSelection(context, data.accounts, telefono);
+        } else {
+            // Login exitoso directo
+            state.clienteActual = data.client;
+            await updateNavbar(context);
+            renderView('dashboard');
+        }
 
     } catch (error) {
-        errorContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+        if (errorContainer) errorContainer.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+        else alert(error.message);
     } finally {
-        submitButton.disabled = false;
+        if (submitButton) submitButton.disabled = false;
     }
+}
+
+/**
+ * Renderiza una vista para que el usuario elija a qué negocio entrar si su teléfono está en varios.
+ */
+function renderAccountSelection(context, accounts, telefono) {
+    const { dom } = context;
+    const accountsHtml = accounts.map(acc => `
+        <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center btn-select-account" data-id-negocio="${acc.id_negocio}">
+            <div>
+                <div class="fw-bold">${acc.nombre_negocio}</div>
+                <small class="text-muted">Registrado como: ${acc.nombre_completo}</small>
+            </div>
+            <i class="bi bi-chevron-right"></i>
+        </button>
+    `).join('');
+
+    dom.appContainer.innerHTML = `
+        <div class="row justify-content-center mt-5">
+            <div class="col-md-6">
+                <div class="card shadow-lg">
+                    <div class="card-header text-center bg-primary text-white"><h3>Selecciona un Negocio</h3></div>
+                    <div class="card-body">
+                        <p class="text-center">El número <strong>${telefono}</strong> está asociado a varias cuentas. ¿A cuál deseas acceder?</p>
+                        <div class="list-group mb-3">${accountsHtml}</div>
+                        <div class="text-center mb-3"><button class="btn btn-outline-secondary" id="btn-cancel-selection">Cancelar</button></div>
+                        <hr>
+                        <div class="text-center">
+                            <a href="#" id="btn-register-new-business-selection" class="text-decoration-none">¿No ves tu negocio? Regístrate en uno nuevo</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.querySelectorAll('.btn-select-account').forEach(btn => {
+        btn.addEventListener('click', (e) => performLogin(context, telefono, e.currentTarget.dataset.idNegocio));
+    });
+    document.getElementById('btn-cancel-selection').addEventListener('click', () => context.renderView('login'));
+    document.getElementById('btn-register-new-business-selection').addEventListener('click', (e) => {
+        e.preventDefault();
+        context.renderView('register', { telefono: telefono });
+    });
 }
 
 /**

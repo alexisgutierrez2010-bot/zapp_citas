@@ -37,17 +37,6 @@ if (empty($nombre_usuario) || empty($correo_electronico)) {
     exit;
 }
 
-// Verificar duplicados de email (excluyendo al usuario actual)
-$sql_check_email = "SELECT id_usuario FROM j100_usuarios WHERE correo_electronico = ? AND id_usuario != ?";
-$stmt_check_email = $conn->prepare($sql_check_email);
-$stmt_check_email->bind_param("si", $correo_electronico, $id_usuario_session);
-$stmt_check_email->execute();
-if ($stmt_check_email->get_result()->num_rows > 0) {
-    http_response_code(409);
-    echo json_encode(['error' => 'El correo electrónico ya está en uso por otro usuario.']);
-    exit;
-}
-
 $conn->begin_transaction();
 try {
     // Actualizar nombre y correo

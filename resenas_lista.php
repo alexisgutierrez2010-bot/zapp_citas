@@ -4,11 +4,26 @@
 require_once 'auth_check.php';
 require_once 'config.php';
 
-// Filtro por negocio
-$id_negocio_filtro = isset($_GET['id_negocio']) ? (int)$_GET['id_negocio'] : 0;
+// --- LÓGICA DE ROLES Y FILTRADO ---
+// Determinar si el usuario es Administrador de forma robusta
+$es_administrador = (isset($rol_session) && strcasecmp(trim($rol_session), 'Administrador') == 0);
+
+$id_negocio_filtro = 0;
+if ($es_administrador) {
+    $id_negocio_filtro = isset($_GET['id_negocio']) ? (int)$_GET['id_negocio'] : 0;
+} else {
+    // Si no es Administrador (es Propietario), solo puede ver su propio negocio
+    $id_negocio_filtro = $id_negocio_session;
+}
 
 // Obtener lista de negocios para el filtro
-$negocios = $conn->query("SELECT id_negocio, nombre_negocio FROM j102_negocios ORDER BY nombre_negocio ASC");
+$todos_los_negocios = [];
+$result_todos_negocios = $conn->query("SELECT id_negocio, nombre_negocio FROM j102_negocios WHERE activo = 1 ORDER BY nombre_negocio ASC");
+if ($result_todos_negocios) {
+    while ($row = $result_todos_negocios->fetch_assoc()) {
+        $todos_los_negocios[] = $row;
+    }
+}
 
 // Construir consulta principal
 $sql = "SELECT 
@@ -48,37 +63,43 @@ $resenas_result = $stmt->get_result();
 <body style="background-color: <?php echo $daily_bg_color; ?>;">
     <?php include 'navbar.php'; ?>
     <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h1>Gestión de Reseñas</h1>
-        </div>
-
-        <?php if (isset($_GET['status'])): ?>
-            <div class="alert alert-<?php echo $_GET['status'] == 'success' ? 'success' : 'danger'; ?>">
-                <?php echo htmlspecialchars($_GET['message']); ?>
-            </div>
-        <?php endif; ?>
-
         <div class="card">
             <div class="card-header">
-                <form method="GET" action="resenas_lista.php" class="row g-3 align-items-center">
-                    <div class="col-md-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">
+                        Lista de Reseñas
+                        <span class="badge bg-secondary fs-6"><?php echo htmlspecialchars($rol_session ?? 'Desconocido'); ?></span>
+                    </h3>
+                </div>
+            </div>
+            <div class="card-body">
+                <?php if (isset($_GET['message'])): ?>
+                    <div class="alert alert-<?php echo $_GET['status'] == 'success' ? 'success' : 'danger'; ?> alert-dismissible fade show" role="alert">
+                        <?php echo htmlspecialchars(urldecode($_GET['message'])); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($es_administrador): ?>
+                <form method="GET" action="resenas_lista.php" class="row g-3 align-items-center mb-3 bg-light p-3 rounded">
+                    <div class="col-md-8">
                         <label for="id_negocio" class="form-label">Filtrar por Negocio</label>
                         <select name="id_negocio" id="id_negocio" class="form-select">
                             <option value="0">Todos los Negocios</option>
-                            <?php while ($negocio = $negocios->fetch_assoc()): ?>
+                            <?php foreach ($todos_los_negocios as $negocio): ?>
                                 <option value="<?php echo $negocio['id_negocio']; ?>" <?php echo ($id_negocio_filtro == $negocio['id_negocio']) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($negocio['nombre_negocio']); ?>
                                 </option>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-4 d-grid">
                         <label class="form-label">&nbsp;</label>
-                        <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+                        <button type="submit" class="btn btn-info">Filtrar</button>
                     </div>
                 </form>
-            </div>
-            <div class="card-body">
+                <?php endif; ?>
+
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
                         <thead class="table-dark">
@@ -87,7 +108,9 @@ $resenas_result = $stmt->get_result();
                                 <th>Comentario</th>
                                 <th>Cliente</th>
                                 <th>Servicio</th>
+                                <?php if ($es_administrador): ?>
                                 <th>Negocio</th>
+                                <?php endif; ?>
                                 <th>Fecha</th>
                                 <th>Estado</th>
                                 <th>Acciones</th>
@@ -101,7 +124,9 @@ $resenas_result = $stmt->get_result();
                                         <td><?php echo nl2br(htmlspecialchars($resena['comentario'])); ?></td>
                                         <td><?php echo htmlspecialchars($resena['nombre_cliente']); ?></td>
                                         <td><?php echo htmlspecialchars($resena['nombre_servicio'] ?? 'N/A'); ?></td>
+                                        <?php if ($es_administrador): ?>
                                         <td><?php echo htmlspecialchars($resena['nombre_negocio']); ?></td>
+                                        <?php endif; ?>
                                         <td class="text-nowrap"><?php echo date('d/m/Y H:i', strtotime($resena['fecha_hora'])); ?></td>
                                         <td><span class="badge <?php echo $resena['activo'] ? 'bg-success' : 'bg-secondary'; ?>"><?php echo $resena['activo'] ? 'Activa' : 'Inactiva'; ?></span></td>
                                         <td>
@@ -111,7 +136,8 @@ $resenas_result = $stmt->get_result();
                                     </tr>
                                 <?php endwhile; ?>
                             <?php else: ?>
-                                <tr><td colspan="8" class="text-center">No hay reseñas que coincidan con el filtro.</td></tr>
+                                <?php $colspan = $es_administrador ? 8 : 7; ?>
+                                <tr><td colspan="<?php echo $colspan; ?>" class="text-center">No hay reseñas que coincidan con el filtro.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

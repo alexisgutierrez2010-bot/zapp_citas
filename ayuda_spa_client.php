@@ -1,117 +1,167 @@
 <?php
-// Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
+// Elaborado por GEMINI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-25-2025).
-?><!DOCTYPE html><html lang="es">
+// Update :Dec-27-2025).
+?>
+<!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ayuda - App Cliente</title>
+    <title>Ayuda - Aplicación del Cliente</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css' rel='stylesheet'>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         body { background-color: #f8f9fa; }
-        .container { max-width: 960px; }
         .card-header { background-color: #0d6efd; color: white; }
-        .accordion-button:not(.collapsed) { color: #0c63e4; background-color: #e7f1ff; }
+        .accordion-button { font-weight: 500; }
     </style>
 </head>
 <body>
     <div class="container mt-4 mb-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div class="d-flex align-items-center">
-                <img src="logo_zapp_citas.png" alt="Logo ZApp Citas" style="height: 2.5em; margin-right: 15px;">
-                <h1 class="h2 mb-0">Ayuda de la Aplicación del Cliente</h1>
-            </div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1><i class="bi bi-question-circle-fill text-primary"></i> Guía de la Aplicación del Cliente</h1>
             <a href="javascript:window.close();" class="btn btn-secondary">Cerrar Ventana</a>
         </div>
 
-        <div class="card">
-            <div class="card-header"><h4>Guía Rápida de Uso</h4></div>
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Bienvenido al Portal de Clientes</h4>
+            </div>
             <div class="card-body">
-                <p class="lead">Bienvenido a la guía de la aplicación para clientes. Aquí encontrarás una explicación de cada sección para que puedas gestionar tus citas de forma fácil y rápida.</p>
+                <p>Esta aplicación está diseñada para que puedas gestionar tus citas de forma rápida y sencilla. Aquí puedes agendar nuevos servicios, ver tu historial y mantener tus datos actualizados.</p>
+            </div>
+        </div>
 
-                <div class="accordion" id="ayudaAccordion">
+        <div class="accordion" id="ayudaClienteAccordion">
 
-                    <!-- Sección 1: Acceso y Navegación -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true">
-                                <i class="bi bi-box-arrow-in-right me-2"></i> Acceso y Navegación
-                            </button>
-                        </h2>
-                        <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#ayudaAccordion">
-                            <div class="accordion-body">
-                                <p>El acceso a la aplicación es muy sencillo:</p>
-                                <ul>
-                                    <li><strong>Inicio de Sesión:</strong> Solo necesitas tu número de teléfono y completar un código de seguridad (CAPTCHA).</li>
-                                    <li><strong>Nuevo Usuario:</strong> Si tu número no está registrado, el sistema te guiará para que crees tu cuenta.</li>
-                                    <li><strong>Menú Principal:</strong> Una vez dentro, tendrás acceso a las secciones: <strong>Inicio</strong>, <strong>Agendar Cita</strong>, <strong>Mi Historial</strong> y <strong>Mi Perfil</strong>.</li>
-                                </ul>
-                            </div>
-                        </div>
+            <!-- Inicio de Sesión y Registro -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLogin" aria-expanded="true">
+                        <i class="bi bi-box-arrow-in-right me-2"></i> Inicio de Sesión y Registro
+                    </button>
+                </h2>
+                <div id="collapseLogin" class="accordion-collapse collapse show" data-bs-parent="#ayudaClienteAccordion">
+                    <div class="accordion-body">
+                        <p>Para acceder, simplemente ingresa tu <strong>número de teléfono celular</strong> con el que te registraste en el negocio.</p>
+                        <ul>
+                            <li><strong>Si ya eres cliente:</strong> Iniciarás sesión directamente. Si tu número está en varios negocios, el sistema te pedirá que elijas a cuál deseas entrar.</li>
+                            <li><strong>Si eres nuevo:</strong> El sistema te indicará que no estás registrado y te ofrecerá un formulario para que completes tus datos y te registres en el negocio de tu elección.</li>
+                        </ul>
                     </div>
-
-                    <!-- Sección 2: Inicio (Dashboard) -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
-                                <i class="bi bi-house-door-fill me-2"></i> Inicio (Dashboard)
-                            </button>
-                        </h2>
-                        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#ayudaAccordion">
-                            <div class="accordion-body">
-                                <p>Es tu pantalla principal. Aquí verás un resumen de tu actividad:</p>
-                                <ul>
-                                    <li><strong>Próxima Cita:</strong> Muestra los detalles de tu cita más cercana.</li>
-                                    <li><strong>Acciones Rápidas:</strong> Si tu cita está pendiente, podrás <strong>Confirmar</strong> tu asistencia o <strong>Cancelar</strong> la cita directamente desde aquí.</li>
-                                    <li><strong>Agendar:</strong> Si no tienes citas, verás un botón para agendar tu primera cita.</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Sección 3: Agendar Cita -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
-                                <i class="bi bi-calendar-plus-fill me-2"></i> Agendar Cita
-                            </button>
-                        </h2>
-                        <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#ayudaAccordion">
-                            <div class="accordion-body">
-                                <p>El proceso para agendar una nueva cita es guiado y consta de 3 simples pasos:</p>
-                                <ol>
-                                    <li><strong>Elige un servicio:</strong> Se te mostrará la lista de servicios disponibles en el negocio.</li>
-                                    <li><strong>Elige fecha y hora:</strong> Selecciona un día en el calendario y luego elige uno de los horarios disponibles que se mostrarán.</li>
-                                    <li><strong>Confirma los detalles:</strong> Revisa que toda la información sea correcta y confirma para finalizar el agendamiento.</li>
-                                </ol>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Sección 4: Mi Historial y Mi Perfil -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour">
-                                <i class="bi bi-person-lines-fill me-2"></i> Mi Historial y Mi Perfil
-                            </button>
-                        </h2>
-                        <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#ayudaAccordion">
-                            <div class="accordion-body">
-                                <ul>
-                                    <li><strong>Mi Historial:</strong> En esta sección podrás ver una lista completa de todas tus citas, tanto las pasadas como las futuras, con su respectivo estado.</li>
-                                    <li><strong>Mi Perfil:</strong> Aquí puedes ver y actualizar tus datos personales, como tu nombre, correo electrónico y dirección.</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
             </div>
-            <div class="card-footer text-center text-muted"><p class="mb-0 small">©2025. Authorized by www.acticven.com All rights reserved. Version 1.12.27</p></div>
+
+            <!-- Inicio (Dashboard) -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDashboard">
+                        <i class="bi bi-house-door-fill me-2"></i> Inicio (Tu Próxima Cita)
+                    </button>
+                </h2>
+                <div id="collapseDashboard" class="accordion-collapse collapse" data-bs-parent="#ayudaClienteAccordion">
+                    <div class="accordion-body">
+                        <p>Es tu pantalla principal. Aquí verás un resumen de tu próxima cita pendiente.</p>
+                        <strong>Funcionalidades:</strong>
+                        <ul>
+                            <li><strong>Ver Detalles:</strong> Muestra la fecha, hora, servicio y negocio de tu próxima cita.</li>
+                            <li><strong>Confirmar Asistencia:</strong> Permite al negocio saber que asistirás.</li>
+                            <li><strong>Cancelar Cita:</strong> Cancela tu cita. Esta acción notificará al negocio.</li>
+                            <li><strong>Reagendar:</strong> Te permite elegir una nueva fecha u hora para una cita que aún está pendiente.</li>
+                        </ul>
+                        <p>Si no tienes citas próximas, verás un mensaje de bienvenida y un botón para agendar tu primera cita.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agendar Cita -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBooking">
+                        <i class="bi bi-calendar-plus-fill me-2"></i> Agendar Cita
+                    </button>
+                </h2>
+                <div id="collapseBooking" class="accordion-collapse collapse" data-bs-parent="#ayudaClienteAccordion">
+                    <div class="accordion-body">
+                        <p>Esta sección te guía a través de un proceso sencillo de 2 pasos para reservar un nuevo servicio.</p>
+                        <ol>
+                            <li><strong>Paso 1: Selecciona un Servicio.</strong> Verás una lista de todos los servicios ofrecidos por el negocio, con su duración y precio.</li>
+                            <li><strong>Paso 2: Elige Fecha y Hora.</strong> Se mostrará un calendario. Al seleccionar un día, verás todos los horarios disponibles. Simplemente haz clic en el que prefieras y confirma.</li>
+                        </ol>
+                        <p>Una vez confirmada, recibirás un correo electrónico con los detalles y un evento de calendario (.ics) para que lo añadas a tu agenda personal.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mi Historial -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHistory">
+                        <i class="bi bi-clock-history me-2"></i> Mi Historial
+                    </button>
+                </h2>
+                <div id="collapseHistory" class="accordion-collapse collapse" data-bs-parent="#ayudaClienteAccordion">
+                    <div class="accordion-body">
+                        <p>Aquí encontrarás un listado completo de todas tus citas, tanto las pasadas como las futuras.</p>
+                        <strong>Información Mostrada:</strong>
+                        <ul>
+                            <li>Fecha y hora de la cita.</li>
+                            <li>Nombre del servicio o evento.</li>
+                            <li>Estado actual de la cita (Completada, Cancelada, Pendiente, etc.).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reseñas -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseReviews">
+                        <i class="bi bi-star-fill me-2"></i> Reseñas
+                    </button>
+                </h2>
+                <div id="collapseReviews" class="accordion-collapse collapse" data-bs-parent="#ayudaClienteAccordion">
+                    <div class="accordion-body">
+                        <p>En esta sección puedes compartir tu experiencia y leer las opiniones de otros clientes.</p>
+                        <strong>Funcionalidades:</strong>
+                        <ul>
+                            <li><strong>Ver Reseñas:</strong> Lee los comentarios y puntuaciones que otros clientes han dejado sobre el negocio.</li>
+                            <li><strong>Dejar tu Reseña:</strong>
+                                <ol>
+                                    <li>Selecciona una puntuación de 1 a 5 estrellas.</li>
+                                    <li>Escribe un comentario detallando tu experiencia.</li>
+                                    <li>Haz clic en "Publicar Reseña" para compartir tu opinión.</li>
+                                </ol>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mi Perfil -->
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseProfile">
+                        <i class="bi bi-person-fill-gear me-2"></i> Mi Perfil
+                    </button>
+                </h2>
+                <div id="collapseProfile" class="accordion-collapse collapse" data-bs-parent="#ayudaClienteAccordion">
+                    <div class="accordion-body">
+                        <p>Mantén tu información de contacto actualizada.</p>
+                        <strong>Datos que puedes editar:</strong>
+                        <ul>
+                            <li>Nombre Completo.</li>
+                            <li>Correo Electrónico.</li>
+                            <li>Número de Teléfono.</li>
+                            <li>Dirección y preferencias de comunicación.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

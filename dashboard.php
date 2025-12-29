@@ -62,6 +62,17 @@ $email_negocio = $config['email'] ?? '';
 
     <div class="container main-content d-flex flex-column justify-content-center">
         <div class="text-center">
+            <?php if (strcasecmp(trim($rol_session ?? ''), 'Administrador') != 0): ?>
+            <div class="alert alert-primary shadow-lg mb-5 mx-auto" style="max-width: 700px; background-color: rgba(13, 110, 253, 0.8); border-color: rgba(255,255,255,0.5); color: white;">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-rocket-takeoff-fill fs-1 me-4"></i>
+                    <div>
+                        <h4 class="alert-heading">¡Descubre la Nueva App del Propietario!</h4>
+                        <p class="mb-0">Gestiona tu negocio de forma más rápida y moderna. <a href="spa_owner.php" class="alert-link fw-bold">¡Pruébala ahora!</a></p>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
             <div class="time-display mb-4">
                 <div class="date fs-4"><?php echo date('l, j F Y'); ?></div>
                 <div class="time display-4" id="dashboard-time"><?php echo date('h:i:s A'); ?></div>

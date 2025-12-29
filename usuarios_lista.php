@@ -5,19 +5,23 @@
 require_once 'auth_check.php';
 require_once 'config.php';
 
-/*
-// Solo el rol Master puede acceder a esta página
-if ($rol_session != 'Master') {
-    header("Location: dashboard.php?status=error&message=" . urlencode("No tienes permiso para acceder a esta sección."));
+// --- LÓGICA DE ROLES Y FILTRADO ---
+// Determinar si el usuario es Administrador de forma robusta
+$es_administrador = (isset($rol_session) && strcasecmp(trim($rol_session), 'Administrador') == 0);
+
+if (!$es_administrador) {
+    // Si no es administrador, no tiene acceso a esta página.
+    header("Location: dashboard.php?status=error&message=" . urlencode("Acceso no autorizado."));
     exit;
 }
-*/
 
-// Obtener lista de negocios si el usuario es Master
-$configs_list = [];
-$configs_result = $conn->query("SELECT id_negocio, nombre_negocio FROM j102_negocios WHERE activo = 1 ORDER BY nombre_negocio");
-while ($row = $configs_result->fetch_assoc()) {
-    $configs_list[] = $row;
+$id_negocio_filtro = isset($_GET['id_negocio_filtro']) ? (int)$_GET['id_negocio_filtro'] : 0;
+$todos_los_negocios = [];
+$result_todos_negocios = $conn->query("SELECT id_negocio, nombre_negocio FROM j102_negocios WHERE activo = 1 ORDER BY nombre_negocio ASC");
+if ($result_todos_negocios) {
+    while ($row = $result_todos_negocios->fetch_assoc()) {
+        $todos_los_negocios[] = $row;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -32,70 +36,44 @@ while ($row = $configs_result->fetch_assoc()) {
     <?php include 'navbar.php'; ?>
 
     <div class="container mt-4">
-        <div class="row">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header"><h3>Registrar Nuevo Usuario</h3></div>
-                    <div class="card-body">
-                        <?php
-                        if (isset($_GET['status']) || isset($_GET['message_key'])) {
-                            $status = $_GET['status'] ?? '';
-                            $message_key = $_GET['message_key'] ?? '';
-                            $message = '';
-
-                            if (!empty($message_key)) {
-                                $message = htmlspecialchars($message_key);
-                            } elseif ($status === 'success_create') {
-                                $message = 'Usuario creado con éxito.';
-                            } elseif ($status === 'success_deactivate') {
-                                $message = 'Usuario desactivado con éxito.';
-                            }
-                            if (!empty($message)) {
-                                $alert_type = strpos($status, 'error') === false ? 'success' : 'danger';
-                                echo "<div class='alert alert-{$alert_type}'>" . htmlspecialchars($message) . "</div>";
-                            }
-                        }
-                        ?>
-                        <form action="usuarios_crear.php" method="POST">
-                            <div class="mb-3">
-                                <label for="nombre_usuario" class="form-label">Nombre de Usuario</label>
-                                <input type="text" class="form-control" id="nombre_usuario" name="nombre_usuario" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="correo_electronico" class="form-label">Correo Electrónico</label>
-                                <input type="email" class="form-control" id="correo_electronico" name="correo_electronico" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="password" class="form-label">Contraseña</label>
-                                <input type="password" class="form-control" id="password" name="password" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="rol" class="form-label">Rol</label>
-                                <select class="form-select" id="rol" name="rol" required>
-                                    <option value="Propietario" selected>Propietario</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="id_negocio" class="form-label">Negocio Asignado</label>
-                                <select class="form-select" id="id_negocio" name="id_negocio" required>
-                                    <?php foreach ($configs_list as $config_item): ?>
-                                        <option value="<?php echo $config_item['id_negocio']; ?>"><?php echo htmlspecialchars($config_item['nombre_negocio']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="form-check form-switch mb-3">
-                                <input class="form-check-input" type="checkbox" id="activo_crear" name="activo" value="1" checked>
-                                <label class="form-check-label" for="activo_crear">Usuario Activo</label>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100 mt-2">Guardar Usuario</button>
-                        </form>
-                    </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">
+                        Lista de Usuarios
+                        <span class="badge bg-secondary fs-6"><?php echo htmlspecialchars($rol_session ?? 'Desconocido'); ?></span>
+                    </h3>
+                    <a href="usuarios_nuevo.php" class="btn btn-primary">Crear Nuevo Usuario</a>
                 </div>
             </div>
-            <div class="col-md-8">
-                <h3>Lista de Usuarios</h3>
+            <div class="card-body">
+                <?php if (isset($_GET['message'])): ?>
+                    <div class="alert alert-<?php echo $_GET['status'] == 'success' ? 'success' : 'danger'; ?> alert-dismissible fade show" role="alert">
+                        <?php echo htmlspecialchars(urldecode($_GET['message'])); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif; ?>
+
+                <form method="GET" action="usuarios_lista.php" class="row g-3 align-items-center mb-3 bg-light p-3 rounded">
+                    <div class="col-md-8">
+                        <label for="id_negocio_filtro" class="form-label">Filtrar por Negocio</label>
+                        <select name="id_negocio_filtro" id="id_negocio_filtro" class="form-select">
+                            <option value="0">Todos los Negocios</option>
+                            <?php foreach ($todos_los_negocios as $negocio): ?>
+                                <option value="<?php echo $negocio['id_negocio']; ?>" <?php echo ($id_negocio_filtro == $negocio['id_negocio']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($negocio['nombre_negocio']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-grid">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-info">Filtrar</button>
+                    </div>
+                </form>
+
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover">
+                    <table class="table table-striped table-hover align-middle">
                         <thead class="table-dark">
                             <tr>
                                 <th>#</th>
@@ -104,60 +82,64 @@ while ($row = $configs_result->fetch_assoc()) {
                                 <th>Rol</th>
                                 <th>Negocio</th>
                                 <th>Estado</th>
-                                <th>Fecha Registro</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php
-                            $sql = "SELECT u.id_usuario, u.nombre_usuario, u.correo_electronico, u.rol, u.activo, u.fecha_registro, n.nombre_negocio 
+                            $sql = "SELECT u.*, n.nombre_negocio 
                                     FROM j100_usuarios u
                                     JOIN j102_negocios n ON u.id_negocio = n.id_negocio";
-                            $sql .= " ORDER BY n.nombre_negocio, u.nombre_usuario";
+                            
+                            $params = [];
+                            $types = "";
+                            if ($id_negocio_filtro > 0) {
+                                $sql .= " WHERE u.id_negocio = ?";
+                                $params[] = $id_negocio_filtro;
+                                $types .= "i";
+                            }
+                            $sql .= " ORDER BY u.nombre_usuario ASC";
+
                             $stmt = $conn->prepare($sql);
+                            if (!empty($types)) {
+                                $stmt->bind_param($types, ...$params);
+                            }
                             $stmt->execute();
                             $result = $stmt->get_result();
 
-                            $i = 1;
-                            if ($result->num_rows > 0) {
+                            if ($result && $result->num_rows > 0) {
+                                $i = 1;
                                 while($row = $result->fetch_assoc()) {
                                     echo "<tr>";
                                     echo "<td>" . $i++ . "</td>";
-                                    echo "<td>" . htmlspecialchars($row["nombre_usuario"]) . "</td>";
-                                    echo "<td>" . htmlspecialchars($row["correo_electronico"]) . "</td>";
+                                    echo "<td>" . htmlspecialchars($row['nombre_usuario']) . "</td>";
+                                    echo "<td>" . htmlspecialchars($row['correo_electronico']) . "</td>";
                                     echo "<td><span class='badge bg-secondary'>" . htmlspecialchars($row["rol"]) . "</span></td>";
                                     echo "<td>" . htmlspecialchars($row["nombre_negocio"]) . "</td>";
                                     $estado_usuario = $row['activo'] ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>';
                                     echo "<td>" . $estado_usuario . "</td>";
-                                    echo "<td>" . (!empty($row['fecha_registro']) ? date('d/m/Y', strtotime($row['fecha_registro'])) : 'N/A') . "</td>";
                                     echo '<td>';
                                     
                                     // Lógica para mostrar los botones de acción
-                                    $puede_actuar = false;
                                     // Un usuario no puede actuar sobre sí mismo
-                                    if ($_SESSION['id_usuario'] != $row['id_usuario']) {
-                                        // Temporalmente, todos pueden actuar sobre todos (excepto sobre sí mismos)
-                                        $puede_actuar = true;
-                                    }
-
-                                    if ($puede_actuar) {
-                                        echo '<a href="usuarios_editar.php?id=' . $row['id_usuario'] . '" class="btn btn-sm btn-warning">Editar</a>
+                                    if ($row['id_usuario'] != $_SESSION['id_usuario']) {
+                                        echo '<a href="usuarios_editar.php?id=' . $row['id_usuario'] . '" class="btn btn-sm btn-warning">Editar</a> 
+                                              <a href="usuarios_reset_clave.php?id=' . $row['id_usuario'] . '" class="btn btn-sm btn-info">Resetear Clave</a>
                                               <form action="usuarios_eliminar.php" method="POST" style="display:inline-block;" onsubmit="return confirm(\'¿Seguro que quieres desactivar este usuario?\');">
                                                   <input type="hidden" name="id_usuario" value="' . $row['id_usuario'] . '">
                                                   <button type="submit" class="btn btn-sm btn-danger">Desactivar</button>
                                               </form>';
                                     } else {
-                                        echo '<span class="text-muted fst-italic"> (No permitido) </span>';
+                                        echo '<span class="text-muted fst-italic">(Usuario actual)</span>';
                                     }
                                     echo '</td>';
                                     echo "</tr>";
                                 }
+                            } else {
+                                echo "<tr><td colspan='8' class='text-center'>No hay usuarios registrados.</td></tr>";
                             }
                             $stmt->close();
                             ?>
-                            <?php if ($result->num_rows === 0): ?>
-                                <tr><td colspan="8" class="text-center">No hay usuarios registrados.</td></tr>
-                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>

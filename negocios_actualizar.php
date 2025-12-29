@@ -68,7 +68,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt_texto = $conn->prepare($sql_texto);
         if (!$stmt_texto) throw new Exception("Error al preparar la consulta de texto: " . $conn->error);
 
-        $stmt_texto->bind_param("sssisissssiisssssssi", 
+        $stmt_texto->bind_param("sssiisssiisissssii", 
             $nombre_negocio, $telefono, $email, $id_categoria_negocio, $activo,
             $direccion1, $direccion2, $ciudad, $id_pais, $id_estado, $zip_code,
             $dias_prueba, $fecha_registro, $fecha_habilitacion, $fecha_desactivacion,

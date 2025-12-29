@@ -6,13 +6,11 @@ require_once 'auth_check.php';
 require_once 'audit_log.php';
 require_once 'config.php'; // Ajustado para la nueva estructura
 
-// Solo Master y Admin pueden crear usuarios
-/*
-if ($rol_session != 'Master') {
+// Solo el rol Administrador puede crear usuarios desde este panel.
+if (strcasecmp(trim($rol_session ?? ''), 'Administrador') != 0) {
     header("Location: dashboard.php?status=error&message=" . urlencode("No tienes permiso para esta acción."));
     exit;
 }
-*/
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // 1. Recoger datos del formulario
@@ -22,23 +20,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $rol = $_POST['rol'];
     $activo = isset($_POST['activo']) ? 1 : 0;
 
-    // Si el usuario es Master, puede asignar un negocio. Si es Admin, se asigna su propio negocio.
+    // Si el usuario es Administrador, puede asignar un negocio.
     $id_negocio = (int)$_POST['id_negocio'];
 
     // 2. Validaciones
     if (empty($nombre_usuario) || empty($correo_electronico) || empty($password) || empty($rol)) {
-        header("Location: usuarios_lista.php?status=error&message=" . urlencode("Todos los campos son obligatorios."));
+        header("Location: usuarios_nuevo.php?status=error&message=" . urlencode("Todos los campos son obligatorios."));
         exit();
     }
 
     // 3. Verificar duplicados (nombre de usuario o email)
-    $sql_check = "SELECT id_usuario FROM j100_usuarios WHERE nombre_usuario = ? OR correo_electronico = ?";
+    $sql_check = "SELECT id_usuario FROM j100_usuarios WHERE nombre_usuario = ?";
     $stmt_check = $conn->prepare($sql_check);
-    $stmt_check->bind_param("ss", $nombre_usuario, $correo_electronico);
+    $stmt_check->bind_param("s", $nombre_usuario);
     $stmt_check->execute();
     $stmt_check->store_result();
     if ($stmt_check->num_rows > 0) {
-        header("Location: usuarios_lista.php?status=error&message=" . urlencode("El nombre de usuario o el correo ya existen."));
+        header("Location: usuarios_nuevo.php?status=error&message=" . urlencode("El nombre de usuario ya existe. Por favor, elija otro."));
         exit();
     }
     $stmt_check->close();
@@ -56,7 +54,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'CREATE_USER', $descripcion_audit);
         header("Location: usuarios_lista.php?status=success&message=" . urlencode("Usuario creado con éxito."));
     } else {
-        header("Location: usuarios_lista.php?status=error&message=" . urlencode("Error al crear el usuario: " . $stmt->error));
+        header("Location: usuarios_nuevo.php?status=error&message=" . urlencode("Error al crear el usuario: " . $stmt->error));
     }
 
     $stmt->close();

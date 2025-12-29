@@ -47,6 +47,6 @@
     <main id="app-container" class="container mt-4"></main>
     <?php include 'spa_client_footer.php'; ?>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script type="module" src="app_client.js?v=<?php echo filemtime('app_client.js') . '&t=' . time(); ?>"></script>
+    <script type="module" src="app_client.js?v=<?php echo filemtime('app_client.js'); ?>"></script>
 </body>
 </html>

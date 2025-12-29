@@ -4,7 +4,7 @@
 INSTRUCCIONES DE DESPLIEGUE - ZAPP CITAS
 ==================================================
 
-Fecha: 14 de Diciembre de 2025
+Fecha: 27 de Diciembre de 2025
 
 Este documento proporciona los pasos b&aacute;sicos para desplegar la aplicaci&oacute;n ZApp Citas desde un entorno local (XAMPP en Windows) a un servidor de hosting en producci&oacute;n (como Hostinger, basado en Linux).
 

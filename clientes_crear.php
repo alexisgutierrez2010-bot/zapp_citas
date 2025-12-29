@@ -1,100 +1,78 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-01-2025).
 require_once 'auth_check.php';
-// 1. Incluir la configuración de la base de datos
 require_once 'audit_log.php';
 require_once 'config.php';
 
-// 2. Verificar que los datos se envían por el método POST
+// Solo el rol Administrador puede crear clientes desde este panel.
+if (strcasecmp(trim($rol_session ?? ''), 'Administrador') != 0) {
+    header("Location: dashboard.php?status=error&message=" . urlencode("Acceso no autorizado."));
+    exit;
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    // 3. Recoger y limpiar los datos del formulario
+    // Recoger y limpiar los datos del formulario
     $nombre = trim($_POST['nombre_completo']);
     $country_code = $_POST['country_code'];
-    $phone_number = preg_replace('/[^0-9]/', '', $_POST['numero_celular']); // Limpiar número
+    $phone_number = preg_replace('/[^0-9]/', '', $_POST['numero_celular']);
     $email = trim($_POST['correo_electronico']);
     $direccion1 = trim($_POST['direccion1']);
-    $direccion2 = trim($_POST['direccion2']);
+    $direccion2 = trim($_POST['direccion2']); // Nuevo
     $ciudad = trim($_POST['ciudad']);
-    $id_pais = isset($_POST['id_pais']) ? (int)$_POST['id_pais'] : null;
-    $id_estado = isset($_POST['id_estado']) ? (int)$_POST['id_estado'] : null;
+    $id_pais = isset($_POST['id_pais']) ? (int)$_POST['id_pais'] : null; // Nuevo
+    $id_estado = isset($_POST['id_estado']) ? (int)$_POST['id_estado'] : null; // Nuevo
     $zip_code = trim($_POST['zip_code']);
-    $notas = trim($_POST['notas_adicionales']);
-    $in_sms = isset($_POST['in_sms']) ? 1 : 0;
-    $in_email = isset($_POST['in_email']) ? 1 : 0;
-    $in_whatsapp = isset($_POST['in_whatsapp']) ? 1 : 0; // Ya estaba, se confirma.
+    $notas = trim($_POST['notas_adicionales']); // Nuevo
+    $in_sms = isset($_POST['in_sms']) ? 1 : 0; // Nuevo
+    $in_email = isset($_POST['in_email']) ? 1 : 0; // Nuevo
+    $in_whatsapp = isset($_POST['in_whatsapp']) ? 1 : 0; // Nuevo
+    $id_negocio = (int)$_POST['id_negocio']; // Obtener del formulario
     $celular = ''; // Inicializar
 
-    // --- NUEVA VALIDACIÓN ---
-    // Validar el formato del correo electrónico
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        header("Location: clientes_lista.php?status=error&message_key=error_invalid_email");
+    if (empty($nombre) || empty($phone_number) || empty($email) || $id_negocio <= 0) {
+        header("Location: clientes_nuevo.php?status=error&message=" . urlencode("Nombre, teléfono, email y negocio son obligatorios."));
         exit();
-    }    
-    // Unir código de país y número si se proporcionó un número
-    if (!empty($phone_number)) {
-        $celular = $country_code . ' ' . $phone_number;
     }
-    // --- FIN DE LA NUEVA VALIDACIÓN ---
 
-    // VERIFICACIÓN DE DUPLICADOS: Revisar si el correo electrónico ya existe
-    $sql_check = "SELECT id_cliente FROM j106_clientes WHERE correo_electronico = ? AND id_negocio = ?";
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        header("Location: clientes_nuevo.php?status=error&message=" . urlencode("Email inválido."));
+        exit();
+    }
+    
+    $celular = $country_code . ' ' . $phone_number;
+
+    // Verificar duplicados
+    $sql_check = "SELECT id_cliente FROM j106_clientes WHERE (correo_electronico = ? OR numero_celular = ?) AND id_negocio = ?";
     if ($stmt_check = $conn->prepare($sql_check)) {
-        $stmt_check->bind_param("si", $email, $id_negocio_session);
+        $stmt_check->bind_param("ssi", $email, $celular, $id_negocio);
         $stmt_check->execute();
         $stmt_check->store_result();
-
         if ($stmt_check->num_rows > 0) {
-            // Si encontramos un resultado, el correo ya existe.
-            header("Location: clientes_lista.php?status=error&message_key=error_duplicate_entry");
+            header("Location: clientes_nuevo.php?status=error&message=" . urlencode("El cliente ya existe en este negocio (email o teléfono duplicado)."));
             exit();
         }
         $stmt_check->close();
     }
 
-    // --- MANEJO DE FOTO DE PERFIL ---
-    $foto_data = null;
-    $foto_tipo = null;
-    if (isset($_FILES['foto_perfil']) && $_FILES['foto_perfil']['error'] == UPLOAD_ERR_OK) {
-        // Validar que sea una imagen
-        $check = getimagesize($_FILES['foto_perfil']['tmp_name']);
-        if ($check !== false) {
-            $foto_data = file_get_contents($_FILES['foto_perfil']['tmp_name']);
-            $foto_tipo = $_FILES['foto_perfil']['type'];
-        }
-    }
-    // --- FIN MANEJO DE FOTO ---
+    $sql = "INSERT INTO j106_clientes (nombre_completo, numero_celular, correo_electronico, direccion1, direccion2, ciudad, id_pais, id_estado, zip_code, notas_adicionales, id_negocio, in_sms, in_email, in_whatsapp, activo, fecha_registro) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())";
 
-    // 4. Preparar la consulta SQL para evitar inyecciones SQL (muy importante)
-    $sql = "INSERT INTO j106_clientes (nombre_completo, numero_celular, correo_electronico, direccion1, direccion2, ciudad, id_pais, id_estado, zip_code, notas_adicionales, id_negocio, in_sms, in_email, in_whatsapp, foto_perfil_data, foto_perfil_tipo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-    // Preparar la sentencia
     if ($stmt = $conn->prepare($sql)) {
-        // 5. Vincular los parámetros
-        $stmt->bind_param("ssssssiissiiiiss", $nombre, $celular, $email, $direccion1, $direccion2, $ciudad, $id_pais, $id_estado, $zip_code, $notas, $id_negocio_session, $in_sms, $in_email, $in_whatsapp, $foto_data, $foto_tipo);
+        $stmt->bind_param("ssssssiissiii", $nombre, $celular, $email, $direccion1, $direccion2, $ciudad, $id_pais, $id_estado, $zip_code, $notas, $id_negocio, $in_sms, $in_email, $in_whatsapp);
 
-        // 6. Ejecutar la sentencia
         if ($stmt->execute()) {
             $id_nuevo_cliente = $stmt->insert_id;
-            $descripcion_audit = "Se ha creado el cliente '{$nombre}' (ID: {$id_nuevo_cliente}).";
-            registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'CREATE_CLIENT', $descripcion_audit);
-
-            // Si todo va bien, redirigir
-            header("Location: clientes_lista.php?status=success_create"); // Redirigir primero
-            $stmt->close(); // Luego cerrar la sentencia
-            exit(); // Terminar el script
+            $descripcion_audit = "Se creó el cliente '{$nombre}' (ID: {$id_nuevo_cliente}).";
+            registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio, 'CREATE_CLIENT', $descripcion_audit);
+            header("Location: clientes_lista.php?status=success&message=" . urlencode("Cliente creado con éxito."));
         } else {
-            // Si hay un error, redirigir con un mensaje de error
-            header("Location: clientes_lista.php?status=error&message_key=operation_error");
+            header("Location: clientes_nuevo.php?status=error&message=" . urlencode("Error al crear: " . $stmt->error));
         }
-
-        // 7. Cerrar la sentencia
         $stmt->close();
     } else {
-        header("Location: clientes_lista.php?status=error&message=" . urlencode($conn->error));
+        header("Location: clientes_nuevo.php?status=error&message=" . urlencode($conn->error));
     }
-
     exit();
 }

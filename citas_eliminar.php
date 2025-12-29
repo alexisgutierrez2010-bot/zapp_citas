@@ -10,6 +10,8 @@ require_once 'config.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+$es_administrador = (isset($rol_session) && strcasecmp(trim($rol_session), 'Administrador') == 0);
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // 1. Recoger y validar el ID de la cita
@@ -29,14 +31,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // ob_end_clean(); // Descartamos la salida (la redirección de enviar_email.php)
 
     // 2. Preparar la consulta SQL de eliminación
-    $sql = "UPDATE j108_citas SET estado_cita = 'Cancelada' WHERE id_cita = ?";
-
-    if ($stmt = $conn->prepare($sql)) {
+    if ($es_administrador) {
+        $sql = "UPDATE j108_citas SET estado_cita = 'Cancelada' WHERE id_cita = ?";
+        $stmt = $conn->prepare($sql);
         $stmt->bind_param("i", $id_cita);
+    } else {
+        $sql = "UPDATE j108_citas SET estado_cita = 'Cancelada' WHERE id_cita = ? AND id_negocio = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ii", $id_cita, $id_negocio_session);
+    }
 
+    if ($stmt) {
         if ($stmt->execute()) {
             $descripcion_audit = "Se canceló la cita (ID: {$id_cita}) desde el panel de administración.";
-            registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'CANCEL_APPOINTMENT', $descripcion_audit);
+            registrar_auditoria($conn, $_SESSION['id_usuario'], null, 'CANCEL_APPOINTMENT', $descripcion_audit);
 
             header("Location: citas_lista.php?status=success_delete");
         } else {

@@ -28,54 +28,59 @@ $sql_negocio = "SELECT id_negocio, nombre_negocio, telefono, activo, fecha_desac
 $stmt_negocio = $conn->prepare($sql_negocio);
 $stmt_negocio->bind_param("s", $telefono_negocio_cleaned_input);
 $stmt_negocio->execute();
-$found_negocio = $stmt_negocio->get_result()->fetch_assoc();
+$result_negocios = $stmt_negocio->get_result();
+
+$negocios_candidatos = [];
+while ($row = $result_negocios->fetch_assoc()) {
+    $negocios_candidatos[] = $row;
+}
 $stmt_negocio->close();
 
-if (!$found_negocio) {
+if (empty($negocios_candidatos)) {
     http_response_code(404); // Not Found
     echo json_encode(['error' => 'El negocio no fue encontrado.', 'error_key' => 'login_error_business_not_found']);
     exit;
 }
 
-// --- VALIDACIÓN DE PERÍODO DE PRUEBA ---
-if ($found_negocio['activo'] == 2) { // 2 = Suspendido
-    http_response_code(403); // Forbidden
-    echo json_encode(['error' => 'La cuenta de este negocio se encuentra suspendida.']);
-    exit;
-}
-if ($found_negocio['activo'] == 3) { // 3 = Eliminado
-    http_response_code(403); // Forbidden
-    echo json_encode(['error' => 'La cuenta de este negocio ha sido eliminada.']);
-    exit;
-}
-if ($found_negocio['activo'] == 4) { // 4 = Pendiente por Aprobar
-    http_response_code(403); // Forbidden
-    echo json_encode(['error' => 'La cuenta de este negocio está pendiente de aprobación por un administrador.']);
-    exit;
-}
-// --- FIN DE VALIDACIÓN ---
+// 4. Iterar sobre los negocios encontrados para ver si la contraseña coincide con algún usuario propietario
+foreach ($negocios_candidatos as $found_negocio) {
+    $id_negocio = $found_negocio['id_negocio'];
+    $nombre_negocio = $found_negocio['nombre_negocio'];
 
-$id_negocio = $found_negocio['id_negocio'];
-$nombre_negocio = $found_negocio['nombre_negocio'];
+    // Buscar un usuario 'Propietario' para este negocio específico
+    $sql_user = "SELECT id_usuario, nombre_usuario, password_hash, activo FROM j100_usuarios WHERE id_negocio = ? AND rol = 'Propietario'";
+    $stmt_user = $conn->prepare($sql_user);
+    $stmt_user->bind_param("i", $id_negocio);
+    $stmt_user->execute();
+    $result_user = $stmt_user->get_result();
 
-// 4. Buscar un usuario 'Propietario' para ese negocio y validar su contraseña
-$sql_user = "SELECT id_usuario, nombre_usuario, password_hash, activo FROM j100_usuarios WHERE id_negocio = ? AND rol = 'Propietario'";
-$stmt_user = $conn->prepare($sql_user);
-$stmt_user->bind_param("i", $id_negocio);
-$stmt_user->execute();
-$result_user = $stmt_user->get_result();
-
-if ($result_user->num_rows > 0) { // Puede haber más de un propietario, validamos el primero que coincida
     while ($usuario = $result_user->fetch_assoc()) {
-        if ($usuario['activo'] != 1) {
-            continue; // Si este usuario propietario está inactivo, prueba con el siguiente (si hay más)
-        }
-
         if (password_verify($password, $usuario['password_hash'])) {
+            // ¡Contraseña correcta! Ahora validamos el estado.
+            
+            if ($usuario['activo'] != 1) continue; // Usuario inactivo, saltar
+
+            // --- VALIDACIÓN DE ESTADO DEL NEGOCIO ---
+            if ($found_negocio['activo'] == 2) { // 2 = Suspendido
+                http_response_code(403);
+                echo json_encode(['error' => "La cuenta del negocio '{$nombre_negocio}' se encuentra suspendida."]);
+                exit;
+            }
+            if ($found_negocio['activo'] == 3) { // 3 = Eliminado
+                http_response_code(403);
+                echo json_encode(['error' => "La cuenta del negocio '{$nombre_negocio}' ha sido eliminada."]);
+                exit;
+            }
+            if ($found_negocio['activo'] == 4) { // 4 = Pendiente
+                http_response_code(403);
+                echo json_encode(['error' => "La cuenta del negocio '{$nombre_negocio}' está pendiente de aprobación."]);
+                exit;
+            }
+            // --- FIN VALIDACIÓN ---
+
             // ¡Login exitoso!
             // Almacenar datos del propietario en la sesión
             $_SESSION['owner_loggedin'] = true;
-            $_SESSION['owner_id_usuario'] = $usuario['id_usuario'];
             $_SESSION['owner_id_usuario'] = $usuario['id_usuario'];
             $_SESSION['owner_nombre_usuario'] = $usuario['nombre_usuario'];
             $_SESSION['owner_id_negocio'] = (int)$id_negocio;
@@ -96,6 +101,7 @@ if ($result_user->num_rows > 0) { // Puede haber más de un propietario, validam
             exit; // Salir después de un login exitoso
         }
     }
+    $stmt_user->close();
 }
 
 // Si llegamos aquí, no se encontró un propietario con esa contraseña o no hay propietario para el negocio

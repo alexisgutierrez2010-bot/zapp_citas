@@ -51,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // SOLUCIÓN: Usar el ID de la sesión por seguridad, no el del input.
     $id_cliente = (int)($_SESSION['client_id']);
+    $id_negocio = (int)($_SESSION['client_id_negocio']); // Obtenemos el negocio de la sesión
     $nombre = trim($input['nombre_completo'] ?? '');
     $email = trim($input['correo_electronico'] ?? '');
     $celular = trim($input['numero_celular'] ?? ''); // AÑADIDO
@@ -70,26 +71,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Verificar que el email no esté en uso por OTRO cliente
-    $sql_check = "SELECT id_cliente FROM j106_clientes WHERE correo_electronico = ? AND id_cliente != ?";
+    // Verificar que el email no esté en uso por OTRO cliente EN EL MISMO NEGOCIO
+    $sql_check = "SELECT id_cliente FROM j106_clientes WHERE correo_electronico = ? AND id_negocio = ? AND id_cliente != ?";
     $stmt_check = $conn->prepare($sql_check);
-    $stmt_check->bind_param("si", $email, $id_cliente);
+    $stmt_check->bind_param("sii", $email, $id_negocio, $id_cliente);
     $stmt_check->execute();
     if ($stmt_check->get_result()->num_rows > 0) {
         http_response_code(409); // Conflict
-        echo json_encode(['error' => 'El correo electrónico ya está en uso por otro cliente.']);
+        echo json_encode(['error' => 'El correo electrónico ya está en uso por otro cliente en este negocio.']);
         exit;
     }
     $stmt_check->close();
 
-    // AÑADIDO: Verificar que el celular no esté en uso por OTRO cliente
-    $sql_check_cel = "SELECT id_cliente FROM j106_clientes WHERE numero_celular = ? AND id_cliente != ?";
+    // AÑADIDO: Verificar que el celular no esté en uso por OTRO cliente EN EL MISMO NEGOCIO
+    $sql_check_cel = "SELECT id_cliente FROM j106_clientes WHERE numero_celular = ? AND id_negocio = ? AND id_cliente != ?";
     $stmt_check_cel = $conn->prepare($sql_check_cel);
-    $stmt_check_cel->bind_param("si", $celular, $id_cliente);
+    $stmt_check_cel->bind_param("sii", $celular, $id_negocio, $id_cliente);
     $stmt_check_cel->execute();
     if ($stmt_check_cel->get_result()->num_rows > 0) {
         http_response_code(409); // Conflict
-        echo json_encode(['error' => 'El número de celular ya está en uso por otro cliente.']);
+        echo json_encode(['error' => 'El número de celular ya está en uso por otro cliente en este negocio.']);
         exit;
     }
     $stmt_check_cel->close();

@@ -62,6 +62,16 @@ try {
     }
     $stmt_check->close();
 
+    // Verificar si el cliente ya existe para ese negocio (por correo electrónico)
+    $sql_check_email = "SELECT id_cliente FROM j106_clientes WHERE correo_electronico = ? AND id_negocio = ?";
+    $stmt_check_email = $conn->prepare($sql_check_email);
+    $stmt_check_email->bind_param("si", $correo_electronico, $id_negocio);
+    $stmt_check_email->execute();
+    if ($stmt_check_email->get_result()->num_rows > 0) {
+        throw new Exception("Ya existe un cliente registrado con este correo electrónico para este negocio.", 409);
+    }
+    $stmt_check_email->close();
+
     // 3. Insertar el nuevo cliente
     $sql_insert = "INSERT INTO j106_clientes (id_negocio, nombre_completo, correo_electronico, numero_celular, direccion1, direccion2, ciudad, zip_code, id_pais, id_estado, in_email, in_sms, in_whatsapp, activo, fecha_registro) 
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())";

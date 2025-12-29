@@ -10,12 +10,27 @@ if ($id_servicio <= 0) {
     exit();
 }
 
-$stmt = $conn->prepare("SELECT * FROM j104_servicios WHERE id_servicio = ? AND id_negocio = ?");
-$stmt->bind_param("ii", $id_servicio, $id_negocio_session);
+// Determinar si es Administrador
+$es_administrador = (isset($rol_session) && strcasecmp(trim($rol_session), 'Administrador') == 0);
+
+// SOLUCIÓN: No seleccionar el campo BLOB 'foto_servicio', en su lugar, verificar si existe para evitar errores de memoria.
+$sql = "SELECT id_servicio, nombre_servicio, duracion_valor, duracion_unidad, precio, activo, id_negocio, (foto_servicio IS NOT NULL AND LENGTH(foto_servicio) > 0) as tiene_foto FROM j104_servicios WHERE id_servicio = ?";
+$params = [$id_servicio];
+$types = "i";
+
+// Si no es administrador, debe pertenecer a su negocio.
+if (!$es_administrador) {
+    $sql .= " AND id_negocio = ?";
+    $params[] = $id_negocio_session;
+    $types .= "i";
+}
+
+$stmt = $conn->prepare($sql);
+$stmt->bind_param($types, ...$params);
 $stmt->execute();
 $result = $stmt->get_result();
 if ($result->num_rows !== 1) {
-    header("Location: servicios_lista.php?status=error&message=Servicio no encontrado.");
+    header("Location: servicios_lista.php?status=error&message=Servicio no encontrado o no tienes permiso para editarlo.");
     exit();
 }
 $servicio = $result->fetch_assoc();
@@ -42,8 +57,15 @@ $stmt->close();
                             <div class="mb-3">
                                 <label for="foto_servicio" class="form-label">Cambiar Foto (Opcional)</label>
                                 <input class="form-control" type="file" id="foto_servicio" name="foto_servicio" accept="image/*">
-                                <?php if (!empty($servicio['foto_servicio'])): ?>
-                                    <div class="mt-2"><small>Foto Actual:</small><br><img src="api_get_service_image.php?id=<?php echo $servicio['id_servicio']; ?>" alt="Foto actual" class="img-thumbnail" style="max-height: 100px;"></div>
+                                <?php if (!empty($servicio['tiene_foto'])): ?>
+                                    <div class="mt-2">
+                                        <small>Foto Actual:</small><br>
+                                        <img src="api_get_service_image.php?id=<?php echo $servicio['id_servicio']; ?>" alt="Foto actual" class="img-thumbnail" style="max-height: 100px;">
+                                        <div class="form-check mt-1">
+                                            <input class="form-check-input" type="checkbox" name="eliminar_foto" id="eliminar_foto" value="1">
+                                            <label class="form-check-label" for="eliminar_foto">Eliminar foto actual</label>
+                                        </div>
+                                    </div>
                                 <?php endif; ?>
                             </div>
                             <div class="mb-3"><label class="form-label">Duración</label><div class="input-group"><input type="number" class="form-control" name="duracion_valor" value="<?php echo htmlspecialchars($servicio['duracion_valor']); ?>" required><select class="form-select" name="duracion_unidad"><option value="Minutos" <?php echo $servicio['duracion_unidad'] == 'Minutos' ? 'selected' : ''; ?>>Minutos</option><option value="Horas" <?php echo $servicio['duracion_unidad'] == 'Horas' ? 'selected' : ''; ?>>Horas</option><option value="Dias" <?php echo $servicio['duracion_unidad'] == 'Dias' ? 'selected' : ''; ?>>Días</option></select></div></div>

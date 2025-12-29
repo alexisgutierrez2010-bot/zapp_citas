@@ -7,40 +7,58 @@ require_once 'auth_check.php';
 require_once 'config.php';
 header('Content-Type: application/json');
 
-// 2. Preparar la consulta para obtener las citas
-// Unimos Citas con Clientes para obtener el nombre del cliente
-// Filtramos por el id_negocio de la sesión para un entorno multi-negocio
-// Opcional: Excluimos las citas canceladas para no mostrarlas en el calendario
-$sql = "SELECT 
-            j108_citas.id_cita,
-            j108_citas.fecha_hora_inicio,
-            j108_citas.fecha_hora_fin,
-            j106_clientes.nombre_completo,
-            j108_citas.estado_cita
-        FROM j108_citas
-        JOIN j106_clientes ON j108_citas.id_cliente = j106_clientes.id_cliente
-        WHERE j108_citas.estado_cita != 'Cancelada' AND j108_citas.id_negocio = ?";
+$es_administrador = (isset($rol_session) && strcasecmp(trim($rol_session), 'Administrador') == 0);
+$id_negocio_get = isset($_GET['id_negocio']) ? (int)$_GET['id_negocio'] : 0;
+
+$sql = "SELECT
+            c.id_cita,
+            c.fecha_hora_inicio,
+            c.fecha_hora_fin,
+            cl.nombre_completo,
+            c.estado_cita,
+            n.nombre_negocio
+        FROM j108_citas c
+        JOIN j106_clientes cl ON c.id_cliente = cl.id_cliente
+        JOIN j102_negocios n ON c.id_negocio = n.id_negocio
+        WHERE c.estado_cita != 'Cancelada'";
+
+$params = [];
+$types = "";
+
+if ($es_administrador) {
+    if ($id_negocio_get > 0) {
+        $sql .= " AND c.id_negocio = ?";
+        $params[] = $id_negocio_get;
+        $types .= "i";
+    }
+    // Si es admin y $id_negocio_get es 0, no se añade filtro de negocio (muestra todos).
+} else {
+    // Si no es admin, se fuerza a ver solo su negocio.
+    $sql .= " AND c.id_negocio = ?";
+    $params[] = $id_negocio_session;
+    $types .= "i";
+}
 
 $stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $id_negocio_session);
+if (!empty($types)) {
+    $stmt->bind_param($types, ...$params);
+}
 $stmt->execute();
 $result = $stmt->get_result();
 
-// 3. Construir el array de eventos en el formato que FullCalendar necesita
 $eventos = [];
 if ($result && $result->num_rows > 0) {
     while($row = $result->fetch_assoc()) {
+        $title = $es_administrador && $id_negocio_get == 0 ? $row['nombre_completo'] . ' (' . $row['nombre_negocio'] . ')' : $row['nombre_completo'];
         $eventos[] = [
             'id'    => $row['id_cita'],
-            'title' => $row['nombre_completo'], // El texto que se mostrará en el evento
+            'title' => $title,
             'start' => $row['fecha_hora_inicio'], // Fecha y hora de inicio
             'end'   => $row['fecha_hora_fin'],   // Fecha y hora de fin
-            // Podríamos añadir colores según el estado, pero lo mantenemos simple por ahora
         ];
     }
 }
 
-// 4. Cerrar la conexión y devolver los eventos en formato JSON
 echo json_encode($eventos);
 exit();
 ?>

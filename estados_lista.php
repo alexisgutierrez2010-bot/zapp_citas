@@ -24,26 +24,25 @@ if (!$pais) {
 
 $estados_result = $conn->query("SELECT * FROM j111_estados WHERE id_pais = $id_pais ORDER BY nombre_estado ASC");
 ?>
-<!DOCTYPE html>
-<html lang="<?php echo $lang; ?>">
+<!DOCTYPE html><html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo str_replace('{country}', htmlspecialchars($pais['nombre_pais']), __('locations_states_title')); ?></title>
+    <title>Estados de <?php echo htmlspecialchars($pais['nombre_pais']); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body style="background-color: <?php echo $daily_bg_color; ?>;">
     <?php include 'navbar.php'; ?>
 
     <div class="container mt-4">
-        <a href="paises_lista.php?lang=<?php echo $lang; ?>" class="btn btn-secondary mb-3"><?php echo __('locations_back_to_countries'); ?></a>
-        <h2><?php echo str_replace('{country}', '<strong>' . htmlspecialchars($pais['nombre_pais']) . '</strong>', __('locations_states_title')); ?></h2>
+        <a href="paises_lista.php" class="btn btn-secondary mb-3">Volver a Países</a>
+        <h2>Estados de <strong><?php echo htmlspecialchars($pais['nombre_pais']); ?></strong></h2>
 
         <div class="row mt-4">
             <!-- Formulario para agregar estado -->
             <div class="col-md-4">
                 <div class="card">
-                    <div class="card-header"><h4><?php echo __('locations_register_state'); ?></h4></div>
+                    <div class="card-header"><h4>Registrar Estado</h4></div>
                     <div class="card-body">
                         <?php
                         if (isset($_GET['status']) || isset($_GET['message_key'])) {
@@ -52,9 +51,9 @@ $estados_result = $conn->query("SELECT * FROM j111_estados WHERE id_pais = $id_p
                             $message = '';
 
                             if (!empty($message_key)) {
-                                $message = __($message_key);
+                                $message = htmlspecialchars($message_key);
                             } elseif (strpos($status, 'success') !== false) {
-                                $message = __('operation_success');
+                                $message = 'Operación realizada con éxito.';
                             }
                             if (!empty($message)) {
                                 $alert_type = strpos($status, 'error') === false ? 'success' : 'danger';
@@ -65,10 +64,10 @@ $estados_result = $conn->query("SELECT * FROM j111_estados WHERE id_pais = $id_p
                         <form action="estados_crear.php" method="POST">
                             <input type="hidden" name="id_pais" value="<?php echo $id_pais; ?>">
                             <div class="mb-3">
-                                <label for="nombre_estado" class="form-label"><?php echo __('locations_form_state_name'); ?></label>
+                                <label for="nombre_estado" class="form-label">Nombre del Estado</label>
                                 <input type="text" class="form-control" id="nombre_estado" name="nombre_estado" required>
                             </div>
-                            <button type="submit" class="btn btn-primary w-100"><?php echo __('locations_form_save_state'); ?></button>
+                            <button type="submit" class="btn btn-primary w-100">Guardar Estado</button>
                         </form>
                     </div>
                 </div>
@@ -76,14 +75,14 @@ $estados_result = $conn->query("SELECT * FROM j111_estados WHERE id_pais = $id_p
 
             <!-- Lista de estados -->
             <div class="col-md-8">
-                <h4><?php echo __('locations_list_states'); ?></h4>
+                <h4>Lista de Estados</h4>
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
                         <thead class="table-dark">
                             <tr>
                                 <th>#</th>
-                                <th><?php echo __('locations_form_state_name'); ?></th>
-                                <th><?php echo __('actions'); ?></th>
+                                <th>Nombre del Estado</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -95,17 +94,17 @@ $estados_result = $conn->query("SELECT * FROM j111_estados WHERE id_pais = $id_p
                                         <td><?php echo $i++; ?></td>
                                         <td><?php echo htmlspecialchars($estado['nombre_estado']); ?></td>
                                         <td>
-                                            <a href="estados_editar.php?id=<?php echo $estado['id_estado']; ?>&lang=<?php echo $lang; ?>" class="btn btn-sm btn-warning"><?php echo __('edit'); ?></a>
-                                            <form action="estados_eliminar.php" method="POST" class="d-inline" onsubmit="return confirm('<?php echo __('locations_confirm_delete_state'); ?>');">
+                                            <a href="estados_editar.php?id=<?php echo $estado['id_estado']; ?>" class="btn btn-sm btn-warning">Editar</a>
+                                            <form action="estados_eliminar.php" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que quieres eliminar este estado?');">
                                                 <input type="hidden" name="id_estado" value="<?php echo $estado['id_estado']; ?>">
                                                 <input type="hidden" name="id_pais" value="<?php echo $id_pais; ?>">
-                                                <button type="submit" class="btn btn-sm btn-danger"><?php echo __('delete'); ?></button>
+                                                <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
                                             </form>
                                         </td>
                                     </tr>
                                 <?php endwhile;
                             else: ?>
-                                <tr><td colspan="3" class="text-center"><?php echo __('locations_no_states'); ?></td></tr>
+                                <tr><td colspan="3" class="text-center">No hay estados registrados para este país.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

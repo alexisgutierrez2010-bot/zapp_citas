@@ -10,9 +10,9 @@ require_once 'config.php'; // Este archivo no debería llamar a config.php dos v
 // --- DATOS DEL USUARIO A CREAR O ACTUALIZAR ---
 $nombre_usuario = 'master'; // Usuario a restablecer
 $password_plano = 'master123'; // Nueva contraseña
-$rol = 'Master'; // Rol del usuario
+$rol = 'Administrador'; // Rol del usuario (CORREGIDO)
 $id_config_negocio = 1; // ID del negocio principal
-$email_usuario = 'master@negocio.com'; // Email del usuario
+$email_usuario = 'alexisgutierrez@acticven.com'; // Email del usuario actualizado
 
 // 1. Encriptar la contraseña de forma segura
 $password_hash = password_hash($password_plano, PASSWORD_DEFAULT);

@@ -75,27 +75,38 @@ try {
     $stmt_cita->bind_param("iiissss", $id_negocio, $id_cliente, $id_servicio, $fecha_inicio_sql, $fecha_fin_sql, $descripcion_final, $tipo_cita);
     if (!$stmt_cita->execute()) throw new Exception("Error al crear la cita: " . $stmt_cita->error);
     $id_nueva_cita = $stmt_cita->insert_id;
-    $stmt_cita->close();
 
-    // --- 4. Insertar Invitados (si es reunión) ---
-    if ($tipo_cita === 'Reunion' && !empty($invitados)) {
-        $sql_invitado = "INSERT INTO j109_invitados_cita (id_cita, nombre_invitado, correo_electronico_invitado, numero_celular_invitado) VALUES (?, ?, ?, ?)";
-        $stmt_invitado = $conn->prepare($sql_invitado);
-        foreach ($invitados as $invitado) {
-            if (!empty($invitado['nombre']) && !empty($invitado['email'])) {
-                $stmt_invitado->bind_param("isss", $id_nueva_cita, $invitado['nombre'], $invitado['email'], $invitado['telefono']);
-                $stmt_invitado->execute();
+    // --- 4. Insertar Invitados (si es reunión) y confirmar transacción ---
+    if ($tipo_cita === 'Reunion') {
+        if (!empty($invitados)) {
+            $sql_invitado = "INSERT INTO j109_invitados_cita (id_cita, nombre_invitado, correo_electronico_invitado, numero_celular_invitado) VALUES (?, ?, ?, ?)";
+            $stmt_invitado = $conn->prepare($sql_invitado);
+            foreach ($invitados as $invitado) {
+                if (!empty($invitado['nombre']) && !empty($invitado['email'])) {
+                    $stmt_invitado->bind_param("isss", $id_nueva_cita, $invitado['nombre'], $invitado['email'], $invitado['telefono']);
+                    $stmt_invitado->execute();
+                }
             }
+            $stmt_invitado->close();
         }
-        $stmt_invitado->close();
     }
 
-    // --- 5. Enviar Notificaciones por Correo (si está activado) ---
-    // SOLUCIÓN: Inicializar variables para evitar errores de "variable no definida" si no se entra en los condicionales.
-    $datos_correo = null;
-    $asunto_evento = null;
+    // --- 5. Confirmar la transacción ANTES de enviar correos ---
+    $conn->commit();
+    registrar_auditoria($conn, $id_usuario, $id_negocio, 'OWNER_CREATE_APPOINTMENT', "Propietario creó cita ID {$id_nueva_cita}.");
 
-    if ($notificar_cliente) {
+} catch (Exception $e) {
+    $conn->rollback();
+    $http_code = ($e->getCode() >= 400 && $e->getCode() < 600) ? $e->getCode() : 500;
+    http_response_code($http_code);
+    echo json_encode(['error' => $e->getMessage()]);
+    exit; // Salir para no continuar con el envío de correo
+}
+
+// --- 6. Enviar Notificaciones (Fuera de la transacción) ---
+$notification_payload = null;
+if ($notificar_cliente) {
+    try {
         // Obtener todos los datos para el correo y el iCal
         $sql_datos = "SELECT 
                         cl.nombre_completo AS nombre_cliente, cl.correo_electronico AS email_cliente, cl.numero_celular AS telefono_cliente,
@@ -114,94 +125,78 @@ try {
         $datos_correo = $stmt_datos->get_result()->fetch_assoc();
         $stmt_datos->close();
 
-        // SOLUCIÓN: Definir el asunto del evento aquí, para que esté disponible para email y SMS/WhatsApp.
         if ($datos_correo) {
             $asunto_evento = ($tipo_cita === 'Reunion') ? $asunto : ($datos_correo['nombre_servicio'] ?? 'Servicio');
-        }
 
-        if ($datos_correo && !empty($datos_correo['email_cliente'])) {
-            // La variable $asunto_evento ya está definida.
-            
-            // Preparar detalles para el iCal
-            // MEJORA: Se añaden fallbacks para evitar notices si algún dato del negocio es nulo.
-            $ical_details = [
-                'start_time' => $fecha_hora_inicio->format('Y-m-d H:i:s'),
-                'end_time' => $fecha_hora_fin->format('Y-m-d H:i:s'),
-                'summary' => $asunto_evento,
-                'description' => $descripcion,
-                'location' => $datos_correo['direccion_negocio'] ?? '',
-                'organizer_email' => $datos_correo['email_negocio'] ?? SMTP_USERNAME,
-                'organizer_name' => $datos_correo['nombre_negocio'] ?? 'ZApp Citas',
-                'attendee_email' => $datos_correo['email_cliente'],
-                'attendee_name' => $datos_correo['nombre_cliente'],
-                'uid' => "ZAPPCITAS-{$id_nueva_cita}-" . time() . "@acticven.com",
-                'guests' => $invitados // Pasar invitados para el iCal
-            ];
-            $ical_content = generate_ical_content($ical_details);
+            // Enviar correo si el cliente tiene uno
+            if (!empty($datos_correo['email_cliente'])) {
+                $ical_details = [
+                    'start_time' => $fecha_hora_inicio->format('Y-m-d H:i:s'),
+                    'end_time' => $fecha_hora_fin->format('Y-m-d H:i:s'),
+                    'summary' => $asunto_evento,
+                    'description' => $descripcion,
+                    'location' => $datos_correo['direccion_negocio'] ?? '',
+                    'organizer_email' => $datos_correo['email_negocio'] ?? SMTP_USERNAME,
+                    'organizer_name' => $datos_correo['nombre_negocio'] ?? 'ZApp Citas',
+                    'attendee_email' => $datos_correo['email_cliente'],
+                    'attendee_name' => $datos_correo['nombre_cliente'],
+                    'uid' => "ZAPPCITAS-{$id_nueva_cita}-" . time() . "@acticven.com",
+                    'guests' => $invitados
+                ];
+                $ical_content = generate_ical_content($ical_details);
 
-            // Preparar PHPMailer
-            $mail = new PHPMailer(true);
-            $mail->isSMTP();
-            $mail->Host = SMTP_HOST;
-            $mail->SMTPAuth = true;
-            $mail->Username = SMTP_USERNAME;
-            $mail->Password = SMTP_PASSWORD;
-            $mail->SMTPSecure = defined('SMTP_SECURE') ? SMTP_SECURE : PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = defined('SMTP_PORT') ? SMTP_PORT : 587;
-            $mail->CharSet = 'UTF-8';
-            $mail->SMTPOptions = ['ssl' => ['verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true]];
+                $mail = new PHPMailer(true);
+                $mail->isSMTP();
+                $mail->Host = SMTP_HOST;
+                $mail->SMTPAuth = true;
+                $mail->Username = SMTP_USERNAME;
+                $mail->Password = SMTP_PASSWORD;
+                $mail->SMTPSecure = defined('SMTP_SECURE') ? SMTP_SECURE : PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port = defined('SMTP_PORT') ? SMTP_PORT : 587;
+                $mail->CharSet = 'UTF-8';
+                $mail->SMTPOptions = ['ssl' => ['verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true]];
 
-            $mail->setFrom(SMTP_USERNAME, $datos_correo['nombre_negocio']);
-            $mail->addReplyTo($datos_correo['email_negocio'], $datos_correo['nombre_negocio']);
-            if (!empty($datos_correo['email_propietario'])) {
-                $mail->addBCC($datos_correo['email_propietario']);
-            }
-            $mail->isHTML(true);
-            $mail->Subject = "Cita Confirmada: {$asunto_evento}";
-            $mail->Body = "<h2>Cita Confirmada</h2><p>Hola {$datos_correo['nombre_cliente']}, tu cita ha sido agendada con éxito.</p><ul><li><strong>Asunto:</strong> {$asunto_evento}</li><li><strong>Fecha:</strong> {$fecha_hora_inicio->format('d/m/Y')}</li><li><strong>Hora:</strong> {$fecha_hora_inicio->format('h:i A')}</li></ul><p>¡Te esperamos!</p>";
-            $mail->AltBody = "Cita confirmada: {$asunto_evento} el {$fecha_hora_inicio->format('d/m/Y')} a las {$fecha_hora_inicio->format('h:i A')}.";
-            $mail->addStringAttachment($ical_content, 'cita.ics', 'base64', 'text/calendar');
+                $mail->setFrom(SMTP_USERNAME, $datos_correo['nombre_negocio']);
+                $mail->addReplyTo($datos_correo['email_negocio'], $datos_correo['nombre_negocio']);
+                if (!empty($datos_correo['email_propietario'])) $mail->addBCC($datos_correo['email_propietario']);
+                $mail->isHTML(true);
+                $mail->Subject = "Cita Confirmada: {$asunto_evento}";
+                $mail->Body = "<h2>Cita Confirmada</h2><p>Hola {$datos_correo['nombre_cliente']}, tu cita ha sido agendada con éxito.</p><ul><li><strong>Asunto:</strong> {$asunto_evento}</li><li><strong>Fecha:</strong> {$fecha_hora_inicio->format('d/m/Y')}</li><li><strong>Hora:</strong> {$fecha_hora_inicio->format('h:i A')}</li></ul><p>¡Te esperamos!</p>";
+                $mail->AltBody = "Cita confirmada: {$asunto_evento} el {$fecha_hora_inicio->format('d/m/Y')} a las {$fecha_hora_inicio->format('h:i A')}.";
+                $mail->addStringAttachment($ical_content, 'cita.ics', 'base64', 'text/calendar');
 
-            // Añadir destinatarios (cliente + invitados)
-            $mail->addAddress($datos_correo['email_cliente'], $datos_correo['nombre_cliente']);
-            if ($tipo_cita === 'Reunion') {
-                foreach ($invitados as $invitado) {
-                    if (!empty($invitado['email'])) {
-                        $mail->addAddress($invitado['email'], $invitado['nombre']);
+                $mail->addAddress($datos_correo['email_cliente'], $datos_correo['nombre_cliente']);
+                if ($tipo_cita === 'Reunion') {
+                    foreach ($invitados as $invitado) {
+                        if (!empty($invitado['email'])) $mail->addAddress($invitado['email'], $invitado['nombre']);
                     }
                 }
+                $mail->send();
             }
-            
-            $mail->send();
+
+            // Preparar payload para notificaciones adicionales (SMS/WhatsApp)
+            if (!empty($datos_correo['telefono_cliente'])) {
+                $notification_payload = [
+                    'telefono_cliente' => $datos_correo['telefono_cliente'],
+                    'nombre_cliente' => $datos_correo['nombre_cliente'],
+                    'nombre_negocio' => $datos_correo['nombre_negocio'],
+                    'asunto_evento' => $asunto_evento,
+                    'fecha_hora_inicio' => $fecha_hora_inicio->format('d/m/Y \a \l\a\s h:i A'),
+                ];
+            }
         }
+    } catch (Exception $e) {
+        // Si el correo falla, no detenemos la ejecución ni revertimos la cita.
+        // Simplemente registramos el error para depuración.
+        registrar_auditoria($conn, $id_usuario, $id_negocio, 'EMAIL_FAIL', "Fallo al enviar correo para nueva cita ID {$id_nueva_cita}. Error: " . $e->getMessage());
     }
-
-    // --- 6. Preparar datos para notificaciones adicionales (SMS/WhatsApp) ---
-    $notification_payload = null;
-    if ($notificar_cliente && $datos_correo && !empty($datos_correo['telefono_cliente'])) {
-        $notification_payload = [
-            'telefono_cliente' => $datos_correo['telefono_cliente'],
-            'nombre_cliente' => $datos_correo['nombre_cliente'],
-            'nombre_negocio' => $datos_correo['nombre_negocio'],
-            'asunto_evento' => $asunto_evento,
-            'fecha_hora_inicio' => $fecha_hora_inicio->format('d/m/Y \a \l\a\s h:i A'),
-        ];
-    }
-
-    // --- 7. Finalizar ---
-    $conn->commit();
-    registrar_auditoria($conn, $id_usuario, $id_negocio, 'OWNER_CREATE_APPOINTMENT', "Propietario creó cita ID {$id_nueva_cita}.");
-    echo json_encode([
-        'success' => true, 
-        'message' => 'Cita creada con éxito.',
-        'notification_payload' => $notification_payload
-    ]);
-} catch (Exception $e) {
-    $conn->rollback();
-    $http_code = ($e->getCode() >= 400 && $e->getCode() < 600) ? $e->getCode() : 500;
-    http_response_code($http_code);
-    echo json_encode(['error' => $e->getMessage()]);
 }
 
+// --- 7. Finalizar y enviar respuesta ---
+echo json_encode([
+    'success' => true, 
+    'message' => 'Cita creada con éxito.',
+    'notification_payload' => $notification_payload
+]);
 $conn->close();
 ?>

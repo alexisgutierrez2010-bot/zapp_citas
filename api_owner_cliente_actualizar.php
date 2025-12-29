@@ -62,7 +62,7 @@ $stmt_check->bind_param("ssii", $numero_celular, $correo_electronico, $id_negoci
 $stmt_check->execute();
 if ($stmt_check->get_result()->num_rows > 0) {
     http_response_code(409);
-    echo json_encode(['error' => 'El teléfono o correo ya está registrado para otro cliente.']);
+    echo json_encode(['error' => 'El teléfono o correo ya está registrado para otro cliente en este negocio.']);
     exit;
 }
 $stmt_check->close();

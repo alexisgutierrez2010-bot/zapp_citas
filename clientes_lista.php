@@ -1,9 +1,27 @@
 <?php
 // Elaborado por GEMENI ASSIST y Alexis Gutierrez de www.ACTICVEN.COM
-// ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
-// Update :Dec-05-2025). Aplicada la internacionalización (i18n).
+// ©2025. Software development and Authorized by WWW.ACTICVEN.COM All rights reserved.
 require_once 'auth_check.php';
-require_once 'config.php'; // Incluimos la conexión aquí para usarla más adelante
+require_once 'config.php';
+
+// --- LÓGICA DE ROLES Y FILTRADO ---
+// Determinar si el usuario es Administrador de forma robusta
+$es_administrador = (isset($rol_session) && strcasecmp(trim($rol_session), 'Administrador') == 0);
+
+$id_negocio_filtro = 0;
+$todos_los_negocios = [];
+if ($es_administrador) {
+    $id_negocio_filtro = isset($_GET['id_negocio_filtro']) ? (int)$_GET['id_negocio_filtro'] : 0;
+    $result_todos_negocios = $conn->query("SELECT id_negocio, nombre_negocio FROM j102_negocios WHERE activo = 1 ORDER BY nombre_negocio ASC");
+    if ($result_todos_negocios) {
+        while ($row = $result_todos_negocios->fetch_assoc()) {
+            $todos_los_negocios[] = $row;
+        }
+    }
+} else {
+    // Si no es Administrador (es Propietario), solo puede ver su propio negocio
+    $id_negocio_filtro = $id_negocio_session;
+}
 
 // Obtener la lista de países para los menús desplegables
 $paises = [];
@@ -11,188 +29,115 @@ $paises_result = $conn->query("SELECT id_pais, nombre_pais, codigo_telefono FROM
 while ($row = $paises_result->fetch_assoc()) {
     $paises[] = $row;
 }
-
-// Obtener el nombre del negocio actual para mostrarlo en la página
-$nombre_negocio_actual = 'Negocio Desconocido';
-$stmt_negocio = $conn->prepare("SELECT nombre_negocio FROM j102_negocios WHERE id_negocio = ?");
-$stmt_negocio->bind_param("i", $id_negocio_session);
-$stmt_negocio->execute();
-$result_negocio = $stmt_negocio->get_result()->fetch_assoc();
-$nombre_negocio_actual = $result_negocio['nombre_negocio'] ?? $nombre_negocio_actual;
 ?>
-<!DOCTYPE html><html lang="es">
+<!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Clientes</title>
-    <!-- Usaremos Bootstrap para un diseño limpio y rápido -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body style="background-color: <?php echo $daily_bg_color; ?>;">
-    <?php include 'navbar.php'; // Incluimos el menú de navegación ?>
-
+    <?php include 'navbar.php'; ?>
     <div class="container mt-4">
-        <div class="row">
-            <div class="col-md-5">
-                <div class="card">
-                    <div class="card-header"><h3>Registrar Nuevo Cliente</h3></div>
-                    <div class="card-body">
-                        <?php
-                        // Mostrar mensajes de éxito o error
-                        if (isset($_GET['status']) || isset($_GET['message_key'])) {
-                            $status = $_GET['status'] ?? '';
-                            $message_key = $_GET['message_key'] ?? '';
-                            $message = '';
-
-                            if (!empty($message_key)) {
-                                $message = htmlspecialchars($message_key);
-                            } elseif ($status === 'success_create') {
-                                $message = 'Registro creado con éxito.';
-                            } elseif ($status === 'success_update') {
-                                $message = 'Actualización exitosa.';
-                            }
-                            if (!empty($message)) {
-                                $alert_type = strpos($status, 'error') === false ? 'success' : 'danger';
-                                echo "<div class='alert alert-{$alert_type}'>" . htmlspecialchars($message) . "</div>";
-                            }
-                        }
-                        ?>
-
-                        <form action="clientes_crear.php" method="POST" enctype="multipart/form-data">
-                            <div class="mb-3"><label for="nombre" class="form-label">Nombre Completo</label>
-                                <input type="text" class="form-control" id="nombre" name="nombre_completo" required>
-                            </div>
-                            <div class="mb-3"><label for="numero_celular" class="form-label">Teléfono Celular</label>
-                                <div class="input-group">
-                                    <select class="form-select" id="country_code" name="country_code" style="max-width: 120px;">
-                                        <?php foreach ($paises as $pais): ?>
-                                            <option value="<?php echo htmlspecialchars($pais['codigo_telefono']); ?>" <?php echo ($pais['id_pais'] == 1) ? 'selected' : ''; ?>><?php echo htmlspecialchars($pais['codigo_telefono']); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <input type="tel" class="form-control" id="numero_celular" name="numero_celular" placeholder="Ej: 4121234567">
-                                </div>
-                            </div>
-                            <div class="mb-3"><label for="email" class="form-label">Correo Electrónico</label>
-                                <input type="email" class="form-control" id="email" name="correo_electronico" required>
-                            </div>
-                            <div class="mb-3"><label for="direccion1" class="form-label">Dirección 1</label>
-                                <input type="text" class="form-control" id="direccion1" name="direccion1" maxlength="128">
-                            </div>
-                            <div class="mb-3"><label for="direccion2" class="form-label">Dirección 2 (Opcional)</label>
-                                <input type="text" class="form-control" id="direccion2" name="direccion2" maxlength="128">
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_pais" class="form-label">País</label>
-                                    <select class="form-select" id="id_pais" name="id_pais" required>
-                                        <option value="">Seleccione un país...</option>
-                                        <?php foreach ($paises as $pais): ?>
-                                            <option value="<?php echo $pais['id_pais']; ?>" data-codigo-telefono="<?php echo htmlspecialchars($pais['codigo_telefono']); ?>" <?php echo ($pais['id_pais'] == 1) ? 'selected' : ''; ?>>
-                                                <?php echo htmlspecialchars($pais['nombre_pais']); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="id_estado" class="form-label">Estado / Provincia</label>
-                                    <select class="form-select" id="id_estado" name="id_estado" required disabled>
-                                        <option value="">Cargando...</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-8 mb-3">
-                                    <label for="ciudad" class="form-label">Ciudad</label>
-                                    <input type="text" class="form-control" id="ciudad" name="ciudad">
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label for="zip_code" class="form-label">Código Postal</label>
-                                    <input type="text" class="form-control" id="zip_code" name="zip_code">
-                                </div>
-                            </div>
-                            <div class="mb-3"><label for="notas" class="form-label">Notas Adicionales</label>
-                                <textarea class="form-control" id="notas" name="notas_adicionales" rows="3"></textarea>
-                            </div>
-                            <hr>
-                            <div class="mb-3"><label class="form-label">Preferencias de Comunicación:</label>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="in_sms" value="1" id="in_sms_crear" checked>
-                                    <label class="form-check-label" for="in_sms_crear">Recibir notificaciones por SMS</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="in_email" value="1" id="in_email_crear" checked>
-                                    <label class="form-check-label" for="in_email_crear">Recibir notificaciones por Email</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="in_whatsapp" value="1" id="in_whatsapp_crear" checked>
-                                    <label class="form-check-label" for="in_whatsapp_crear">Recibir notificaciones por WhatsApp</label>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="foto_perfil" class="form-label">Foto de Perfil (Opcional)</label>
-                                <input class="form-control" type="file" id="foto_perfil" name="foto_perfil" accept="image/jpeg, image/png">
-                            </div>
-                            <div class="d-grid gap-2 d-sm-flex">
-                                <button type="submit" class="btn btn-primary flex-grow-1">Guardar Cliente</button>
-                                <button type="reset" class="btn btn-secondary flex-grow-1">Limpiar Formulario</button>
-                            </div>
-                        </form>
-                    </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">
+                        Lista de Clientes
+                        <span class="badge bg-secondary fs-6"><?php echo htmlspecialchars($rol_session ?? 'Desconocido'); ?></span>
+                    </h3>
+                    <?php if ($es_administrador): ?>
+                        <a href="clientes_nuevo.php" class="btn btn-primary">Crear Nuevo Cliente</a>
+                    <?php endif; ?>
                 </div>
             </div>
+            <div class="card-body">
+                <?php if (isset($_GET['message'])): ?>
+                    <div class="alert alert-<?php echo $_GET['status'] == 'success' ? 'success' : 'danger'; ?> alert-dismissible fade show" role="alert">
+                        <?php echo htmlspecialchars(urldecode($_GET['message'])); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                <?php endif; ?>
 
-            <div class="col-md-7"><h3>Lista de Clientes</h3>
-                <h5 class="text-muted mb-3">Para: <?php echo htmlspecialchars($nombre_negocio_actual); ?></h5>
+                <?php if ($es_administrador): ?>
+                <form method="GET" action="clientes_lista.php" class="row g-3 align-items-center mb-3 bg-light p-3 rounded">
+                    <div class="col-md-8">
+                        <label for="id_negocio_filtro" class="form-label">Filtrar por Negocio</label>
+                        <select name="id_negocio_filtro" id="id_negocio_filtro" class="form-select">
+                            <option value="0">Todos los Negocios</option>
+                            <?php foreach ($todos_los_negocios as $negocio): ?>
+                                <option value="<?php echo $negocio['id_negocio']; ?>" <?php echo ($id_negocio_filtro == $negocio['id_negocio']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($negocio['nombre_negocio']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-grid">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-info">Filtrar</button>
+                    </div>
+                </form>
+                <?php endif; ?>
+
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover">
+                    <table class="table table-striped table-hover align-middle">
                         <thead class="table-dark">
                             <tr>
-                                <th style="width: 50px;">Foto</th>
+                                <th>#</th>
                                 <th>Nombre</th>
-                                <th>Teléfono</th>
+                                <th>Celular</th>
                                 <th>Email</th>
+                                <?php if ($es_administrador): ?>
+                                <th>Negocio</th>
+                                <?php endif; ?>
                                 <th>Estado</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php
-                            $sql = "SELECT id_cliente, nombre_completo, numero_celular, correo_electronico, activo, foto_perfil_tipo FROM j106_clientes WHERE id_negocio = ? ORDER BY activo DESC, nombre_completo ASC";
+                            $sql = "SELECT c.*, n.nombre_negocio FROM j106_clientes c JOIN j102_negocios n ON c.id_negocio = n.id_negocio";
+                            $params = [];
+                            $types = "";
+                            if ($id_negocio_filtro > 0) {
+                                $sql .= " WHERE c.id_negocio = ?";
+                                $params[] = $id_negocio_filtro;
+                                $types .= "i";
+                            }
+                            $sql .= " ORDER BY c.nombre_completo ASC";
+                            
                             $stmt = $conn->prepare($sql);
-                            $stmt->bind_param("i", $id_negocio_session);
+                            if (!empty($types)) {
+                                $stmt->bind_param($types, ...$params);
+                            }
                             $stmt->execute();
                             $result = $stmt->get_result();
-
+                            
                             if ($result->num_rows > 0) {
+                                $i = 1;
                                 while($row = $result->fetch_assoc()) {
-                                    $foto_html = '<img src="assets/images/default_avatar.png" class="rounded-circle me-2" width="40" height="40" alt="Avatar">';
-                                    if (!empty($row['foto_perfil_tipo'])) {
-                                        $image_url = 'api_get_client_image.php?id=' . $row['id_cliente'];
-                                        $foto_html = '<a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" data-image-url="' . $image_url . '" data-client-name="' . htmlspecialchars($row["nombre_completo"]) . '">
-                                                        <img src="' . $image_url . '" class="rounded-circle me-2" width="40" height="40" alt="Foto de ' . htmlspecialchars($row["nombre_completo"]) . '">
-                                                     </a>';
-                                    }
-
                                     echo "<tr>";
-                                    echo "<td>" . $foto_html . "</td>";
+                                    echo "<td>" . $i++ . "</td>";
                                     echo "<td>" . htmlspecialchars($row["nombre_completo"]) . "</td>";
                                     echo "<td>" . htmlspecialchars($row["numero_celular"]) . "</td>";
                                     echo "<td>" . htmlspecialchars($row["correo_electronico"]) . "</td>";
-                                    $estado_cliente = $row['activo'] ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-danger">Inactivo</span>';
-                                    echo "<td>" . $estado_cliente . "</td>";
+                                    if ($es_administrador) {
+                                        echo "<td>" . htmlspecialchars($row["nombre_negocio"]) . "</td>";
+                                    }
+                                    echo '<td><span class="badge ' . ($row['activo'] ? 'bg-success' : 'bg-danger') . '">' . ($row['activo'] ? 'Activo' : 'Inactivo') . '</span></td>';
                                     echo '<td>
-                                            <a href="clientes_editar.php?id=' . $row['id_cliente'] . '" class="btn btn-sm btn-warning">Editar</a>';
-                                    if ($row['activo']) { // Solo mostrar el botón de desactivar si el cliente está activo
-                                        echo '<form action="clientes_eliminar.php" method="POST" style="display:inline-block;" onsubmit="return confirm(\'¿Estás seguro de que quieres desactivar este cliente? No se podrá usar para nuevas citas, pero su historial se conservará.\');">
+                                            <a href="clientes_editar.php?id=' . $row['id_cliente'] . '" class="btn btn-sm btn-warning">Editar</a>
+                                            <form action="clientes_eliminar.php" method="POST" class="d-inline" onsubmit="return confirm(\'¿Seguro que quieres desactivar este cliente?\');">
                                                 <input type="hidden" name="id_cliente" value="' . $row['id_cliente'] . '">
                                                 <button type="submit" class="btn btn-sm btn-danger">Desactivar</button>
-                                            </form>';
-                                    }
-                                    echo '</td>';
+                                            </form>
+                                          </td>';
                                     echo "</tr>";
                                 }
                             } else {
-                                echo "<tr><td colspan='6' class='text-center'>No hay clientes registrados todavía.</td></tr>";
+                                $colspan = $es_administrador ? 7 : 6;
+                                echo "<tr><td colspan='{$colspan}' class='text-center'>No hay clientes registrados que coincidan con el filtro.</td></tr>";
                             }
                             ?>
                         </tbody>
@@ -201,77 +146,6 @@ $nombre_negocio_actual = $result_negocio['nombre_negocio'] ?? $nombre_negocio_ac
             </div>
         </div>
     </div>
-
-    <!-- Modal para ver la imagen -->
-    <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="imageModalLabel">Foto de Perfil</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <img src="" id="modalImage" class="img-fluid rounded" alt="Foto de perfil">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const paisSelect = document.getElementById('id_pais');
-        const estadoSelect = document.getElementById('id_estado');
-        const codigoTelefonoSelect = document.getElementById('country_code');
-
-        function cargarEstados(idPais, idEstadoSeleccionado = null) {
-            if (!idPais) {
-                estadoSelect.innerHTML = '<option value="">Seleccione un país primero</option>';
-                estadoSelect.disabled = true;
-                return;
-            }
-
-            fetch(`api_estados.php?id_pais=${idPais}`)
-                .then(response => response.json())
-                .then(data => {
-                    estadoSelect.innerHTML = '<option value="">Seleccione un estado...</option>';
-                    data.forEach(estado => {
-                        const option = document.createElement('option');
-                        option.value = estado.id_estado;
-                        option.textContent = estado.nombre_estado;
-                        if (idEstadoSeleccionado && estado.id_estado == idEstadoSeleccionado) {
-                            option.selected = true;
-                        }
-                        estadoSelect.appendChild(option);
-                    });
-                    estadoSelect.disabled = false;
-                });
-        }
-
-        paisSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            codigoTelefonoSelect.value = selectedOption.getAttribute('data-codigo-telefono');
-            cargarEstados(this.value);
-        });
-
-        // Carga inicial de estados si ya hay un país seleccionado (para formularios de edición)
-        if (paisSelect.value) {
-            cargarEstados(paisSelect.value);
-        }
-
-        // Script para el modal de la imagen
-        var imageModal = document.getElementById('imageModal');
-        imageModal.addEventListener('show.bs.modal', function (event) {
-            // Botón que activó el modal
-            var button = event.relatedTarget;
-            // Extraer información de los atributos data-*
-            var imageUrl = button.getAttribute('data-image-url');
-            var clientName = button.getAttribute('data-client-name');
-            
-            document.getElementById('modalImage').src = imageUrl;
-            document.getElementById('imageModalLabel').textContent = 'Foto de ' + clientName;
-        });
-    });
-    </script>
     <?php include 'footer.php'; ?>
 </body>
 </html>

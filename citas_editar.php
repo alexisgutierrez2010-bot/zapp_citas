@@ -5,6 +5,8 @@
 require_once 'auth_check.php';
 require_once 'config.php';
 
+$es_administrador = (isset($rol_session) && strcasecmp(trim($rol_session), 'Administrador') == 0);
+
 // 1. Verificar que se ha proporcionado un ID válido
 $id_cita = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($id_cita <= 0) {
@@ -13,8 +15,14 @@ if ($id_cita <= 0) {
 }
 
 // 2. Obtener los datos actuales de la cita
-$stmt_cita = $conn->prepare("SELECT * FROM j108_citas WHERE id_cita = ? AND id_negocio = ?");
-$stmt_cita->bind_param("ii", $id_cita, $id_negocio_session);
+if ($es_administrador) {
+    $stmt_cita = $conn->prepare("SELECT * FROM j108_citas WHERE id_cita = ?");
+    $stmt_cita->bind_param("i", $id_cita);
+} else {
+    $stmt_cita = $conn->prepare("SELECT * FROM j108_citas WHERE id_cita = ? AND id_negocio = ?");
+    $stmt_cita->bind_param("ii", $id_cita, $id_negocio_session);
+}
+
 $stmt_cita->execute();
 $result_cita = $stmt_cita->get_result();
 if ($result_cita->num_rows === 1) {
@@ -24,6 +32,10 @@ if ($result_cita->num_rows === 1) {
     exit();
 }
 $stmt_cita->close();
+
+$fecha_seleccionada = isset($_GET['fecha']) ? $_GET['fecha'] : date('Y-m-d', strtotime($cita['fecha_hora_inicio']));
+
+$id_negocio_cita = $cita['id_negocio']; // Usar el negocio de la cita, no el de la sesión
 
 // Si la cita es una Reunión, obtener la lista de invitados
 $invitados = [];
@@ -38,29 +50,43 @@ if ($cita['tipo_cita'] === 'Reunion') {
     $stmt_invitados->close();
 }
 
+// Obtener citas existentes para el día seleccionado para verificar colisiones, EXCLUYENDO la actual
+$citas_existentes = [];
+$stmt_citas_colision = $conn->prepare("SELECT fecha_hora_inicio, fecha_hora_fin FROM j108_citas WHERE id_negocio = ? AND DATE(fecha_hora_inicio) = ? AND id_cita != ? AND estado_cita != 'Cancelada'");
+$stmt_citas_colision->bind_param("isi", $id_negocio_cita, $fecha_seleccionada, $id_cita);
+$stmt_citas_colision->execute();
+$res_citas_colision = $stmt_citas_colision->get_result();
+while ($row = $res_citas_colision->fetch_assoc()) {
+    $citas_existentes[] = [
+        'start' => new DateTime($row['fecha_hora_inicio']),
+        'end' => new DateTime($row['fecha_hora_fin'])
+    ];
+}
+$stmt_citas_colision->close();
+
 // 3. Obtener listas de clientes y servicios para los desplegables
-$stmt_clientes = $conn->prepare("SELECT id_cliente, nombre_completo FROM j106_clientes WHERE id_negocio = ? AND activo = 1 ORDER BY nombre_completo ASC");
-$stmt_clientes->bind_param("i", $id_negocio_session);
+$stmt_clientes = $conn->prepare("SELECT id_cliente, nombre_completo FROM j106_clientes WHERE id_negocio = ? ORDER BY nombre_completo ASC");
+$stmt_clientes->bind_param("i", $id_negocio_cita);
 $stmt_clientes->execute();
 $clientes_result = $stmt_clientes->get_result();
 
-$stmt_servicios = $conn->prepare("SELECT id_servicio, nombre_servicio FROM j104_servicios WHERE activo = TRUE AND id_negocio = ? ORDER BY nombre_servicio ASC");
-$stmt_servicios->bind_param("i", $id_negocio_session);
+$stmt_servicios = $conn->prepare("SELECT id_servicio, nombre_servicio FROM j104_servicios WHERE id_negocio = ? ORDER BY nombre_servicio ASC");
+$stmt_servicios->bind_param("i", $id_negocio_cita);
 $stmt_servicios->execute();
 $servicios_result = $stmt_servicios->get_result();
 
 // 4. Obtener la configuración para los horarios
 $stmt_config = $conn->prepare("SELECT hora_inicio, hora_cierre, intervalo_minutos FROM j102_negocios WHERE id_negocio = ?");
-$stmt_config->bind_param("i", $id_negocio_session);
+$stmt_config->bind_param("i", $id_negocio_cita);
 $stmt_config->execute();
 $config = $stmt_config->get_result()->fetch_assoc();
 ?>
 <!DOCTYPE html>
-<html lang="<?php echo $lang; ?>">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo __('appointments_edit_title'); ?></title>
+    <title>Editar Cita</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body style="background-color: <?php echo $daily_bg_color; ?>;">
@@ -71,37 +97,37 @@ $config = $stmt_config->get_result()->fetch_assoc();
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
-                        <h3><?php echo __('appointments_editing_title'); ?></h3>
+                        <h3>Editando Cita</h3>
                     </div>
                     <div class="card-body">
                         <?php
                         if (isset($_GET['message_key'])) {
-                            $message = __($_GET['message_key']);
-                            echo "<div class='alert alert-danger'>" . htmlspecialchars($message) . "</div>";
+                            echo "<div class='alert alert-danger'>" . htmlspecialchars($_GET['message_key']) . "</div>";
                         } elseif (isset($_GET['status']) && $_GET['status'] == 'error') {
                             // Fallback para mensajes antiguos
-                            $errorMessage = isset($_GET['message']) ? htmlspecialchars($_GET['message']) : __('operation_error');
+                            $errorMessage = isset($_GET['message']) ? htmlspecialchars($_GET['message']) : 'Error en la operación.';
                             echo '<div class="alert alert-danger">' . $errorMessage . '</div>';
                         }
                         ?>
                         <form action="citas_actualizar.php" method="POST">
                             <input type="hidden" name="id_cita" value="<?php echo $cita['id_cita']; ?>">
                             <input type="hidden" name="tipo_cita" value="<?php echo $cita['tipo_cita']; ?>">
+                            <input type="hidden" name="id_negocio" value="<?php echo $id_negocio_cita; ?>">
 
                             <div class="mb-3">
-                                <label class="form-label"><?php echo __('appointments_type'); ?></label>
+                                <label class="form-label">Tipo de Cita</label>
                                 <input type="text" class="form-control" value="<?php echo htmlspecialchars($cita['tipo_cita']); ?>" readonly>
                             </div>
 
                             <div class="mb-3">
                                 <label for="descripcion_trabajo" class="form-label" id="label_descripcion">
-                                    <?php echo ($cita['tipo_cita'] === 'Reunion') ? __('appointments_meeting_subject') : __('appointments_additional_desc'); ?>
+                                    <?php echo ($cita['tipo_cita'] === 'Reunion') ? 'Asunto de la Reunión' : 'Descripción Adicional'; ?>
                                 </label>
                                 <textarea class="form-control" id="descripcion_trabajo" name="descripcion_trabajo" rows="2"><?php echo htmlspecialchars($cita['descripcion_trabajo']); ?></textarea>
                             </div>
 
                             <div class="mb-3">
-                                <label for="id_cliente" class="form-label"><?php echo __('appointments_client'); ?></label>
+                                <label for="id_cliente" class="form-label">Cliente</label>
                                 <select class="form-select" id="id_cliente" name="id_cliente" required>
                                     <?php while($cliente = $clientes_result->fetch_assoc()): ?>
                                         <option value="<?php echo $cliente['id_cliente']; ?>" <?php echo ($cliente['id_cliente'] == $cita['id_cliente']) ? 'selected' : ''; ?>>
@@ -112,7 +138,7 @@ $config = $stmt_config->get_result()->fetch_assoc();
                             </div>
 
                             <div class="mb-3" id="campo_servicio" style="<?php echo ($cita['tipo_cita'] === 'Reunion') ? 'display: none;' : ''; ?>">
-                                <label for="id_servicio" class="form-label"><?php echo __('appointments_service'); ?></label>
+                                <label for="id_servicio" class="form-label">Servicio</label>
                                 <select class="form-select" id="id_servicio" name="id_servicio" required>
                                     <?php while($servicio = $servicios_result->fetch_assoc()): ?>
                                         <option value="<?php echo $servicio['id_servicio']; ?>" <?php echo ($servicio['id_servicio'] == $cita['id_servicio']) ? 'selected' : ''; ?>>
@@ -123,24 +149,36 @@ $config = $stmt_config->get_result()->fetch_assoc();
                             </div>
 
                             <div class="mb-3">
-                                <label for="fecha_cita" class="form-label"><?php echo __('appointments_date'); ?></label>
-                                <input type="date" class="form-control" id="fecha_cita" name="fecha_cita" value="<?php echo date('Y-m-d', strtotime($cita['fecha_hora_inicio'])); ?>" required>
+                                <label for="fecha_cita" class="form-label">Fecha</label>
+                                <input type="date" class="form-control" id="fecha_cita" name="fecha_cita" value="<?php echo htmlspecialchars($fecha_seleccionada); ?>" required onchange="actualizarFecha(this.value)">
                             </div>
 
                             <div class="mb-3">
-                                <label for="hora_cita" class="form-label"><?php echo __('appointments_time'); ?></label>
+                                <label for="hora_cita" class="form-label">Hora</label>
                                 <select class="form-select" id="hora_cita" name="hora_cita" required>
                                     <?php
-                                    $start = new DateTime($config['hora_inicio']);
-                                    $end = new DateTime($config['hora_cierre']);
-                                    $interval = new DateInterval('PT' . $config['intervalo_minutos'] . 'M');
-                                    $slots = new DatePeriod($start, $interval, $end);
-                                    $hora_cita_actual = date('H:i', strtotime($cita['fecha_hora_inicio']));
+                                    if (isset($config)) {
+                                        $start = new DateTime($config['hora_inicio']);
+                                        $end = new DateTime($config['hora_cierre']);
+                                        $interval = new DateInterval('PT' . $config['intervalo_minutos'] . 'M');
+                                        $slots = new DatePeriod($start, $interval, $end);
+                                        $hora_cita_actual = date('H:i', strtotime($cita['fecha_hora_inicio']));
 
-                                    foreach ($slots as $slot) {
-                                        $slot_format = $slot->format('H:i');
-                                        $selected = ($slot_format == $hora_cita_actual) ? 'selected' : '';
-                                        echo '<option value="' . $slot_format . '" ' . $selected . '>' . $slot->format('h:i A') . '</option>';
+                                        foreach ($slots as $slot) {
+                                            $slot_format = $slot->format('H:i');
+                                            $slot_start_dt = new DateTime($fecha_seleccionada . ' ' . $slot_format);
+                                            $ocupado = false;
+                                            foreach ($citas_existentes as $cita_existente) {
+                                                if ($slot_start_dt >= $cita_existente['start'] && $slot_start_dt < $cita_existente['end']) {
+                                                    $ocupado = true;
+                                                    break;
+                                                }
+                                            }
+                                            $selected = ($slot_format == $hora_cita_actual && $fecha_seleccionada == date('Y-m-d', strtotime($cita['fecha_hora_inicio']))) ? 'selected' : '';
+                                            $disabled = $ocupado ? 'disabled' : '';
+                                            $display_text = $ocupado ? ' (Ocupado)' : '';
+                                            echo '<option value="' . $slot_format . '" ' . $selected . ' ' . $disabled . '>' . $slot->format('h:i A') . $display_text . '</option>';
+                                        }
                                     }
                                     ?>
                                 </select>
@@ -150,7 +188,7 @@ $config = $stmt_config->get_result()->fetch_assoc();
                             <?php if ($cita['tipo_cita'] === 'Reunion'): ?>
                             <div id="seccion_invitados">
                                 <hr>
-                                <h5><?php echo __('appointments_meeting_guests'); ?></h5>
+                                <h5>Invitados a la Reunión</h5>
                                 <div id="lista_invitados">
                                     <?php foreach ($invitados as $index => $invitado): ?>
                                         <div class="row g-2 mb-2 align-items-center">
@@ -163,13 +201,13 @@ $config = $stmt_config->get_result()->fetch_assoc();
                                     <?php endforeach; ?>
                                 </div>
                                 <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="btn_anadir_invitado">
-                                    <?php echo __('appointments_add_guest'); ?>
+                                    Añadir Invitado
                                 </button>
                                 <hr>
                             </div>
                             <?php endif; ?>
 
-                            <button type="submit" class="btn btn-success w-100"><?php echo __('services_form_update'); ?></button>
+                            <button type="submit" class="btn btn-success w-100">Actualizar</button>
                         </form>
                     </div>
                 </div>

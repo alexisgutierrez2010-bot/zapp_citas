@@ -11,13 +11,6 @@ require_once 'vendor/autoload.php'; // SOLUCIÓN: Cargar las dependencias de Com
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-// Obtener la configuración del negocio para validaciones
-$stmt_config = $conn->prepare("SELECT * FROM j102_negocios WHERE id_negocio = ?");
-$stmt_config->bind_param("i", $id_negocio_session);
-$stmt_config->execute();
-$config = $stmt_config->get_result()->fetch_assoc();
-$stmt_config->close();
-
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
@@ -30,7 +23,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $hora_cita = $_POST['hora_cita'];
     $fecha_hora_inicio_str = $fecha_cita . ' ' . $hora_cita;
     $descripcion = trim($_POST['descripcion_trabajo']);
-    $id_negocio = $id_negocio_session; // Usar el id_negocio de la sesión
+    
+    // Lógica de Negocio para Admin
+    $id_negocio = $id_negocio_session;
+    if (isset($_POST['id_negocio']) && (strcasecmp(trim($rol_session ?? ''), 'Administrador') == 0)) {
+        $id_negocio = (int)$_POST['id_negocio'];
+    }
+
+    // Obtener configuración del negocio seleccionado
+    $stmt_config = $conn->prepare("SELECT * FROM j102_negocios WHERE id_negocio = ?");
+    $stmt_config->bind_param("i", $id_negocio);
+    $stmt_config->execute();
+    $config = $stmt_config->get_result()->fetch_assoc();
+    $stmt_config->close();
 
     // 2. Obtener la duración del servicio para calcular la hora de fin
     $stmt_duracion = $conn->prepare("SELECT nombre_servicio, duracion_valor, duracion_unidad FROM j104_servicios WHERE id_servicio = ?");

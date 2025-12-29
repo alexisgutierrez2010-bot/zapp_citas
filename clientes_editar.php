@@ -5,11 +5,14 @@
 require_once 'auth_check.php';
 require_once 'config.php';
 
+// Determinar si es Administrador
+$es_administrador = (isset($rol_session) && strcasecmp(trim($rol_session), 'Administrador') == 0);
+
 // 1. Verificar que se ha proporcionado un ID válido
 $id_cliente = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($id_cliente <= 0) {
-    header("Location: dashboard.php?status=error&message=" . urlencode("ID de cliente no válido."));
+    header("Location: clientes_lista.php?status=error&message=ID de cliente no válido.");
     exit();
 }
 
@@ -18,24 +21,41 @@ $cliente = []; // Inicializar la variable para evitar errores
 $sql = "SELECT 
             c.id_cliente, c.nombre_completo, c.numero_celular, c.correo_electronico, c.foto_perfil_tipo,
             c.direccion1, c.direccion2, c.ciudad, c.zip_code, c.notas_adicionales, c.in_sms, c.in_email, c.in_whatsapp, c.activo,
-            c.id_pais, c.id_estado
+            c.id_pais, c.id_estado, c.id_negocio
         FROM j106_clientes c
-        WHERE c.id_cliente = ? AND c.id_negocio = ?";
+        WHERE c.id_cliente = ?";
+
+$params = [$id_cliente];
+$types = "i";
+if (!$es_administrador) {
+    $sql .= " AND c.id_negocio = ?";
+    $params[] = $id_negocio_session;
+    $types .= "i";
+}
 
 if ($stmt = $conn->prepare($sql)) {
-    $stmt->bind_param("ii", $id_cliente, $id_negocio_session);
+    $stmt->bind_param($types, ...$params);
     $stmt->execute();
     $result = $stmt->get_result();
     if ($result->num_rows === 1) {
         $cliente = $result->fetch_assoc();
     } else {
-        header("Location: clientes_lista.php?status=error&message=" . urlencode("Cliente no encontrado o no pertenece a tu negocio."));
+        header("Location: clientes_lista.php?status=error&message=Cliente no encontrado o no tienes permiso para editarlo.");
         exit();
     }
     $stmt->close();
 } else {
     // Si la preparación de la consulta falla
     die("Error al preparar la consulta para obtener los datos del cliente.");
+}
+
+// Obtener la lista de negocios (solo para Administrador)
+$todos_los_negocios = [];
+if ($es_administrador) {
+    $result_negocios = $conn->query("SELECT id_negocio, nombre_negocio FROM j102_negocios WHERE activo = 1 ORDER BY nombre_negocio ASC");
+    while ($row = $result_negocios->fetch_assoc()) {
+        $todos_los_negocios[] = $row;
+    }
 }
 
 // Obtener la lista de países para los menús desplegables
@@ -59,13 +79,12 @@ if (!empty($cliente['numero_celular'])) {
         $phone_number_display = $cliente['numero_celular'];
     }
 }
-?>
-<!DOCTYPE html>
-<html lang="<?php echo $lang; ?>">
+?><!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo __('clients_edit_title'); ?></title>
+    <title>Editar Cliente</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body style="background-color: <?php echo $daily_bg_color; ?>;">
@@ -76,16 +95,15 @@ if (!empty($cliente['numero_celular'])) {
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
-                        <h3><?php echo __('clients_editing'); ?>: <?php echo htmlspecialchars($cliente['nombre_completo'] ?? 'Cliente'); ?></h3>
+                        <h3>Editando: <?php echo htmlspecialchars($cliente['nombre_completo'] ?? 'Cliente'); ?></h3>
                     </div>
                     <div class="card-body">
                         <?php
                         if (isset($_GET['message_key'])) {
-                            $message = __($_GET['message_key']);
-                            echo "<div class='alert alert-danger'>" . htmlspecialchars($message) . "</div>";
+                            echo "<div class='alert alert-danger'>" . htmlspecialchars($_GET['message_key']) . "</div>";
                         } elseif (isset($_GET['status']) && $_GET['status'] == 'error') {
                             // Fallback para mensajes antiguos
-                            $errorMessage = isset($_GET['message']) ? htmlspecialchars($_GET['message']) : __('operation_error');
+                            $errorMessage = isset($_GET['message']) ? htmlspecialchars($_GET['message']) : 'Error en la operación.';
                             echo '<div class="alert alert-danger">' . $errorMessage . '</div>';
                         }
                         ?>
@@ -93,12 +111,25 @@ if (!empty($cliente['numero_celular'])) {
                             <!-- Campo oculto para enviar el ID del cliente -->
                             <input type="hidden" name="id_cliente" value="<?php echo $cliente['id_cliente']; ?>">
 
+                            <?php if ($es_administrador): ?>
                             <div class="mb-3">
-                                <label for="nombre" class="form-label"><?php echo __('clients_form_name'); ?></label>
+                                <label for="id_negocio" class="form-label">Negocio</label>
+                                <select name="id_negocio" id="id_negocio" class="form-select" required>
+                                    <?php foreach ($todos_los_negocios as $negocio): ?>
+                                        <option value="<?php echo $negocio['id_negocio']; ?>" <?php echo ($cliente['id_negocio'] == $negocio['id_negocio']) ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($negocio['nombre_negocio']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <?php endif; ?>
+
+                            <div class="mb-3">
+                                <label for="nombre" class="form-label">Nombre Completo</label>
                                 <input type="text" class="form-control" id="nombre" name="nombre_completo" value="<?php echo htmlspecialchars($cliente['nombre_completo']); ?>" required>
                             </div>
                             <div class="mb-3">
-                                <label for="celular" class="form-label"><?php echo __('clients_form_phone'); ?></label>
+                                <label for="celular" class="form-label">Teléfono Celular</label>
                                 <div class="input-group">
                                     <select class="form-select" id="country_code" name="country_code" style="max-width: 120px;">
                                         <?php foreach ($paises as $pais): ?>
@@ -109,22 +140,22 @@ if (!empty($cliente['numero_celular'])) {
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label for="email" class="form-label"><?php echo __('clients_form_email'); ?></label>
+                                <label for="email" class="form-label">Correo Electrónico</label>
                                 <input type="email" class="form-control" id="email" name="correo_electronico" value="<?php echo htmlspecialchars($cliente['correo_electronico']); ?>" required>
                             </div>
                             <div class="mb-3">
-                                <label for="direccion1" class="form-label"><?php echo __('clients_form_address1'); ?></label>
+                                <label for="direccion1" class="form-label">Dirección 1</label>
                                 <input type="text" class="form-control" id="direccion1" name="direccion1" value="<?php echo htmlspecialchars($cliente['direccion1'] ?? ''); ?>" maxlength="128">
                             </div>
                             <div class="mb-3">
-                                <label for="direccion2" class="form-label"><?php echo __('clients_form_address2'); ?></label>
+                                <label for="direccion2" class="form-label">Dirección 2</label>
                                 <input type="text" class="form-control" id="direccion2" name="direccion2" value="<?php echo htmlspecialchars($cliente['direccion2'] ?? ''); ?>" maxlength="128">
                             </div>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_pais" class="form-label"><?php echo __('clients_form_country'); ?></label>
+                                    <label for="id_pais" class="form-label">País</label>
                                     <select class="form-select" id="id_pais" name="id_pais" required>
-                                        <option value=""><?php echo __('businesses_form_select_country'); ?></option>
+                                        <option value="">Seleccione un país...</option>
                                         <?php foreach ($paises as $pais): ?>
                                             <option value="<?php echo $pais['id_pais']; ?>" data-codigo-telefono="<?php echo htmlspecialchars($pais['codigo_telefono']); ?>" <?php echo ($cliente['id_pais'] == $pais['id_pais']) ? 'selected' : ''; ?>>
                                                 <?php echo htmlspecialchars($pais['nombre_pais']); ?>
@@ -133,37 +164,37 @@ if (!empty($cliente['numero_celular'])) {
                                     </select>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="id_estado" class="form-label"><?php echo __('clients_form_state'); ?></label>
+                                    <label for="id_estado" class="form-label">Estado / Provincia</label>
                                     <select class="form-select" id="id_estado" name="id_estado" required disabled>
-                                        <option value=""><?php echo __('businesses_form_loading'); ?></option>
+                                        <option value="">Cargando...</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-8 mb-3">
-                                    <label for="ciudad" class="form-label"><?php echo __('clients_form_city'); ?></label>
+                                    <label for="ciudad" class="form-label">Ciudad</label>
                                     <input type="text" class="form-control" id="ciudad" name="ciudad" value="<?php echo htmlspecialchars($cliente['ciudad'] ?? ''); ?>">
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label for="zip_code" class="form-label"><?php echo __('clients_form_zip'); ?></label>
+                                    <label for="zip_code" class="form-label">Código Postal</label>
                                     <input type="text" class="form-control" id="zip_code" name="zip_code" value="<?php echo htmlspecialchars($cliente['zip_code'] ?? ''); ?>">
                                 </div>
                             </div>
 
                             <div class="mb-3">
-                                <label for="notas" class="form-label"><?php echo __('clients_form_notes'); ?></label>
+                                <label for="notas" class="form-label">Notas Adicionales</label>
                                 <textarea class="form-control" id="notas" name="notas_adicionales" rows="3"><?php echo htmlspecialchars($cliente['notas_adicionales']); ?></textarea>
                             </div>
                             <hr>
                             <div class="mb-3">
-                                <label class="form-label"><?php echo __('clients_form_communication'); ?></label>
+                                <label class="form-label">Preferencias de Comunicación</label>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="in_sms" value="1" id="in_sms_editar" <?php echo ($cliente['in_sms'] ?? 0) ? 'checked' : ''; ?>>
-                                    <label class="form-check-label" for="in_sms_editar"><?php echo __('clients_form_sms_notifications'); ?></label>
+                                    <label class="form-check-label" for="in_sms_editar">Recibir notificaciones por SMS</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="in_email" value="1" id="in_email_editar" <?php echo ($cliente['in_email'] ?? 0) ? 'checked' : ''; ?>>
-                                    <label class="form-check-label" for="in_email_editar"><?php echo __('clients_form_email_notifications'); ?></label>
+                                    <label class="form-check-label" for="in_email_editar">Recibir notificaciones por Email</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="in_whatsapp" value="1" id="in_whatsapp_editar" <?php echo ($cliente['in_whatsapp'] ?? 0) ? 'checked' : ''; ?>>
@@ -174,7 +205,7 @@ if (!empty($cliente['numero_celular'])) {
                             <div class="mb-3">
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="activo" name="activo" value="1" <?php echo ($cliente['activo'] ?? 0) ? 'checked' : ''; ?>>
-                                    <label class="form-check-label" for="activo"><?php echo __('clients_form_active'); ?></label>
+                                    <label class="form-check-label" for="activo">Cliente Activo</label>
                                 </div>
                             </div>
                             <hr>
@@ -188,7 +219,10 @@ if (!empty($cliente['numero_celular'])) {
                                     </div>
                                 <?php endif; ?>
                             </div>
-                            <button type="submit" class="btn btn-success w-100"><?php echo __('clients_form_update'); ?></button>
+                            <div class="d-flex justify-content-between">
+                                <a href="clientes_lista.php" class="btn btn-secondary">Cancelar</a>
+                                <button type="submit" class="btn btn-success">Actualizar Cliente</button>
+                            </div>
                         </form>
                     </div>
                 </div>

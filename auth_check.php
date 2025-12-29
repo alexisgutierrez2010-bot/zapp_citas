@@ -43,17 +43,22 @@ $_SESSION['last_activity'] = time(); // Actualizar la hora de la última activid
 // --- CONFIGURACIÓN DE ZONA HORARIA DINÁMICA ---
 // Obtenemos la zona horaria del negocio actual y la establecemos para toda la sesión.
 // Esto asegura que todas las operaciones de fecha/hora sean consistentes.
-require_once 'config.php'; // Correcto
-$stmt_tz = $conn->prepare("SELECT p.timezone 
-                           FROM j102_negocios n
-                           JOIN j110_paises p ON n.id_pais = p.id_pais
-                           WHERE n.id_negocio = ?");
-$stmt_tz->bind_param("i", $id_negocio_session);
-$stmt_tz->execute();
-$result_tz = $stmt_tz->get_result()->fetch_assoc();
-$timezone_negocio = $result_tz['timezone'] ?? 'America/Chicago'; // Usar un fallback razonable
-$stmt_tz->close();
+require_once 'config.php';
 
+if (!empty($id_negocio_session) && $id_negocio_session > 0) {
+    $stmt_tz = $conn->prepare("SELECT p.timezone 
+                               FROM j102_negocios n
+                               JOIN j110_paises p ON n.id_pais = p.id_pais
+                               WHERE n.id_negocio = ?");
+    $stmt_tz->bind_param("i", $id_negocio_session);
+    $stmt_tz->execute();
+    $result_tz = $stmt_tz->get_result()->fetch_assoc();
+    $timezone_negocio = $result_tz['timezone'] ?? 'America/Caracas'; // Fallback a una zona horaria común
+    $stmt_tz->close();
+} else {
+    // Para el usuario Master o si no hay negocio, usar un timezone por defecto.
+    $timezone_negocio = 'America/Caracas';
+}
 date_default_timezone_set($timezone_negocio);
 
 // --- LÓGICA DE COLOR DE FONDO POR DÍA ---

@@ -80,10 +80,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("Location: olvide_clave.php?status=success&message=Si tu correo está en nuestro sistema, recibirás un email con instrucciones.");
 
             } catch (Exception $e) {
-                header("Location: olvide_clave.php?status=error&message=Error en la operación.");
+                $error_info = htmlspecialchars($mail->ErrorInfo);
+                header("Location: olvide_clave.php?status=error&message=" . urlencode("Error al enviar el correo: " . $error_info));
             }
         } else {
-            header("Location: olvide_clave.php?status=error&message=Error en la operación.");
+            header("Location: olvide_clave.php?status=error&message=" . urlencode("Error al actualizar la contraseña en la base de datos."));
         }
         $update_stmt->close();
 

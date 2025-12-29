@@ -8,6 +8,12 @@ require_once 'config.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
+    // Seguridad: Solo el rol Administrador puede desactivar servicios.
+    if (strcasecmp(trim($rol_session ?? ''), 'Administrador') != 0) {
+        header("Location: dashboard.php?status=error&message=" . urlencode("Acceso no autorizado."));
+        exit;
+    }
+
     // 1. Recoger y validar el ID del servicio
     $id_servicio = isset($_POST['id_servicio']) ? (int)$_POST['id_servicio'] : 0;
 
@@ -25,16 +31,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $stmt_info->close();
 
     // 2. Preparar la consulta SQL de eliminación
-    $sql = "UPDATE j104_servicios SET activo = FALSE WHERE id_servicio = ?"; // Eliminación lógica
+    $sql = "UPDATE j104_servicios SET activo = 0 WHERE id_servicio = ?"; // Eliminación lógica
 
     if ($stmt = $conn->prepare($sql)) {
         $stmt->bind_param("i", $id_servicio);
 
         if ($stmt->execute()) {
-            $descripcion_audit = "Se eliminó el servicio '{$nombre_servicio_eliminado}' (ID: {$id_servicio}).";
-            registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'DELETE_SERVICE', $descripcion_audit);
+        $descripcion_audit = "Se desactivó el servicio '{$nombre_servicio_eliminado}' (ID: {$id_servicio}).";
+        registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'DEACTIVATE_SERVICE', $descripcion_audit);
 
-            header("Location: servicios_lista.php?status=success_delete");
+        header("Location: servicios_lista.php?status=success&message=" . urlencode("Servicio desactivado con éxito."));
         } else {
             // Error común: el servicio está en uso.
             $error_message = "No se puede eliminar el servicio. Es posible que esté asignado a una o más citas.";

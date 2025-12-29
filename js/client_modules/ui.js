@@ -177,12 +177,12 @@ export async function updateNavbar(context) {
             <span class="ms-2 fw-normal text-white-50" style="font-size: 0.8em;">${genericSubtitle}</span>
         `;
         // Añadir enlace de ayuda y volver al inicio para usuarios no logueados
-        navMenu.innerHTML = `<li class="nav-item"><a class="nav-link" href="ayuda_index.php" target="_blank">❓ Ayuda</a></li>`;
+        navMenu.innerHTML = `<li class="nav-item"><a class="nav-link" href="ayuda_spa_client.php" target="_blank">❓ Ayuda</a></li>`;
         
         // Menú Flotante (Móvil) - No Logueado
         const itemsContainer = document.getElementById('fab-menu-items');
         itemsContainer.innerHTML = `
-            <a href="ayuda_index.php" target="_blank" class="fab-item"><span class="fab-item-label">Ayuda</span><div class="fab-item-icon"><i class="bi bi-question-circle"></i></div></a>
+            <a href="ayuda_spa_client.php" target="_blank" class="fab-item"><span class="fab-item-label">Ayuda</span><div class="fab-item-icon"><i class="bi bi-question-circle"></i></div></a>
             <a href="#" class="fab-item" data-view="login"><span class="fab-item-label">Entrar</span><div class="fab-item-icon"><i class="bi bi-box-arrow-in-right"></i></div></a>
         `;
     }

@@ -154,6 +154,26 @@
                         </div>
                     </div>
 
+                    <!-- Sección Reseñas -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingReviews">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseReviews" aria-expanded="false" aria-controls="collapseReviews">
+                                <i class="bi bi-star-fill me-2"></i> Gestión de Reseñas
+                            </button>
+                        </h2>
+                        <div id="collapseReviews" class="accordion-collapse collapse" aria-labelledby="headingReviews" data-bs-parent="#ayudaAccordion">
+                            <div class="accordion-body">
+                                <p>Esta sección centraliza todas las opiniones y valoraciones que los clientes han dejado sobre tu negocio.</p>
+                                <ul>
+                                    <li><strong>Puntuación Promedio:</strong> En la parte superior, verás la calificación promedio general basada en todas las reseñas recibidas.</li>
+                                    <li><strong>Listado de Reseñas:</strong> Cada reseña muestra la puntuación (de 1 a 5 estrellas), el comentario del cliente, el nombre del cliente y la fecha en que se publicó.</li>
+                                    <li><strong>Contexto del Servicio:</strong> Si la reseña fue dejada para un servicio específico, el nombre del servicio aparecerá junto a la reseña.</li>
+                                </ul>
+                                <p>Utiliza esta sección para entender la percepción de tus clientes y mejorar la calidad de tu servicio.</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Sección 6: Otras Secciones -->
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="headingSix">
@@ -189,7 +209,7 @@
 
     <footer class="footer mt-auto py-1 bg-dark text-white-50">
         <div class="container text-center">
-            <small style="font-size: 0.8rem;">©2025. Authorized by <a href="http://www.acticven.com" target="_blank" class="text-white">www.acticven.com</a> All rights reserved. Version 1.12.27</small>
+            <small style="font-size: 0.8rem;">©2025. Authorized by <a href="http://www.acticven.com" target="_blank" class="text-white">www.acticven.com</a> All rights reserved. Version 1.12.29</small>
         </div>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

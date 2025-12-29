@@ -97,6 +97,7 @@
                             <li>Registro de nuevos clientes.</li>
                             <li>Proceso guiado para agendar nuevas citas.</li>
                             <li>Visualización del historial de citas y gestión del perfil personal.</li>
+                            <li>Publicación y visualización de reseñas sobre el negocio.</li>
                         </ul>
                         <strong>Acceso:</strong> Se accede a través de la tarjeta "App del Cliente" en la página de inicio.
                     </div>
@@ -107,7 +108,7 @@
 
     <footer class="footer mt-auto py-1 bg-dark text-white-50">
         <div class="container text-center">
-            <small style="font-size: 0.8rem;">©2025. Authorized by <a href="http://www.acticven.com" target="_blank" class="text-white">www.acticven.com</a> All rights reserved. Version 1.12.27</small>
+            <small style="font-size: 0.8rem;">©2025. Authorized by <a href="http://www.acticven.com" target="_blank" class="text-white">www.acticven.com</a> All rights reserved. Version 1.12.29</small>
         </div>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

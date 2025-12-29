@@ -10,13 +10,6 @@ require_once 'config.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-// Obtener la configuración del negocio para validaciones
-$stmt_config = $conn->prepare("SELECT * FROM j102_negocios WHERE id_negocio = ?");
-$stmt_config->bind_param("i", $id_negocio_session);
-$stmt_config->execute();
-$config = $stmt_config->get_result()->fetch_assoc();
-$stmt_config->close();
-
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // 1. Recoger los datos del formulario
@@ -28,11 +21,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $hora_cita = $_POST['hora_cita'];
     $fecha_hora_inicio_str = $fecha_cita . ' ' . $hora_cita;
     $descripcion = trim($_POST['descripcion_trabajo']);
+    
+    // Lógica de Negocio
+    $id_negocio = $id_negocio_session;
+    if (isset($_POST['id_negocio']) && (strcasecmp(trim($rol_session ?? ''), 'Administrador') == 0)) {
+        $id_negocio = (int)$_POST['id_negocio'];
+    }
 
     if ($id_cita <= 0) {
         header("Location: citas_lista.php?status=error&message=" . urlencode("ID de cita inválido."));
         exit();
     }
+
+    // Obtener configuración del negocio
+    $stmt_config = $conn->prepare("SELECT * FROM j102_negocios WHERE id_negocio = ?");
+    $stmt_config->bind_param("i", $id_negocio);
+    $stmt_config->execute();
+    $config = $stmt_config->get_result()->fetch_assoc();
+    $stmt_config->close();
 
     // 2. Obtener la duración del servicio
     if ($tipo_cita === 'Servicio') {
@@ -80,9 +86,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // b) Validar colisiones (excluyendo la cita actual)
-    $sql_check = "SELECT id_cita FROM j108_citas WHERE id_negocio = ? AND id_cita != ? AND ? < fecha_hora_fin AND ? > fecha_hora_inicio";
+    $sql_check = "SELECT id_cita FROM j108_citas WHERE id_negocio = ? AND id_cita != ? AND ? < fecha_hora_fin AND ? > fecha_hora_inicio AND estado_cita != 'Cancelada'";
     if ($stmt_check = $conn->prepare($sql_check)) {
-        $stmt_check->bind_param("iiss", $id_negocio_session, $id_cita, $fecha_inicio_db, $fecha_fin_db);
+        $stmt_check->bind_param("iiss", $id_negocio, $id_cita, $fecha_inicio_db, $fecha_fin_db);
         $stmt_check->execute();
         $stmt_check->store_result();
         if ($stmt_check->num_rows > 0) {
@@ -97,9 +103,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     try {
         // 4. Preparar la consulta SQL de actualización para la cita principal
-        $sql = "UPDATE j108_citas SET id_cliente = ?, id_servicio = ?, fecha_hora_inicio = ?, fecha_hora_fin = ?, descripcion_trabajo = ? WHERE id_cita = ?";
+        $sql = "UPDATE j108_citas SET id_cliente = ?, id_servicio = ?, fecha_hora_inicio = ?, fecha_hora_fin = ?, descripcion_trabajo = ? WHERE id_cita = ? AND id_negocio = ?";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("iisssi", $id_cliente, $id_servicio, $fecha_inicio_db, $fecha_fin_db, $descripcion, $id_cita);
+        $stmt->bind_param("iisssii", $id_cliente, $id_servicio, $fecha_inicio_db, $fecha_fin_db, $descripcion, $id_cita, $id_negocio);
         if (!$stmt->execute()) {
             throw new Exception("Error al actualizar la cita principal: " . $stmt->error);
         }
@@ -159,7 +165,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $conn->commit();
 
         $descripcion_audit = "Se actualizó la cita (ID: {$id_cita}) para el cliente ID: {$id_cliente} a la fecha {$fecha_inicio_db}.";
-        registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'UPDATE_APPOINTMENT', $descripcion_audit);
+        registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio, 'UPDATE_APPOINTMENT', $descripcion_audit);
 
         // Simular un POST para enviar el correo automáticamente
         $_POST['id_cita'] = $id_cita;

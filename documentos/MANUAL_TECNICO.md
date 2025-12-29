@@ -1,7 +1,7 @@
 # Manual Técnico y Guía de Despliegue - ZApp Citas
 
-**Versión:** 1.8
-**Última Actualización:** 14 de Diciembre de 2025
+**Versión:** 1.12.29
+**Última Actualización:** 27 de Diciembre de 2025
 
 ---
 
@@ -39,7 +39,7 @@ El sistema utiliza una arquitectura mixta:
     - `$_SESSION['loggedin']`: Booleano que indica si el usuario está autenticado.
     - `$_SESSION['id_usuario']`: ID del usuario logueado.
     - `$_SESSION['id_negocio']`: ID del negocio que el usuario está gestionando.
-    - `$_SESSION['rol']`: Rol del usuario ('Master', 'Propietario').
+    - `$_SESSION['rol']`: Rol del usuario ('Administrador', 'Propietario').
     - `$_SESSION['last_activity']`: Timestamp de la última interacción para controlar el timeout.
 
 ### 2.2. SPA del Propietario (spa_owner)
@@ -92,6 +92,8 @@ A continuación se detalla el comportamiento homologado del sistema:
 | **Cancelar Cita** | `spa_owner` | 🟡 **Manual:** El propietario debe usar la acción "📧 Enviar Email" y seleccionar la plantilla "Cita Cancelada". | |
 | **Completar Cita** | `spa_owner` | 🟡 **Manual:** El propietario debe usar la acción "📧 Enviar Email" y seleccionar la plantilla "Cita Completada". | |
 | **Eliminar Cita** | `spa_owner` | ❌ **Sin Email:** La acción de eliminar es inmediata y no envía notificación. Se recomienda cancelar primero. | El envío desde `zapp_citas` está suspendido. |
+| **Agendar Cita** | `spa_client` | ✅ **Automático:** El sistema envía inmediatamente un correo de confirmación al Cliente y una notificación al Propietario, ambos con el archivo de calendario (`.ics`) adjunto. | Mejora implementada en la API del cliente. |
+| **Reagendar Cita** | `spa_client` | ✅ **Automático:** Al editar una cita, se envía un correo de actualización con el nuevo horario (`.ics`) tanto al Cliente como al Propietario. | |
 
 ---
 
@@ -151,101 +153,83 @@ La siguiente tabla de diagnóstico detalla la cobertura de auditoría en todo el
 
 ---
 
-## 3. Listado de Programas y Funcionalidad
+## 3. Inventario de Archivos del Panel `zapp_citas`
 
-Esta sección detalla cada programa y su propósito dentro del sistema.
+Esta sección detalla la estructura de archivos del panel de administración, agrupados por su función principal, y especificando el rol de usuario que tiene acceso.
 
-#### 3.1. Archivos Centrales y de Configuración
-*   `config.php`: Define las credenciales de conexión a la base de datos y las constantes de configuración de SMTP.
-*   `audit_log.php`: Contiene la función `registrar_auditoria()` para registrar eventos clave.
-*   `index.php`: Portal de bienvenida principal que redirige a las tres aplicaciones.
-*   `footer.php` / `navbar.php`: Componentes de UI para el panel de administración.
-*   `get_image.php`: Script seguro para servir la imagen de fondo de un negocio.
-*   `check_composer.php`: Script de diagnóstico para verificar la instalación de dependencias de Composer.
-*   `documento_ver.php`: Visor que convierte archivos Markdown (.md) a HTML para una lectura fácil.
+### 3.1. Archivos de Núcleo y Seguridad (Uso Común)
+Son la base del panel. Se ejecutan en casi todas las páginas para verificar la sesión, cargar configuraciones y registrar acciones.
 
-#### 3.2. Autenticación y Sesión
-*   `auth_check.php`: **Guardián de sesión** para el panel de administración.
-*   `api_owner_session_check.php`: Guardián de seguridad para la API de la SPA del Propietario.
-*   `api_cliente_session_check.php`: Guardián de seguridad para la API de la SPA del Cliente.
-*   `sesion_iniciar.php` / `procesar_login.php`: Gestionan el login del panel de administración.
-*   `logout.php`: Cierra la sesión del panel de administración.
-*   `olvide_clave.php` / `procesar_olvide_clave.php`: Gestionan la recuperación de contraseñas.
+- **`config.php`**: (CRÍTICO) Contiene las credenciales de la base de datos y del servidor de correo (SMTP).
+- **`auth_check.php`**: (CRÍTICO) Guardián de sesión. Verifica si el usuario ha iniciado sesión, gestiona el timeout por inactividad y establece la zona horaria.
+- **`audit_log.php`**: Contiene la función `registrar_auditoria()` para guardar un registro de todas las acciones importantes.
+- **`image_utils.php`**: Contiene funciones para procesar imágenes (redimensionar).
+- **`navbar.php`**: El menú de navegación superior.
+- **`footer.php`**: El pie de página.
 
-#### 3.3. Panel de Administración (CRUDs)
-*   **Negocios:** `negocios_configuracion.php`, `negocios_actualizar.php`, `crear_negocio.php`, `negocios_crear.php`, `negocios_eliminar.php`.
-*   **Usuarios:** `usuarios_lista.php`, `usuarios_crear.php`, `usuarios_editar.php`, `usuarios_actualizar.php`, `usuarios_eliminar.php`.
-*   **Clientes:** `clientes_lista.php`, `clientes_crear.php`, `clientes_editar.php`, `clientes_actualizar.php`, `clientes_eliminar.php`.
-*   **Servicios:** `servicios_lista.php`, `servicios_crear.php`, `servicios_editar.php`, `servicios_actualizar.php`, `servicios_eliminar.php`.
-*   **Categorías:** `categorias_lista.php`, `categoria_crear.php`, `categorias_procesar_crear.php`, `categoria_editar.php`, `categoria_actualizar.php`, `categoria_eliminar.php`.
-*   **Citas:** `citas_lista.php`, `citas_crear.php`, `citas_editar.php`, `citas_actualizar.php`, `citas_eliminar.php`, `citas_actualizar_estado.php`, `calendario_ver.php`.
-*   **Documentos:** `seleccionar_resumen.php`, `documento_editar.php`, `documento_subir.php`, `enviar_resumen.php`.
-*   **Localizaciones:** `paises_lista.php` (y su CRUD), `estados_lista.php` (y su CRUD).
+### 3.2. Gestión de Sesión (Uso Común)
+Manejan el ciclo de vida del acceso al panel de administración.
 
-#### 3.4. API para SPA del Propietario (spa_owner)
+- **`sesion_iniciar.php`**: Muestra el formulario de login.
+- **`procesar_login.php`**: Valida las credenciales enviadas desde el formulario de login.
+- **`logout.php`**: Cierra la sesión del usuario.
+- **`olvide_clave.php`**: Muestra el formulario para recuperar contraseña.
+- **`procesar_olvide_clave.php`**: Procesa la solicitud de recuperación de contraseña.
+- **`crear_usuario.php`**: (USO DE EMERGENCIA) Script para resetear la contraseña del usuario `master` a `master123` con el rol `Administrador`.
 
-*   **Autenticación y Sesión:**
-    *   `api_owner_login.php`: Valida las credenciales del propietario y crea su sesión.
-    *   `api_owner_logout.php`: Cierra la sesión del propietario.
-    *   `api_owner_recuperar_clave.php`: Gestiona la solicitud de recuperación de contraseña.
-*   **Citas y Calendario:**
-    *   `api_owner_dashboard_data.php`: **(NUEVO)** Devuelve los datos agregados para los 4 gráficos del dashboard.
-    *   `api_owner_citas.php`: Devuelve la lista de citas para una fecha específica (vista de agenda).
-    *   `api_owner_calendario_eventos.php`: Devuelve las citas en formato de evento para FullCalendar.
-    *   `api_owner_horario_disponible.php`: Devuelve los slots de tiempo (libres y ocupados) para un día.
-    *   `api_owner_cita_detalle.php`: Obtiene los detalles completos de una cita.
-    *   `api_owner_cita_crear.php`: Crea una nueva cita (de servicio o reunión).
-    *   `api_owner_cita_actualizar.php`: Actualiza los datos o el estado de una cita.
-    *   `api_owner_cita_eliminar_fisico.php`: **(NUEVO)** Elimina permanentemente una cita y sus invitados.
-    *   `api_owner_cita_eliminar.php`: Cancela una cita (borrado lógico).
-    *   `api_owner_citas_cerrar_vencidas.php`: Marca como 'Vencidas' las citas pasadas.
-*   **Gestión (CRUDs):**
-    *   `api_owner_clientes.php`, `_detalle.php`, `_crear.php`, `_actualizar.php`, `_eliminar.php`: CRUD completo para Clientes.
-    *   `api_owner_servicios.php`, `_crear.php`, `_actualizar.php`, `_eliminar.php`: CRUD completo para Servicios.
-*   **Configuración:**
-    *   `api_owner_negocio_get.php`, `_update.php`: Obtiene y actualiza la configuración del negocio.
-    *   `api_owner_perfil_detalle.php`, `_actualizar.php`: Obtiene y actualiza el perfil del usuario propietario.
-*   **Datos Auxiliares:**
-    *   `api_get_translations.php`: Devuelve el diccionario de traducciones (ES/EN) para la interfaz.
-    *   `api_paises.php`, `api_estados.php`: Devuelven las listas de localizaciones para los formularios.
+### 3.3. Módulos de Gestión (Exclusivos del Administrador)
+Secciones principales del panel, ahora reestructuradas para el control total del rol "Administrador".
 
+- **Gestión de Negocios**:
+    - `negocios_configuracion.php`: Página principal para ver y editar la configuración de todos los negocios.
+    - `negocios_actualizar.php`: Procesa la actualización de un negocio.
+    - `crear_negocio.php`: Muestra el formulario para registrar un nuevo negocio y su propietario.
+    - `negocios_crear.php`: Procesa la creación del nuevo negocio.
+    - `negocios_eliminar.php`: Procesa la desactivación (borrado lógico) de un negocio.
+- **Gestión de Usuarios**:
+    - `usuarios_lista.php`: Muestra la lista de todos los usuarios (Administradores y Propietarios) con filtro por negocio.
+    - `usuarios_nuevo.php`: Muestra el formulario para crear un nuevo usuario.
+    - `usuarios_crear.php`: Procesa la creación del nuevo usuario.
+    - `usuarios_editar.php`: Muestra el formulario para editar un usuario existente.
+    - `usuarios_actualizar.php`: Procesa la actualización de un usuario.
+    - `usuarios_eliminar.php`: Procesa la desactivación de un usuario.
+    - `usuarios_reset_clave.php`: Muestra el formulario para resetear la contraseña de un usuario.
+    - `usuarios_procesar_reset_clave.php`: Procesa el reseteo de la contraseña.
+- **Gestión de Clientes**:
+    - `clientes_lista.php`: Muestra la lista de todos los clientes, con filtro por negocio.
+    - `clientes_nuevo.php`: Muestra el formulario para crear un nuevo cliente.
+    - `clientes_crear.php`: Procesa la creación del nuevo cliente.
+    - `clientes_editar.php`: Muestra el formulario para editar un cliente.
+    - `clientes_actualizar.php`: Procesa la actualización de un cliente.
+    - `clientes_eliminar.php`: Procesa la desactivación de un cliente.
+- **Gestión de Servicios**:
+    - `servicios_lista.php`: Muestra la lista de todos los servicios, con filtro por negocio.
+    - `servicios_nuevo.php`: Muestra el formulario para crear un nuevo servicio.
+    - `servicios_crear.php`: Procesa la creación del nuevo servicio.
+    - `servicios_editar.php`: Muestra el formulario para editar un servicio.
+    - `servicios_procesar_actualizar.php`: Procesa la actualización de un servicio.
+    - `servicios_eliminar.php`: Procesa la desactivación de un servicio.
+- **Gestión de Reseñas**:
+    - `resenas_lista.php`: Muestra la lista de todas las reseñas, con filtro por negocio.
+    - `resenas_editar.php`: Muestra el formulario para editar una reseña.
+    - `resenas_procesar_actualizar.php`: Procesa la actualización de una reseña.
+    - `resenas_procesar_eliminar.php`: Procesa la eliminación permanente de una reseña.
 
-#### 3.5. API para SPA del Cliente (spa_client)
-*   `api_cliente_login.php`: Valida el número de celular del cliente y crea su sesión.
-*   `api_cliente_logout.php`: Cierra la sesión del cliente.
-*   `api_cliente_registro.php`: Registra un nuevo cliente en la base de datos.
-*   `api_cliente_perfil.php`: Obtiene y actualiza los datos del perfil del cliente.
-*   `api_cliente_citas.php`: Devuelve la cita más reciente del cliente.
-*   `api_cliente_historial.php`: Devuelve el historial completo de citas del cliente.
-*   `api_negocios_lista_publica.php`: Devuelve la lista de negocios activos.
-*   `api_servicios_publicos.php`: Devuelve los servicios de un negocio específico.
+### 3.4. Módulos de Visualización y Reportes (Uso Común con Vista Filtrada)
+Estas secciones son accesibles por todos los roles, pero su contenido se adapta: el Administrador ve todo (con filtro), y el Propietario solo ve lo de su negocio.
 
-#### 3.6. Estructura de Archivos JavaScript (SPAs)
+- **`dashboard.php`**: La página de bienvenida principal.
+- **`citas_lista.php`**: Muestra la lista de citas del día. El Administrador puede filtrar por negocio.
+- **`calendario_ver.php`**: Muestra el calendario de citas.
+- **`auditoria_reporte.php`**: Muestra el registro de auditoría.
 
-*   **SPA del Propietario (`/js/owner_modules/`)**
-    *   `app_owner.js` (en raíz): Orquestador principal de la SPA.
-    *   `auth.js`: Módulo de autenticación.
-    *   `agenda.js`: Módulo para la vista de agenda diaria.
-    *   `calendario.js`: Módulo para la vista de calendario mensual.
-    *   `citas.js`: Módulo para los formularios de creación/edición de citas.
-    *   `clientes.js`: Módulo para el CRUD de clientes.
-    *   `dashboard.js`: Módulo para los gráficos de resumen de gestión.
-    *   `disponibilidad.js`: Módulo para la vista de slots de tiempo.
-    *   `negocio.js`: Módulo para la configuración del negocio.
-    *   `perfil.js`: Módulo para el perfil del propietario.
-    *   `servicios.js`: Módulo para el CRUD de servicios.
-    *   `ui.js`: Módulo para componentes de la interfaz de usuario (navbar, reloj).
+### 3.5. Módulos de Configuración Global (Exclusivos del Administrador)
+Estos módulos gestionan catálogos que afectan a todo el sistema.
 
-*   **SPA del Cliente (`/js/client_modules/`)**
-    *   `app_client.js` (en raíz): Orquestador principal de la SPA.
-    *   `auth.js`: Módulo de autenticación y registro de clientes.
-    *   `booking.js`: Módulo para el proceso de agendamiento de citas.
-    *   `dashboard.js`: Módulo para la pantalla principal del cliente.
-    *   `history.js`: Módulo para ver el historial de citas.
-    *   `profile.js`: Módulo para que el cliente edite su perfil.
-    *   `ui.js`: Módulo para componentes de la interfaz de usuario del cliente.
-
-
+- **`categorias_lista.php`** (y su CRUD asociado).
+- **`paises_lista.php`** (y su CRUD asociado).
+- **`estados_lista.php`** (y su CRUD asociado).
+- **`seleccionar_resumen.php`** (y su CRUD de documentos).
 
 ---
 
@@ -316,7 +300,7 @@ Este diagrama ilustra el flujo principal de interacción entre los componentes.
 *   `id_negocio` (FK a j102_negocios)
 *   `nombre_usuario` (UNIQUE)
 *   `correo_electronico` (UNIQUE)
-*   `password_hash`
+*   `password_hash` (VARCHAR)
 *   `rol` ('Master', 'Propietario')
 *   `activo` (TINYINT, 1=Activo, 0=Inactivo)
 *   `fecha_creacion`
@@ -497,34 +481,7 @@ Este script es una herramienta de diagnóstico más completa para resolver probl
     *   **Algún error en Rojo (❌):** El script indicará la causa exacta (ej. `composer.json` inválido, `vendor/` no encontrado) y la solución recomendada.
 
 
- ## 9.  Internacionalización (i18n) - (Implementado en Diciembre 2025)
-
-Se implementó una estrategia global para permitir que la aplicación funcione fluidamente en español (`es`) e inglés (`en`).
-
-#### ESTRATEGIA APLICADA:
-
-*   **Archivo Central de Traducciones**: `languages.php` contiene un array PHP `$translations` con todas las cadenas de texto para 'es' y 'en'. Esto centraliza y facilita la gestión de los textos.
-*   **Función de Ayuda (Helper)**: Se creó una función global `__()` que toma una clave como argumento (ej. `__('login_button')`) y devuelve la cadena traducida según el idioma activo.
-*   **Detección y Persistencia del Idioma**: El sistema detecta el idioma con la siguiente prioridad:
-    1.  Parámetro en URL (`?lang=en`)
-    2.  Cookie de idioma guardada en el navegador.
-    3.  Variable de sesión.
-    El idioma seleccionado se guarda en la sesión y en una cookie para futuras visitas.
-*   **Mensajes de Operación Traducibles**: Se estandarizó el uso de un parámetro `message_key` en las URL de redirección para mostrar mensajes de éxito o error (ej. "Registro creado con éxito") de forma traducible.
-*   **Cobertura Completa**: La estrategia se aplicó a todos los componentes de la interfaz de usuario (menús, formularios, tablas), mensajes del servidor, y al contenido de los correos electrónicos transaccionales (confirmación de citas, recuperación de clave, etc.).
-
-#### TABLA DE CHEQUEO DE ARCHIVOS MODIFICADOS PARA I18N:
-
-La implementación de i18n abarcó todos los archivos que presentan texto al usuario en el panel de administración (`zapp_citas`). Esto incluye:
-
-*   **Vistas Principales:** `dashboard.php`, `calendario_ver.php`, etc.
-*   **Formularios y Listas CRUD:** Todos los archivos `*_lista.php`, `*_editar.php`, `*_crear.php` para todas las entidades (clientes, servicios, usuarios, etc.).
-*   **Componentes de UI:** `navbar.php`, `footer.php`.
-*   **Páginas de Autenticación:** `sesion_iniciar.php`, `olvide_clave.php`.
-*   **Scripts de Proceso:** Todos los scripts que generan mensajes de feedback para el usuario.
-*   **Plantillas de Email:** El contenido de los correos electrónicos se genera utilizando las traducciones para asegurar una comunicación consistente.
-
 ---
 ***FIN DEL DOCUMENTO***
 
-Author: Alexis Gutierrez y Gemini Code Assist (Update: 12/14/2025)
+Author: Alexis Gutierrez y Gemini Code Assist (Update: 12/26/2025)

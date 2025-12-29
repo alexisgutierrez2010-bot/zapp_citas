@@ -5,13 +5,11 @@
 require_once 'auth_check.php';
 require_once 'config.php';
 
-/*
-// Solo Master puede acceder
-if ($rol_session != 'Master') {
+// Solo el rol Administrador puede editar usuarios desde este panel.
+if (strcasecmp(trim($rol_session ?? ''), 'Administrador') != 0) {
     header("Location: dashboard.php?status=error&message=" . urlencode("Acceso no autorizado."));
     exit;
 }
-*/
 $id_usuario_editar = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($id_usuario_editar <= 0) {
     header("Location: usuarios_lista.php?status=error&message=" . urlencode("ID de usuario no válido."));
@@ -30,7 +28,7 @@ if ($result_user->num_rows !== 1) {
 $usuario = $result_user->fetch_assoc();
 $stmt_user->close();
 
-// Obtener lista de negocios si el usuario es Master
+// Obtener lista de negocios si el usuario es Administrador
 $configs_list = [];
 $configs_result = $conn->query("SELECT id_negocio, nombre_negocio FROM j102_negocios WHERE activo = 1 ORDER BY nombre_negocio");
 while ($row = $configs_result->fetch_assoc()) {

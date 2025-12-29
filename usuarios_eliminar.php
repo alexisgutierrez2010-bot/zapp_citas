@@ -45,7 +45,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($stmt->execute()) {
         $descripcion_audit = "Se desactivó el usuario '{$usuario['nombre_usuario']}' (ID: {$id_usuario_eliminar}).";
         registrar_auditoria($conn, $_SESSION['id_usuario'], $id_negocio_session, 'DEACTIVATE_USER', $descripcion_audit);
-        header("Location: usuarios_lista.php?status=success_deactivate");
+        header("Location: usuarios_lista.php?status=success&message=" . urlencode("Usuario desactivado con éxito."));
     } else {
         header("Location: usuarios_lista.php?status=error&message=" . urlencode("Error al eliminar el usuario: " . $stmt->error));
     }

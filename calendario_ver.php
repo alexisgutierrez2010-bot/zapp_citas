@@ -3,6 +3,26 @@
 // ©2025. Software development ad Autorized by WWW.ACTICVEN.COM All rights reserved.
 // Update :Dec-25-2025).
 require_once 'auth_check.php'; // Inicia la sesión, carga el idioma y verifica el login
+
+// --- LÓGICA DE ROLES Y FILTRADO ---
+$es_administrador = (isset($rol_session) && strcasecmp(trim($rol_session), 'Administrador') == 0);
+
+$id_negocio_filtro = 0;
+$todos_los_negocios = [];
+
+if ($es_administrador) {
+    $id_negocio_filtro = isset($_GET['id_negocio_filtro']) ? (int)$_GET['id_negocio_filtro'] : 0;
+    require_once 'config.php'; // Necesita la conexión aquí
+    $result_todos_negocios = $conn->query("SELECT id_negocio, nombre_negocio FROM j102_negocios WHERE activo = 1 ORDER BY nombre_negocio ASC");
+    if ($result_todos_negocios) {
+        while ($row = $result_todos_negocios->fetch_assoc()) {
+            $todos_los_negocios[] = $row;
+        }
+    }
+} else {
+    $id_negocio_filtro = $id_negocio_session;
+}
+// --- FIN LÓGICA ---
 ?><!DOCTYPE html><html lang='es'>
 <head>
     <meta charset='utf-8' />
@@ -33,19 +53,41 @@ require_once 'auth_check.php'; // Inicia la sesión, carga el idioma y verifica 
         require_once 'config.php';     // Correcto
 
         // Obtener la configuración del negocio para ajustar el calendario
+        $id_negocio_para_config = ($es_administrador && $id_negocio_filtro > 0) ? $id_negocio_filtro : $id_negocio_session;
         $stmt_config = $conn->prepare("SELECT hora_inicio, hora_cierre, dias_trabajo FROM j102_negocios WHERE id_negocio = ?");
-        $stmt_config->bind_param("i", $id_negocio_session);
+        $stmt_config->bind_param("i", $id_negocio_para_config);
         $stmt_config->execute();
         $config = $stmt_config->get_result()->fetch_assoc();
         $stmt_config->close();
 
+        include 'navbar.php';         // Muestra el menú de navegación
+    ?>
+
+    <?php if ($es_administrador): ?>
+    <div class="container" style="max-width: 1100px;">
+        <form method="GET" action="calendario_ver.php" class="row g-3 align-items-center mb-3 bg-light p-3 rounded border">
+            <div class="col-md-9">
+                <label for="id_negocio_filtro" class="form-label fw-bold">Filtrar Calendario por Negocio:</label>
+                <select name="id_negocio_filtro" id="id_negocio_filtro" class="form-select" onchange="this.form.submit()">
+                    <option value="0">-- Todos los Negocios --</option>
+                    <?php foreach ($todos_los_negocios as $negocio): ?>
+                        <option value="<?php echo $negocio['id_negocio']; ?>" <?php echo ($id_negocio_filtro == $negocio['id_negocio']) ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($negocio['nombre_negocio']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </form>
+    </div>
+    <?php endif; ?>
+
+    <?php
         // Preparar los datos para JavaScript
         $hora_inicio = $config['hora_inicio'] ?? '08:00:00';
         $hora_cierre = $config['hora_cierre'] ?? '18:00:00';
         $dias_trabajo = !empty($config['dias_trabajo']) ? explode(',', $config['dias_trabajo']) : [1, 2, 3, 4, 5]; // Lunes a Viernes por defecto
-
-        include 'navbar.php';         // Muestra el menú de navegación
     ?>
+
 
     <div id='calendar'></div>
 
@@ -62,7 +104,7 @@ require_once 'auth_check.php'; // Inicia la sesión, carga el idioma y verifica 
             right: 'dayGridMonth,timeGridWeek,timeGridDay' // Botones para cambiar de vista
           },
           // Le decimos al calendario dónde buscar los eventos
-          events: 'api_citas.php',
+          events: 'api_citas.php?id_negocio=<?php echo $id_negocio_filtro; ?>',
 
           // --- AJUSTE DE HORAS LABORABLES ---
           // SOLUCIÓN: Se ajusta la configuración para que el calendario se centre en el horario laboral.

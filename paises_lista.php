@@ -38,7 +38,7 @@ $paises_result = $conn->query("SELECT * FROM j110_paises ORDER BY nombre_pais AS
                             if (!empty($message_key)) {
                                 $message = htmlspecialchars($message_key);
                             } elseif ($status === 'success_create') {
-                                $message = __('create_success');
+                                $message = 'Creado con éxito.';
                             }
                             if (!empty($message)) {
                                 $alert_type = strpos($status, 'error') === false ? 'success' : 'danger';

@@ -58,23 +58,15 @@ $dias_trabajo_str = implode(',', $dias_trabajo_arr);
 $conn->begin_transaction();
 
 try {
-    // 2. Verificar duplicados
-    $telefono_negocio_cleaned = preg_replace('/[^0-9]/', '', $telefono_negocio);
-    $sql_check_negocio = "SELECT id_negocio FROM j102_negocios WHERE REPLACE(REPLACE(REPLACE(telefono, '+', ''), ' ', ''), '-', '') LIKE CONCAT('%', ?, '%')";
-    $stmt_check_negocio = $conn->prepare($sql_check_negocio);
-    $stmt_check_negocio->bind_param("s", $telefono_negocio_cleaned);
-    $stmt_check_negocio->execute();
-    if ($stmt_check_negocio->get_result()->num_rows > 0) {
-        throw new Exception("El teléfono del negocio ya está registrado.", 409);
-    }
-    $stmt_check_negocio->close();
+    // 2. Verificar duplicados (Solo Usuario)
 
-    $sql_check_user = "SELECT id_usuario FROM j100_usuarios WHERE nombre_usuario = ? OR correo_electronico = ?";
+    // Solo verificamos que el nombre de usuario sea único. El correo puede repetirse.
+    $sql_check_user = "SELECT id_usuario FROM j100_usuarios WHERE nombre_usuario = ?";
     $stmt_check_user = $conn->prepare($sql_check_user);
-    $stmt_check_user->bind_param("ss", $nombre_usuario, $email_usuario);
+    $stmt_check_user->bind_param("s", $nombre_usuario);
     $stmt_check_user->execute();
     if ($stmt_check_user->get_result()->num_rows > 0) {
-        throw new Exception("El nombre de usuario o el correo del propietario ya existen.", 409);
+        throw new Exception("El nombre de usuario ya existe. Por favor elige otro.", 409);
     }
     $stmt_check_user->close();
 
